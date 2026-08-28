@@ -69,9 +69,11 @@ Generated migrations belong in source control. The free staging container applie
 
 ## Render staging
 
-Live staging: <https://saberistic-web-staging.onrender.com>
+Live staging: <https://saberistic.com>
 
-Payload Admin: <https://saberistic-web-staging.onrender.com/admin>
+Payload Admin: <https://saberistic.com/admin>
+
+Render fallback: <https://saberistic-web-staging.onrender.com>
 
 [`render.yaml`](./render.yaml) defines the first staging environment:
 
