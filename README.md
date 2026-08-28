@@ -69,16 +69,20 @@ Generated migrations belong in source control. The free staging container applie
 
 ## Render staging
 
+Live staging: <https://saberistic-web-staging.onrender.com>
+
+Payload Admin: <https://saberistic-web-staging.onrender.com/admin>
+
 [`render.yaml`](./render.yaml) defines the first staging environment:
 
 - one Docker web service;
 - one PostgreSQL database;
 - generated `PAYLOAD_SECRET`;
 - idempotent committed migration before the free staging server starts;
-- draft-only initial seed;
+- a draft-first idempotent seed command for controlled initialization;
 - `/api/ready` health gate.
 
-The Blueprint currently uses Render's free staging plans. Free PostgreSQL is temporary and is not the production data plan. Free web services also cannot use Render's pre-deploy phase, so startup migrations are an explicit single-instance staging compromise. Before production, choose paid web/database plans, run migrations in `preDeployCommand`, override the Docker start command to `node server.js`, add S3-compatible object storage for Payload media, set the canonical site URLs, and complete the backup/restore runbook in [`docs/09-operations-security-and-runbook.md`](./docs/09-operations-security-and-runbook.md).
+The Blueprint currently uses Render's free staging plans. Free PostgreSQL is temporary and is not the production data plan. Free web services also cannot use Render's pre-deploy phase, so startup migrations are an explicit single-instance staging compromise. Before production, choose paid web/database plans, run migrations in `preDeployCommand`, override the Docker start command to `node server.js`, add S3-compatible object storage for Payload media, set the canonical site URLs, and complete the backup/restore runbook in [`docs/09-operations-security-and-runbook.md`](./docs/09-operations-security-and-runbook.md). The exact live resource record and handoff are in [`docs/11-live-staging-deployment.md`](./docs/11-live-staging-deployment.md).
 
 ## Content safety model
 

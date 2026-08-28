@@ -18,32 +18,33 @@ The product promise is:
 
 ## Accepted architecture
 
-| Concern | Decision | Reason |
-|---|---|---|
-| Website and CMS | Next.js and MIT-licensed Payload in one TypeScript application | Payload is native to Next.js, self-hostable, keeps the admin and frontend in one codebase, and avoids an unnecessary API service. |
-| Primary database | Dedicated Render Postgres | Managed backups, private-network access, and a clean migration path. |
-| Media | S3-compatible object storage through Payload's official S3 adapter | Render service filesystems are ephemeral; a persistent disk would limit scaling and zero-downtime deploys. |
-| Analytics | Self-hosted, MIT-licensed Umami with its own Render Postgres | Privacy-first analytics remain operationally and permission-isolated from website content. |
-| AI feature | Deterministic readiness engine plus OpenRouter for explanation | The score remains testable and defensible while the visitor still sees useful generative AI immediately. |
-| Abuse controls | Render Key Value-backed rate limiting before public AI launch | Prevents one visitor or bot from exhausting the OpenRouter budget. |
-| Hosting | Render Blueprint for the core platform | Infrastructure is reviewable, reproducible, and grouped into staging and production environments. |
-| Prototypes | Hub-and-spoke: independent apps registered in Payload | Each experiment can use its own stack and deployment cadence without endangering the main site. |
+| Concern          | Decision                                                           | Reason                                                                                                                            |
+| ---------------- | ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------- |
+| Website and CMS  | Next.js and MIT-licensed Payload in one TypeScript application     | Payload is native to Next.js, self-hostable, keeps the admin and frontend in one codebase, and avoids an unnecessary API service. |
+| Primary database | Dedicated Render Postgres                                          | Managed backups, private-network access, and a clean migration path.                                                              |
+| Media            | S3-compatible object storage through Payload's official S3 adapter | Render service filesystems are ephemeral; a persistent disk would limit scaling and zero-downtime deploys.                        |
+| Analytics        | Self-hosted, MIT-licensed Umami with its own Render Postgres       | Privacy-first analytics remain operationally and permission-isolated from website content.                                        |
+| AI feature       | Deterministic readiness engine plus OpenRouter for explanation     | The score remains testable and defensible while the visitor still sees useful generative AI immediately.                          |
+| Abuse controls   | Render Key Value-backed rate limiting before public AI launch      | Prevents one visitor or bot from exhausting the OpenRouter budget.                                                                |
+| Hosting          | Render Blueprint for the core platform                             | Infrastructure is reviewable, reproducible, and grouped into staging and production environments.                                 |
+| Prototypes       | Hub-and-spoke: independent apps registered in Payload              | Each experiment can use its own stack and deployment cadence without endangering the main site.                                   |
 
 ## Documentation map
 
-| Document | Purpose |
-|---|---|
-| [00 — Project context and research summary](./00-project-context-and-research-summary.md) | Request history, source material, original critique, tool selection, and research method. |
-| [01 — Product and site strategy](./01-product-and-site-strategy.md) | Positioning, audiences, offers, conversion model, scope, and success criteria. |
-| [02 — Information architecture and prototype hub](./02-information-architecture-and-prototype-hub.md) | Routes, page hierarchy, prototype lifecycle, URL strategy, and publishing workflow. |
-| [03 — Verified content and AI brief](./03-verified-content-and-ai-brief.md) | Resume-derived copy, public evidence, claim holds, case-study language, and the original AI concept. |
-| [04 — Payload CMS implementation](./04-payload-cms-implementation.md) | Collections, fields, access control, drafts, migrations, media, and seed content. |
-| [05 — Umami analytics implementation](./05-umami-analytics-implementation.md) | Self-hosting, event taxonomy, funnels, privacy rules, and reporting. |
-| [06 — OpenRouter readiness check](./06-openrouter-readiness-check-implementation.md) | User experience, deterministic policy engine, model contract, security, cost controls, and testing. |
-| [07 — Render deployment architecture](./07-render-deployment-architecture.md) | Services, environments, domains, secrets, database strategy, health checks, and Blueprint outline. |
-| [08 — Implementation plan](./08-implementation-plan.md) | Ordered workstreams, dependencies, acceptance criteria, launch gates, and backlog. |
-| [09 — Operations and security runbook](./09-operations-security-and-runbook.md) | Backups, monitoring, restores, incident response, privacy, and key rotation. |
-| [10 — Architecture decision log](./10-architecture-decision-log.md) | Decisions that should not be reopened without new evidence. |
+| Document                                                                                              | Purpose                                                                                                       |
+| ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [00 — Project context and research summary](./00-project-context-and-research-summary.md)             | Request history, source material, original critique, tool selection, and research method.                     |
+| [01 — Product and site strategy](./01-product-and-site-strategy.md)                                   | Positioning, audiences, offers, conversion model, scope, and success criteria.                                |
+| [02 — Information architecture and prototype hub](./02-information-architecture-and-prototype-hub.md) | Routes, page hierarchy, prototype lifecycle, URL strategy, and publishing workflow.                           |
+| [03 — Verified content and AI brief](./03-verified-content-and-ai-brief.md)                           | Resume-derived copy, public evidence, claim holds, case-study language, and the original AI concept.          |
+| [04 — Payload CMS implementation](./04-payload-cms-implementation.md)                                 | Collections, fields, access control, drafts, migrations, media, and seed content.                             |
+| [05 — Umami analytics implementation](./05-umami-analytics-implementation.md)                         | Self-hosting, event taxonomy, funnels, privacy rules, and reporting.                                          |
+| [06 — OpenRouter readiness check](./06-openrouter-readiness-check-implementation.md)                  | User experience, deterministic policy engine, model contract, security, cost controls, and testing.           |
+| [07 — Render deployment architecture](./07-render-deployment-architecture.md)                         | Services, environments, domains, secrets, database strategy, health checks, and Blueprint outline.            |
+| [08 — Implementation plan](./08-implementation-plan.md)                                               | Ordered workstreams, dependencies, acceptance criteria, launch gates, and backlog.                            |
+| [09 — Operations and security runbook](./09-operations-security-and-runbook.md)                       | Backups, monitoring, restores, incident response, privacy, and key rotation.                                  |
+| [10 — Architecture decision log](./10-architecture-decision-log.md)                                   | Decisions that should not be reopened without new evidence.                                                   |
+| [11 — Live staging deployment](./11-live-staging-deployment.md)                                       | Live URLs and resource IDs, deployment verification, retired resources, current limits, and operator handoff. |
 
 ## Recommended first release
 
@@ -61,7 +62,7 @@ Do not delay launch for a full blog, user accounts, repository ingestion, free-f
 
 ## Current repository state
 
-At the time this documentation was written, the repository contained documentation only. It had no application scaffold and was not initialized as a Git repository. A working `render.yaml` should be added only after the application, migrations, Dockerfile, health endpoints, and start commands exist and have been tested locally.
+The first Payload/Next.js thin slice is implemented, tested, published to GitHub, and deployed to Render staging. The repository includes committed migrations, a production Dockerfile, a validated Blueprint, CI, health endpoints, public routes, Payload collections, an idempotent seed, and operational runbooks. See [11](./11-live-staging-deployment.md) for the exact live environment and remaining launch work.
 
 ## Source-of-truth rules
 
