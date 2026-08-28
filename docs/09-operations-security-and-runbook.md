@@ -24,15 +24,15 @@ Independent prototypes get their own inventory rows and recovery targets.
 
 These are launch targets to validate, not public contractual SLAs:
 
-| Component | Recovery time target | Recovery point target | Degraded behavior |
-|---|---:|---:|---|
-| Main website and Payload | 4 hours | 24 hours or better | Maintenance/error response; MVP CMS routes require the Payload database |
-| Payload content database | 4 hours | Render PITR window; daily independent export | Public CMS routes and publishing unavailable; restore or fail over through the runbook |
-| Media bucket | 8 hours | Provider versioning/lifecycle target | Text content remains; missing media gets graceful fallback |
-| Umami | 24 hours | 24 hours | Site functions without analytics |
-| Readiness model call | Immediate fallback | Not applicable | Deterministic report |
-| Rate-limit store | Minutes | No durability required | Conservative in-process emergency limits or AI temporarily disabled |
-| Individual prototype | Defined per prototype | Defined per prototype | Main site marks it unavailable; remains healthy |
+| Component                |  Recovery time target |                        Recovery point target | Degraded behavior                                                                      |
+| ------------------------ | --------------------: | -------------------------------------------: | -------------------------------------------------------------------------------------- |
+| Main website and Payload |               4 hours |                           24 hours or better | Maintenance/error response; MVP CMS routes require the Payload database                |
+| Payload content database |               4 hours | Render PITR window; daily independent export | Public CMS routes and publishing unavailable; restore or fail over through the runbook |
+| Media bucket             |               8 hours |         Provider versioning/lifecycle target | Text content remains; missing media gets graceful fallback                             |
+| Umami                    |              24 hours |                                     24 hours | Site functions without analytics                                                       |
+| Readiness model call     |    Immediate fallback |                               Not applicable | Deterministic report                                                                   |
+| Rate-limit store         |               Minutes |                       No durability required | Conservative in-process emergency limits or AI temporarily disabled                    |
+| Individual prototype     | Defined per prototype |                        Defined per prototype | Main site marks it unavailable; remains healthy                                        |
 
 ## Monitoring
 
@@ -226,6 +226,14 @@ The 2026-08-28 organization audit found secret scanning/push protection disabled
 - review every imported/generated repository for committed credentials, unsafe example environment files, unpinned dependencies, generated history, and license before adding Render secrets or production data;
 - do not copy the unusually large `agent-web` history into the new V2 repository by default; migrate approved content, routes, and implementation pieces deliberately;
 - require a security-settings check and current dependency scan in each prototype launch packet.
+
+### Dependency and vendored-asset review
+
+- run the package-manager audit against the committed lockfile before release and investigate every production-scoped result;
+- inspect the built application for vendored browser assets when an upstream package embeds dependencies, because a clean package-tree audit does not prove that compiled copies are patched;
+- keep pnpm overrides narrowly scoped, pinned, documented, and covered by build, migration, and browser tests;
+- remove an override when the owning upstream dependency ships the fix, rather than allowing it to become permanent invisible policy;
+- as of 2026-08-28, Payload `3.88.0` pulls Monaco Editor `0.56.0`, whose prebuilt assets embed an older DOMPurify copy. The current schema has no code/JSON editor fields, so do not add those fields until this exception is reassessed or upstream ships a fixed stable bundle.
 
 ## Logging and privacy
 

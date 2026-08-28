@@ -49,6 +49,23 @@ The homepage was also inspected in a browser and rendered the authored offer, re
 
 GitHub CI passed dependency installation, TypeScript, ESLint, 29 unit/integration tests, and the production build for the deployed commit.
 
+## Post-deploy dependency hardening
+
+The first repository push surfaced nine GitHub dependency-alert entries, including duplicate manifest/lockfile findings. Before final handoff, the application was moved to patched versions of Next.js (`16.3.3`), React/React DOM (`19.2.8`), Sharp (`0.35.4`), and Vitest (`4.1.11`). Targeted pnpm overrides resolve Payload's current transitive paths to DOMPurify `3.4.14` and esbuild `0.25.12` without changing Payload `3.88.0`, which is already the current stable release.
+
+The remediated lockfile reports zero advisories through `pnpm audit`. It also passed:
+
+- TypeScript and ESLint;
+- all 29 unit/integration tests;
+- the Next.js production build;
+- all four Playwright browser checks, including the anonymous Payload admin entry point;
+- a clean Docker build; and
+- the exact production-container startup path against a fresh PostgreSQL 18 database, including the committed migration and HTTP 200 responses from `/`, `/admin`, and `/api/ready`.
+
+The verification also found and fixed the PostgreSQL 18 Docker Compose volume target. Fresh local databases now mount at `/var/lib/postgresql`, as required by the PostgreSQL 18 image.
+
+One upstream limitation remains documented rather than hidden: Monaco Editor `0.56.0`, pulled in by Payload Admin, embeds an older DOMPurify copy inside its prebuilt browser assets even when the package dependency is overridden. This project currently defines no Payload code or JSON editor fields, so that Monaco path is not used by the current content model and remains limited to the authenticated admin surface. Do not add such fields without reassessing the exposure, and upgrade Payload/Monaco when upstream ships a stable bundle with the fixed sanitizer. Registry audits alone are not sufficient to close this item.
+
 ## Current content and operational limits
 
 - Payload is live and ready for its first administrator, but no public prototype records are published yet. The visitor-facing catalog intentionally shows an honest empty state.
@@ -57,6 +74,7 @@ GitHub CI passed dependency installation, TypeScript, ESLint, 29 unit/integratio
 - Umami is planned but not deployed yet.
 - Production media uploads remain disabled until S3-compatible object storage is connected.
 - A production email adapter is not configured; Payload currently logs email to the service console.
+- Payload's upstream Monaco bundle limitation is tracked in the hardening section above and must be rechecked before adding code/JSON editor fields.
 
 ## Retired environment
 
