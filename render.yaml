@@ -22,7 +22,6 @@ projects:
             initialDeployHook: ./node_modules/.bin/tsx src/scripts/seed.ts
             healthCheckPath: /api/ready
             autoDeployTrigger: checksPass
-            maxShutdownDelaySeconds: 30
             envVars:
               - key: DATABASE_URL
                 fromDatabase:
