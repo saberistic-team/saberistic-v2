@@ -1,18 +1,29 @@
-import React from 'react'
+import type { Metadata } from 'next'
+import type { ReactNode } from 'react'
+
+import { SiteFooter } from '@/components/site/SiteFooter'
+import { SiteHeader } from '@/components/site/SiteHeader'
+import { SkipLink } from '@/components/site/SkipLink'
+
 import './styles.css'
 
-export const metadata = {
-  description: 'A blank template using Payload in a Next.js app.',
-  title: 'Payload Blank Template',
+export const metadata: Metadata = {
+  description:
+    'Senior architecture and hands-on engineering for ambitious AI and software products.',
+  title: {
+    default: 'Saberistic — Prototype to Production',
+    template: '%s — Saberistic',
+  },
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
-
+export default function FrontendLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
-        <main>{children}</main>
+        <SkipLink />
+        <SiteHeader />
+        <main id="main-content">{children}</main>
+        <SiteFooter />
       </body>
     </html>
   )

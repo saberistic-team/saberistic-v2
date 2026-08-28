@@ -1,67 +1,87 @@
-# Payload Blank Template
+# Saberistic V2
 
-This template comes configured with the bare minimum to get started on anything you need.
+Saberistic V2 is a product-engineering site and prototype hub built with Next.js, Payload CMS, and PostgreSQL. The first vertical slice provides an editorial prototype registry, a public homepage and prototype catalogue, strict publication gates, and deployment infrastructure for Render.
 
-## Quick start
+The product direction, research record, content evidence rules, AI-readiness design, Umami plan, and phased implementation plan live in [`docs/`](./docs/README.md).
 
-This template can be deployed directly from our Cloud hosting and it will setup MongoDB and cloud S3 object storage for media.
+## Current slice
 
-## Quick Start - local setup
+- Payload Admin and APIs in the same Next.js application
+- PostgreSQL-backed prototypes, evidence sources, media, users, and site settings
+- draft-first seed data based on audited public repositories
+- public homepage, prototype index, and prototype detail pages
+- fail-closed launch buttons: a URL is never enough on its own
+- liveness (`/api/health`) and database readiness (`/api/ready`) endpoints
+- deterministic unit tests and browser smoke tests
+- multi-stage production image, GitHub Actions CI, and a Render Blueprint
 
-To spin up this template locally, follow these steps:
+Umami analytics and the OpenRouter explanation layer are intentionally planned after this CMS-to-public-page deployment is proven. The AI feature will explain a deterministic Production Readiness Check; it will not control scores or accept code, files, logs, or arbitrary prompts.
 
-### Clone
+## Local development
 
-After you click the `Deploy` button above, you'll want to have standalone copy of this repo on your machine. If you've already cloned this repo, skip to [Development](#development).
+Requirements: Node.js 22, pnpm 11, and PostgreSQL 18 (Docker Compose is provided for the database).
 
-### Development
+```bash
+cp .env.example .env
+pnpm install
+docker compose up -d postgres
+pnpm migrate
+pnpm seed
+pnpm dev
+```
 
-1. First [clone the repo](#clone) if you have not done so already
-2. `cd my-project && cp .env.example .env` to copy the example environment variables. You'll need to add the `MONGODB_URL` from your Cloud project to your `.env` if you want to use S3 storage and the MongoDB database that was created for you.
+Open:
 
-3. `pnpm install && pnpm dev` to install dependencies and start the dev server
-4. open `http://localhost:3000` to open the app in your browser
+- site: <http://localhost:3000>
+- Payload Admin: <http://localhost:3000/admin>
+- health: <http://localhost:3000/api/health>
+- readiness: <http://localhost:3000/api/ready>
 
-That's it! Changes made in `./src` will be reflected in your app. Follow the on-screen instructions to login and create your first admin user. Then check out [Production](#production) once you're ready to build and serve your app, and [Deployment](#deployment) when you're ready to go live.
+The default seed is deliberately private: audited candidates are created as drafts. To create clearly labelled public concept records for local visual review, run:
 
-#### Docker (Optional)
+```bash
+pnpm seed:preview
+```
 
-If you prefer to use Docker for local development instead of a local MongoDB instance, the provided docker-compose.yml file can be used.
+Optional admin bootstrap variables are documented in [`.env.example`](./.env.example). Never commit `.env`.
 
-To do so, follow these steps:
+## Quality checks
 
-- Modify the `MONGODB_URL` in your `.env` file to `mongodb://127.0.0.1/<dbname>`
-- Modify the `docker-compose.yml` file's `MONGODB_URL` to match the above `<dbname>`
-- Run `docker-compose up` to start the database, optionally pass `-d` to run in the background.
+```bash
+pnpm run verify
+# or run the gates individually:
+pnpm generate:types
+pnpm typecheck
+pnpm lint
+pnpm test:int
+pnpm build
+pnpm test:e2e
+```
 
-## How it works
+Create and review a schema migration after changing Payload fields:
 
-The Payload config is tailored specifically to the needs of most websites. It is pre-configured in the following ways:
+```bash
+pnpm migrate:create initial-platform
+pnpm migrate:status
+```
 
-### Collections
+Generated migrations belong in source control. The free staging container applies committed migrations before it starts the server because Render reserves pre-deploy commands for paid web services. Production must move the same command to Render's pre-deploy phase.
 
-See the [Collections](https://payloadcms.com/docs/configuration/collections) docs for details on how to extend this functionality.
+## Render staging
 
-- #### Users (Authentication)
+[`render.yaml`](./render.yaml) defines the first staging environment:
 
-  Users are auth-enabled collections that have access to the admin panel.
+- one Docker web service;
+- one PostgreSQL database;
+- generated `PAYLOAD_SECRET`;
+- idempotent committed migration before the free staging server starts;
+- draft-only initial seed;
+- `/api/ready` health gate.
 
-  For additional help, see the official [Auth Example](https://github.com/payloadcms/payload/tree/3.x/examples/auth) or the [Authentication](https://payloadcms.com/docs/authentication/overview#authentication-overview) docs.
+The Blueprint currently uses Render's free staging plans. Free PostgreSQL is temporary and is not the production data plan. Free web services also cannot use Render's pre-deploy phase, so startup migrations are an explicit single-instance staging compromise. Before production, choose paid web/database plans, run migrations in `preDeployCommand`, override the Docker start command to `node server.js`, add S3-compatible object storage for Payload media, set the canonical site URLs, and complete the backup/restore runbook in [`docs/09-operations-security-and-runbook.md`](./docs/09-operations-security-and-runbook.md).
 
-- #### Media
+## Content safety model
 
-  This is the uploads enabled collection. It features pre-configured sizes, focal point and manual resizing to help you manage your pictures.
+Repository ownership proves control of source, not product maturity. Public prototype records carry explicit provenance, lifecycle, availability, sensitivity, verification, and launch-approval fields. Publication hooks reject unsafe combinations, and public queries request only an allowlisted projection while respecting Payload access control.
 
-### Docker
-
-Alternatively, you can use [Docker](https://www.docker.com) to spin up this template locally. To do so, follow these steps:
-
-1. Follow [steps 1 and 2 from above](#development), the docker-compose file will automatically use the `.env` file in your project root
-1. Next run `docker-compose up`
-1. Follow [steps 4 and 5 from above](#development) to login and create your first admin user
-
-That's it! The Docker instance will help you get up and running quickly while also standardizing the development environment across your teams.
-
-## Questions
-
-If you have any issues or questions, reach out to us on [Discord](https://discord.com/invite/payload) or start a [GitHub discussion](https://github.com/payloadcms/payload/discussions).
+Resume and internet research are source leads, not blanket permission to publish claims. Approved wording and held claims are recorded in [`docs/03-verified-content-and-ai-brief.md`](./docs/03-verified-content-and-ai-brief.md).

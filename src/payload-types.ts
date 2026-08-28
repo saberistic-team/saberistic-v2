@@ -69,6 +69,8 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    'evidence-sources': EvidenceSource;
+    prototypes: Prototype;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,17 +80,23 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'evidence-sources': EvidenceSourcesSelect<false> | EvidenceSourcesSelect<true>;
+    prototypes: PrototypesSelect<false> | PrototypesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'site-settings': SiteSetting;
+  };
+  globalsSelect: {
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -122,7 +130,10 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
+  name: string;
+  role: 'admin' | 'editor';
+  lastSecurityReviewAt?: string | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -147,10 +158,15 @@ export interface User {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   alt: string;
+  caption?: string | null;
+  credit?: string | null;
+  sourceUrl?: string | null;
+  usageRights: 'owned' | 'licensed' | 'public-domain' | 'third-party-permission';
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
   url?: string | null;
   thumbnailURL?: string | null;
   filename?: string | null;
@@ -160,13 +176,137 @@ export interface Media {
   height?: number | null;
   focalX?: number | null;
   focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    card?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "evidence-sources".
+ */
+export interface EvidenceSource {
+  id: number;
+  title: string;
+  url: string;
+  sourceType:
+    | 'official-product'
+    | 'official-company'
+    | 'repository'
+    | 'commit'
+    | 'pull-request'
+    | 'package-registry'
+    | 'archive'
+    | 'resume'
+    | 'professional-profile'
+    | 'third-party-reference'
+    | 'other';
+  publisherOrOwner: string;
+  accessedAt: string;
+  supports: string;
+  strength: 'primary' | 'first-party-public' | 'public-contribution' | 'secondary' | 'self-attested';
+  permissionStatus: 'public' | 'approval-required' | 'private-only';
+  allowedSurfaces: ('homepage' | 'work' | 'about' | 'proposal' | 'prototype-hub' | 'private-only')[];
+  archivedUrl?: string | null;
+  archivedAt?: string | null;
+  verificationStatus: 'proposed' | 'verified' | 'rejected';
+  internalVerificationNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prototypes".
+ */
+export interface Prototype {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  story: string;
+  status: 'concept' | 'prototype' | 'alpha' | 'beta' | 'live' | 'archived';
+  problem?: string | null;
+  decisions?:
+    | {
+        title: string;
+        detail: string;
+        id?: string | null;
+      }[]
+    | null;
+  limitations?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  dataClassification: 'none' | 'synthetic-only' | 'non-sensitive' | 'account-data' | 'sensitive';
+  safetyNotice?: string | null;
+  dataHandlingNotes?: string | null;
+  appUrl?: string | null;
+  sourceUrl?: string | null;
+  sourceProvenance?: {
+    repositoryUrl?: string | null;
+    repositoryOwner?: string | null;
+    repositoryName?: string | null;
+    relation?: ('organization_owned' | 'personal_original' | 'fork' | 'external_contribution') | null;
+    licenseSpdxExpression?:
+      ('MIT' | 'Apache-2.0' | 'PolyForm-Noncommercial-1.0.0' | 'NOASSERTION' | 'OTHER-REVIEWED') | null;
+    sourceLastCheckedAt?: string | null;
+    sourceReviewStatus?: ('unreviewed' | 'metadata_only' | 'reviewed' | 'blocked') | null;
+  };
+  availabilityStatus: 'unchecked' | 'available' | 'degraded' | 'unavailable' | 'retired';
+  availabilityMessage?: string | null;
+  availabilityCheckedAt?: string | null;
+  poster?: (number | null) | Media;
+  featured?: boolean | null;
+  featuredOrder?: number | null;
+  featureUntil?: string | null;
+  launchedAt?: string | null;
+  lastVerifiedAt?: string | null;
+  privacyUrl?: string | null;
+  termsUrl?: string | null;
+  serviceExpectations?: string | null;
+  evidenceSources?: (number | EvidenceSource)[] | null;
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    socialImage?: (number | null) | Media;
+    noIndex?: boolean | null;
+  };
+  launchApproval: 'not-reviewed' | 'approved' | 'blocked';
+  launchReviewer?: (number | null) | User;
+  launchApprovedAt?: string | null;
+  authReviewedAt?: string | null;
+  securityReviewedAt?: string | null;
+  monitoringVerifiedAt?: string | null;
+  restoreTestedAt?: string | null;
+  rollbackTestedAt?: string | null;
+  renderServiceId?: string | null;
+  operationalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
-  id: string;
+  id: number;
   key: string;
   data:
     | {
@@ -183,20 +323,28 @@ export interface PayloadKv {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'evidence-sources';
+        value: number | EvidenceSource;
+      } | null)
+    | ({
+        relationTo: 'prototypes';
+        value: number | Prototype;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -206,10 +354,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -229,7 +377,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -240,6 +388,9 @@ export interface PayloadMigration {
  * via the `definition` "users_select".
  */
 export interface UsersSelect<T extends boolean = true> {
+  name?: T;
+  role?: T;
+  lastSecurityReviewAt?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -263,8 +414,13 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  caption?: T;
+  credit?: T;
+  sourceUrl?: T;
+  usageRights?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
   url?: T;
   thumbnailURL?: T;
   filename?: T;
@@ -274,6 +430,126 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        card?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "evidence-sources_select".
+ */
+export interface EvidenceSourcesSelect<T extends boolean = true> {
+  title?: T;
+  url?: T;
+  sourceType?: T;
+  publisherOrOwner?: T;
+  accessedAt?: T;
+  supports?: T;
+  strength?: T;
+  permissionStatus?: T;
+  allowedSurfaces?: T;
+  archivedUrl?: T;
+  archivedAt?: T;
+  verificationStatus?: T;
+  internalVerificationNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "prototypes_select".
+ */
+export interface PrototypesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  summary?: T;
+  story?: T;
+  status?: T;
+  problem?: T;
+  decisions?:
+    | T
+    | {
+        title?: T;
+        detail?: T;
+        id?: T;
+      };
+  limitations?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  dataClassification?: T;
+  safetyNotice?: T;
+  dataHandlingNotes?: T;
+  appUrl?: T;
+  sourceUrl?: T;
+  sourceProvenance?:
+    | T
+    | {
+        repositoryUrl?: T;
+        repositoryOwner?: T;
+        repositoryName?: T;
+        relation?: T;
+        licenseSpdxExpression?: T;
+        sourceLastCheckedAt?: T;
+        sourceReviewStatus?: T;
+      };
+  availabilityStatus?: T;
+  availabilityMessage?: T;
+  availabilityCheckedAt?: T;
+  poster?: T;
+  featured?: T;
+  featuredOrder?: T;
+  featureUntil?: T;
+  launchedAt?: T;
+  lastVerifiedAt?: T;
+  privacyUrl?: T;
+  termsUrl?: T;
+  serviceExpectations?: T;
+  evidenceSources?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        socialImage?: T;
+        noIndex?: T;
+      };
+  launchApproval?: T;
+  launchReviewer?: T;
+  launchApprovedAt?: T;
+  authReviewedAt?: T;
+  securityReviewedAt?: T;
+  monitoringVerifiedAt?: T;
+  restoreTestedAt?: T;
+  rollbackTestedAt?: T;
+  renderServiceId?: T;
+  operationalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -314,6 +590,104 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: number;
+  siteName: string;
+  tagline: string;
+  canonicalOrigin: string;
+  contactEmail?: string | null;
+  bookingUrl?: string | null;
+  socialLinks?:
+    | {
+        platform: 'github' | 'linkedin' | 'other';
+        label: string;
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  defaultSeo: {
+    title: string;
+    description: string;
+    socialImage?: (number | null) | Media;
+  };
+  defaultPrimaryActionId:
+    | 'check_production_readiness'
+    | 'explore_prototypes'
+    | 'start_architecture_diagnostic'
+    | 'inquire_prototype_to_production'
+    | 'inquire_engineering_rescue'
+    | 'inquire_fractional_principal_engineer';
+  defaultSecondaryActionId:
+    | 'check_production_readiness'
+    | 'explore_prototypes'
+    | 'start_architecture_diagnostic'
+    | 'inquire_prototype_to_production'
+    | 'inquire_engineering_rescue'
+    | 'inquire_fractional_principal_engineer';
+  legalFooter?: string | null;
+  organization: {
+    name: string;
+    legalName?: string | null;
+    url: string;
+    sameAs?:
+      | {
+          url: string;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  tagline?: T;
+  canonicalOrigin?: T;
+  contactEmail?: T;
+  bookingUrl?: T;
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        label?: T;
+        url?: T;
+        id?: T;
+      };
+  defaultSeo?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        socialImage?: T;
+      };
+  defaultPrimaryActionId?: T;
+  defaultSecondaryActionId?: T;
+  legalFooter?: T;
+  organization?:
+    | T
+    | {
+        name?: T;
+        legalName?: T;
+        url?: T;
+        sameAs?:
+          | T
+          | {
+              url?: T;
+              id?: T;
+            };
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

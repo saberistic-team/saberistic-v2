@@ -5,11 +5,19 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
-import { Users } from './collections/Users'
+import { EvidenceSources } from './collections/EvidenceSources'
 import { Media } from './collections/Media'
+import { Prototypes } from './collections/Prototypes'
+import { Users } from './collections/Users'
+import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const serverURL =
+  process.env.SITE_URL?.trim() ||
+  process.env.RENDER_EXTERNAL_URL?.trim() ||
+  'http://localhost:3000'
+const allowedOrigin = new URL(serverURL).origin
 
 export default buildConfig({
   admin: {
@@ -18,7 +26,10 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, EvidenceSources, Prototypes],
+  cors: [allowedOrigin],
+  csrf: [allowedOrigin],
+  serverURL,
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -29,6 +40,12 @@ export default buildConfig({
       connectionString: process.env.DATABASE_URL || '',
     },
   }),
+  globals: [SiteSettings],
   sharp,
+  upload: {
+    limits: {
+      fileSize: 8 * 1024 * 1024,
+    },
+  },
   plugins: [],
 })

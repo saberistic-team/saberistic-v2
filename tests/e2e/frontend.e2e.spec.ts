@@ -1,20 +1,30 @@
-import { test, expect, Page } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 
-test.describe('Frontend', () => {
-  let page: Page
+test.describe('Public site smoke', () => {
+  for (const route of ['/', '/prototypes']) {
+    test(`${route} renders without seeded content`, async ({ page }) => {
+      const response = await page.goto(route)
 
-  test.beforeAll(async ({ browser }, testInfo) => {
-    const context = await browser.newContext()
-    page = await context.newPage()
-  })
+      expect(response).not.toBeNull()
+      expect(response!.ok()).toBe(true)
+      await expect(page.locator('main')).toBeVisible()
+      await expect(page.locator('h1').first()).toBeVisible()
+    })
+  }
 
-  test('can go on homepage', async ({ page }) => {
-    await page.goto('http://localhost:3000')
+  test('/api/health is a cache-safe, non-sensitive liveness response', async ({ request }) => {
+    const response = await request.get('/api/health')
 
-    await expect(page).toHaveTitle(/Payload Blank Template/)
+    expect(response.status()).toBe(200)
+    expect(response.headers()['content-type']).toContain('application/json')
+    expect(response.headers()['cache-control']).toContain('no-store')
 
-    const heading = page.locator('h1').first()
+    const body = (await response.json()) as Record<string, unknown>
 
-    await expect(heading).toHaveText('Welcome to your new project.')
+    expect(body).toMatchObject({ status: 'ok' })
+    expect(Object.keys(body).every((key) => ['commit', 'service', 'status'].includes(key))).toBe(
+      true,
+    )
+    expect(Object.keys(body).some((key) => /secret|token|password|database/i.test(key))).toBe(false)
   })
 })

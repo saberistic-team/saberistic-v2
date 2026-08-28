@@ -1,4 +1,1 @@
-// Any setup scripts you might need go here
-
-// Load .env files
-import 'dotenv/config'
+// Keep unit tests independent from local secrets and database configuration.
