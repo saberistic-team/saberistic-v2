@@ -80,6 +80,96 @@ bootstrapDatabaseURL.searchParams.delete('schema')
 const restrictedConnectionURL = new URL(runtimeDatabaseURL)
 restrictedConnectionURL.searchParams.delete('schema')
 
+const createRestrictedClient = (Client) =>
+  new Client({
+    connectionString: restrictedConnectionURL.toString(),
+    options: `-c search_path=${schema}`,
+  })
+
+const assertExactRoleAttributes = (role) => {
+  if (
+    !role ||
+    !role.rolcanlogin ||
+    role.rolsuper ||
+    role.rolinherit ||
+    role.rolcreaterole ||
+    role.rolcreatedb ||
+    role.rolreplication ||
+    role.rolbypassrls ||
+    role.rolconnlimit !== roleConnectionLimit ||
+    role.rolconfig !== null ||
+    role.rolvaliduntil !== null
+  ) {
+    throw new Error(`PostgreSQL role ${databaseRole} did not pass its exact attribute check.`)
+  }
+}
+
+const assertRoleMembershipIsolation = async (client) => {
+  const administratorResult = await client.query(
+    'SELECT oid::text FROM pg_roles WHERE rolname = session_user',
+  )
+  const administratorOid = administratorResult.rows[0]?.oid
+
+  if (!administratorOid) {
+    throw new Error('The PostgreSQL bootstrap administrator could not be resolved.')
+  }
+
+  const membershipResult = await client.query(
+    `SELECT parent.rolname AS parent_role, member.rolname AS member_role,
+            member.oid::text AS member_oid, membership.admin_option,
+            membership.inherit_option, membership.set_option,
+            grantor.rolsuper AS grantor_is_superuser
+       FROM pg_auth_members AS membership
+       JOIN pg_roles AS member ON member.oid = membership.member
+       JOIN pg_roles AS parent ON parent.oid = membership.roleid
+       JOIN pg_roles AS grantor ON grantor.oid = membership.grantor
+      WHERE member.rolname = $1 OR parent.rolname = $1`,
+    [databaseRole],
+  )
+
+  const unexpectedMembership = membershipResult.rows.find(
+    (membership) =>
+      membership.parent_role !== databaseRole ||
+      membership.member_oid !== administratorOid ||
+      !membership.admin_option ||
+      membership.inherit_option ||
+      membership.set_option ||
+      !membership.grantor_is_superuser,
+  )
+
+  if (unexpectedMembership) {
+    throw new Error(`Refusing to reuse PostgreSQL role ${databaseRole} with role memberships.`)
+  }
+}
+
+const secureOwnedRoutines = async (client, grantee) => {
+  const routineResult = await client.query(
+    `SELECT format(
+              '%I.%I(%s)',
+              namespace.nspname,
+              routine.proname,
+              pg_get_function_identity_arguments(routine.oid)
+            ) AS signature
+       FROM pg_proc AS routine
+       JOIN pg_namespace AS namespace ON namespace.oid = routine.pronamespace
+      WHERE namespace.nspname = $1
+        AND routine.proowner = (
+          SELECT oid FROM pg_roles WHERE rolname = current_user
+        )`,
+    [schema],
+  )
+  const signatures = routineResult.rows.map((routine) => routine.signature)
+
+  if (signatures.length === 0) return
+
+  const functionList = signatures.join(', ')
+  await client.query(`REVOKE ALL PRIVILEGES ON FUNCTION ${functionList} FROM PUBLIC`)
+
+  if (grantee) {
+    await client.query(`GRANT EXECUTE ON FUNCTION ${functionList} TO ${grantee}`)
+  }
+}
+
 const assertRoleIsolation = async (client, roleOid) => {
   const ownershipResult = await client.query(
     `WITH allowed_toast_tables AS (
@@ -362,12 +452,8 @@ const assertRoleIsolation = async (client, roleOid) => {
        FROM pg_db_role_setting AS setting
        LEFT JOIN pg_database AS database ON database.oid = setting.setdatabase
       WHERE setting.setrole = $1::oid
-        AND NOT (
-          database.datname = current_database()
-          AND setting.setconfig = ARRAY[$2::text]
-        )
       LIMIT 1`,
-    [roleOid, `search_path=${schema}`],
+    [roleOid],
   )
 
   if (settingResult.rows.length > 0) {
@@ -391,15 +477,15 @@ const prepareDatabase = async () => {
       'saberistic-umami-role-bootstrap',
     ])
 
-    const roleResult = await adminClient.query(
+    const initialRoleResult = await adminClient.query(
       `SELECT oid, rolcanlogin, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
-              rolreplication, rolbypassrls, rolconfig
+              rolreplication, rolbypassrls, rolconnlimit, rolconfig, rolvaliduntil
          FROM pg_roles
         WHERE rolname = $1`,
       [databaseRole],
     )
 
-    if (roleResult.rows.length === 0) {
+    if (initialRoleResult.rows.length === 0) {
       const passwordResult = await adminClient.query(
         'SELECT quote_literal($1::text) AS password_literal',
         [databasePassword],
@@ -411,63 +497,25 @@ const prepareDatabase = async () => {
                 NOREPLICATION NOBYPASSRLS CONNECTION LIMIT ${roleConnectionLimit}
                 PASSWORD ${passwordResult.rows[0].password_literal}`,
       )
-    } else {
-      const [existingRole] = roleResult.rows
-      const elevated =
-        existingRole.rolsuper ||
-        existingRole.rolcreaterole ||
-        existingRole.rolcreatedb ||
-        existingRole.rolreplication ||
-        existingRole.rolbypassrls
-
-      if (elevated) {
-        throw new Error(`Refusing to reuse elevated PostgreSQL role ${databaseRole}.`)
-      }
-
-      if (existingRole.rolconfig?.length > 0) {
-        throw new Error(
-          `Refusing to reuse PostgreSQL role ${databaseRole} with unexpected global settings.`,
-        )
-      }
-
-      const memberships = await adminClient.query(
-        `SELECT parent.rolname AS parent_role, member.rolname AS member_role
-           FROM pg_auth_members AS membership
-           JOIN pg_roles AS member ON member.oid = membership.member
-           JOIN pg_roles AS parent ON parent.oid = membership.roleid
-          WHERE member.rolname = $1 OR parent.rolname = $1`,
-        [databaseRole],
-      )
-
-      if (memberships.rows.length > 0) {
-        throw new Error(`Refusing to reuse PostgreSQL role ${databaseRole} with role memberships.`)
-      }
     }
 
-    const roleIdentityResult = await adminClient.query(
-      'SELECT oid FROM pg_roles WHERE rolname = $1',
+    const roleResult = await adminClient.query(
+      `SELECT oid, rolcanlogin, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
+              rolreplication, rolbypassrls, rolconnlimit, rolconfig, rolvaliduntil
+         FROM pg_roles
+        WHERE rolname = $1`,
       [databaseRole],
     )
-    const roleOid = roleIdentityResult.rows[0]?.oid
+    const [role] = roleResult.rows
+    const roleOid = role?.oid
 
     if (!roleOid) {
       throw new Error(`PostgreSQL role ${databaseRole} could not be resolved for verification.`)
     }
 
+    assertExactRoleAttributes(role)
+    await assertRoleMembershipIsolation(adminClient)
     await assertRoleIsolation(adminClient, roleOid)
-
-    const passwordResult = await adminClient.query(
-      'SELECT quote_literal($1::text) AS password_literal',
-      [databasePassword],
-    )
-
-    await adminClient.query(
-      `ALTER ROLE ${quotedRole}
-         WITH LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT
-              NOREPLICATION NOBYPASSRLS CONNECTION LIMIT ${roleConnectionLimit}
-              PASSWORD ${passwordResult.rows[0].password_literal}`,
-    )
-    await adminClient.query(`ALTER ROLE ${quotedRole} RESET ALL`)
 
     const databaseResult = await adminClient.query('SELECT current_database() AS name')
     const databaseName = databaseResult.rows[0].name
@@ -477,55 +525,12 @@ const prepareDatabase = async () => {
       `REVOKE CREATE, TEMPORARY ON DATABASE ${quotedDatabase} FROM ${quotedRole}`,
     )
     await adminClient.query(`GRANT CONNECT ON DATABASE ${quotedDatabase} TO ${quotedRole}`)
-    await adminClient.query(
-      `ALTER ROLE ${quotedRole} IN DATABASE ${quotedDatabase} SET search_path TO ${quotedSchema}`,
-    )
 
     await adminClient.query(`CREATE SCHEMA IF NOT EXISTS ${quotedSchema}`)
     await adminClient.query(`CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA ${quotedSchema}`)
     await adminClient.query(`REVOKE ALL PRIVILEGES ON SCHEMA ${quotedSchema} FROM PUBLIC`)
-    await adminClient.query(
-      `REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA ${quotedSchema} FROM PUBLIC`,
-    )
-    await adminClient.query(
-      `REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ${quotedSchema} FROM PUBLIC`,
-    )
-    await adminClient.query(
-      `REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA ${quotedSchema} FROM PUBLIC`,
-    )
+    await secureOwnedRoutines(adminClient, quotedRole)
     await adminClient.query(`GRANT USAGE, CREATE ON SCHEMA ${quotedSchema} TO ${quotedRole}`)
-    await adminClient.query(
-      `GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA ${quotedSchema} TO ${quotedRole}`,
-    )
-    await adminClient.query(
-      `GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ${quotedSchema} TO ${quotedRole}`,
-    )
-    await adminClient.query(
-      `GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA ${quotedSchema} TO ${quotedRole}`,
-    )
-
-    const verifiedRole = await adminClient.query(
-      `SELECT rolcanlogin, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
-              rolreplication, rolbypassrls, rolconnlimit
-         FROM pg_roles
-        WHERE rolname = $1`,
-      [databaseRole],
-    )
-    const [role] = verifiedRole.rows
-
-    if (
-      !role ||
-      !role.rolcanlogin ||
-      role.rolsuper ||
-      role.rolinherit ||
-      role.rolcreaterole ||
-      role.rolcreatedb ||
-      role.rolreplication ||
-      role.rolbypassrls ||
-      role.rolconnlimit !== roleConnectionLimit
-    ) {
-      throw new Error(`PostgreSQL role ${databaseRole} did not pass its privilege check.`)
-    }
 
     await adminClient.query('COMMIT')
   } catch (error) {
@@ -535,7 +540,7 @@ const prepareDatabase = async () => {
     await adminClient.end().catch(() => undefined)
   }
 
-  const restrictedClient = new Client({ connectionString: restrictedConnectionURL.toString() })
+  const restrictedClient = createRestrictedClient(Client)
 
   try {
     await restrictedClient.connect()
@@ -549,6 +554,13 @@ const prepareDatabase = async () => {
       )
     }
 
+    await restrictedClient.query(
+      `REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA ${quotedSchema} FROM PUBLIC`,
+    )
+    await restrictedClient.query(
+      `REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ${quotedSchema} FROM PUBLIC`,
+    )
+    await secureOwnedRoutines(restrictedClient)
     await restrictedClient.query(
       `ALTER DEFAULT PRIVILEGES IN SCHEMA ${quotedSchema} REVOKE ALL ON TABLES FROM PUBLIC`,
     )
@@ -593,7 +605,7 @@ const secureBootstrapAdministrator = async () => {
     throw new Error('The bundled bcrypt password helper is unavailable.')
   }
 
-  const restrictedClient = new Client({ connectionString: restrictedConnectionURL.toString() })
+  const restrictedClient = createRestrictedClient(Client)
   const userTable = `${quoteIdentifier(schema)}."user"`
 
   try {

@@ -50,26 +50,40 @@ describe('Umami container entrypoint', () => {
     expect(entrypointSource).toContain('DIRECT_DATABASE_URL: runtimeDatabaseURL.toString()')
   })
 
-  it('audits a reused role before changing credentials or schema grants', () => {
+  it('audits exact reusable role state without requiring ALTER ROLE', () => {
     expect(entrypointSource).toContain('const assertRoleIsolation = async (client, roleOid) =>')
+    expect(entrypointSource).toContain('const assertExactRoleAttributes = (role) =>')
     expect(entrypointSource).toContain('unexpected_ownership')
     expect(entrypointSource).toContain('unexpected_acl')
     expect(entrypointSource).toContain('FROM pg_default_acl AS default_acl')
     expect(entrypointSource).toContain('FROM pg_attribute AS attribute')
     expect(entrypointSource).toContain('member.rolname = $1 OR parent.rolname = $1')
+    expect(entrypointSource).toContain('membership.admin_option')
+    expect(entrypointSource).toContain('membership.inherit_option')
+    expect(entrypointSource).toContain('membership.set_option')
+    expect(entrypointSource).toContain('role.rolvaliduntil !== null')
+    expect(entrypointSource).not.toContain('ALTER ROLE')
 
     const isolationAudit = entrypointSource.indexOf(
       'await assertRoleIsolation(adminClient, roleOid)',
     )
-    const roleMutation = entrypointSource.indexOf(`ALTER ROLE \${quotedRole}`, isolationAudit)
+    const databaseGrant = entrypointSource.indexOf('GRANT CONNECT ON DATABASE', isolationAudit)
     const schemaCreation = entrypointSource.indexOf(
       'CREATE SCHEMA IF NOT EXISTS \${quotedSchema}',
       isolationAudit,
     )
 
     expect(isolationAudit).toBeGreaterThan(0)
-    expect(roleMutation).toBeGreaterThan(isolationAudit)
-    expect(schemaCreation).toBeGreaterThan(roleMutation)
+    expect(databaseGrant).toBeGreaterThan(isolationAudit)
+    expect(schemaCreation).toBeGreaterThan(databaseGrant)
+  })
+
+  it('proves the generated credential with a session-local schema instead of role settings', () => {
+    expect(entrypointSource).toContain('const createRestrictedClient = (Client) =>')
+    expect(entrypointSource).toContain('options: `-c search_path=\${schema}`')
+    expect(entrypointSource).toContain("'SELECT current_user AS role, current_schema() AS schema'")
+    expect(entrypointSource).toContain('FROM pg_db_role_setting AS setting')
+    expect(entrypointSource).toContain('WHERE setting.setrole = $1::oid')
   })
 
   it('derives the 2FA key without passing bootstrap secrets to the upstream process', () => {

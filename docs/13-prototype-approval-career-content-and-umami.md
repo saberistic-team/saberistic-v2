@@ -101,15 +101,15 @@ Render allows only one Free PostgreSQL instance in the workspace, and Payload al
 - one additional Free Render web service, `saberistic-umami-staging`;
 - the official Umami 3.3.1 image pinned by digest;
 - a minimal bootstrap dependency manifest and committed integrity-pinned pnpm lockfile installed with `--frozen-lockfile`;
-- a constant, non-elevated `saberistic_umami` PostgreSQL role with a Render-generated stable password and ten-connection limit;
+- a constant, non-elevated `saberistic_umami` PostgreSQL role created once with a Render-generated stable password and ten-connection limit, then verified without any `ALTER ROLE` dependency;
 - an `umami` schema created by the container bootstrap, revoked from `PUBLIC`, and granted to only that restricted role;
-- a pre-mutation role-isolation audit that rejects memberships in either direction, cross-schema or global ownership, direct cross-schema/global ACLs, cross-schema default ACLs, and unexpected role settings while permitting clean restarts and the role-owned TOAST objects attached to `umami` tables;
+- a pre-mutation role-isolation audit that requires exact safe role flags, no expiry or role settings, and the existing generated credential; rejects privilege-bearing or unrelated memberships, cross-schema or global ownership, direct cross-schema/global ACLs, and cross-schema default ACLs; and permits clean restarts, the non-inheriting/non-settable automatic creator administration grant made only for a non-superuser PostgreSQL 18 `CREATEROLE` bootstrap account, and role-owned TOAST objects attached to `umami` tables;
 - a root-only PID 1 bootstrap/signal supervisor that removes the owner URL and all bootstrap secrets from the UID-1001/GID-65533 Umami child environment;
 - a migration preflight that locks Umami's fixed administrator row, renames it to `saberistic_admin`, and replaces/verifies its password from a Render-generated secret before the HTTP server binds;
 - Render-generated application and 2FA seed secrets, with the required stable 64-hex 2FA key derived inside the wrapper; and
 - check-gated automatic deploys limited by `buildFilter` to `ops/umami/**` changes.
 
-No Payload migration creates or owns the analytics schema. The container bootstrap is self-sufficient, and both Prisma runtime URLs use the restricted credential with `schema=umami`. Umami's unchanged upstream startup command still performs its normal database check and migrations after the secure preflight.
+No Payload migration creates or owns the analytics schema. The container bootstrap is self-sufficient, and both Prisma runtime URLs use the restricted credential with `schema=umami`; direct bootstrap clients use only a connection-local `search_path`. Umami's unchanged upstream startup command still performs its normal database check and migrations after the secure preflight.
 
 This is a staging compromise, not the production target. The Umami child does not share Payload's owner credential, but both applications still share database compute, storage, connection capacity, expiry, backup policy, and failure domain. The Free database expires after 30 days unless upgraded and currently shows an expiry date of 2026-09-27. A spoofed or flooded public ingestion endpoint could consume its 1 GB storage or degrade Payload. Production must use a dedicated Umami database.
 
@@ -121,7 +121,7 @@ This is a staging compromise, not the production target. The Umami child does no
 4. Sync the Blueprint only after its preview shows one Free web service and no paid database.
 5. Verify the deploy generated all four stable secrets, completed the restricted-role/schema bootstrap and migrations, renamed/secured the fixed administrator, and serves `/api/heartbeat`.
 6. Reveal `UMAMI_ADMIN_PASSWORD` for a supervised `saberistic_admin` login, enable and verify 2FA, and store the credential securely. Do not delete, disable, or demote the fixed bootstrap row; that intentionally makes future startup fail closed.
-7. Verify `saberistic_umami` has no elevated flags, memberships, ownership, direct ACLs, or default ACLs outside its expected boundary; owns the Umami tables; and cannot read Payload tables in `public`. Confirm an unchanged restart succeeds and a deliberately contaminated disposable role fails before HTTP starts.
+7. Verify `saberistic_umami` has exact safe flags, no expiry or role settings, no privilege-bearing memberships, and no ownership, direct ACLs, or default ACLs outside its expected boundary; owns the Umami tables; and cannot read Payload tables in `public`. If PostgreSQL's automatic creator membership is present, require `ADMIN=true`, `SET=false`, and `INHERIT=false`. Confirm an unchanged restart succeeds and credential drift or a deliberately contaminated disposable role fails before HTTP starts without altering the stored role password.
 8. Leave the Saberistic Website record and tracker variables unset. Confirm the frontend emits no analytics and that Umami failure or cold start cannot block the website or a prototype launch.
 
 ## Verification commands
@@ -132,6 +132,6 @@ The release is accepted only after the repository's normal `pnpm verify` workflo
 - idempotent career seeding and preservation of published editorial content;
 - Umami environment validation;
 - restricted-role URL construction and rejection of unsafe schema identifiers;
-- frozen bootstrap dependency installation plus fail-closed ownership, direct-ACL, default-ACL, membership, and role-setting audit coverage;
+- frozen bootstrap dependency installation plus fail-closed exact-role, credential-reuse, ownership, direct-ACL, default-ACL, membership, and role-setting audit coverage without `ALTER ROLE`;
 - bootstrap-secret removal, UID/GID boundaries, deterministic 2FA-key derivation, and pre-server administrator password rotation;
 - absence of production tracker variables from the Blueprint.
