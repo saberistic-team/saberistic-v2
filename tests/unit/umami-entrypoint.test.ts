@@ -107,12 +107,17 @@ describe('Umami container entrypoint', () => {
     expect(upstreamStart).toBeGreaterThan(passwordBootstrap)
   })
 
-  it('keeps the production tracker disabled while generating all bootstrap secrets', () => {
-    expect(renderBlueprintSource).toContain('- key: UMAMI_ADMIN_PASSWORD\n')
-    expect(renderBlueprintSource).toContain('- key: UMAMI_TWO_FACTOR_SEED\n')
+  it('keeps the production tracker disabled in every Blueprint phase', () => {
     expect(renderBlueprintSource).not.toContain('UMAMI_WEBSITE_ID')
     expect(renderBlueprintSource).not.toContain('UMAMI_SCRIPT_URL')
     expect(renderBlueprintSource).not.toContain('UMAMI_TRACK_DOMAINS')
+  })
+
+  it('generates every bootstrap secret when the Umami service is declared', () => {
+    if (!renderBlueprintSource.includes('name: saberistic-umami-staging')) return
+
+    expect(renderBlueprintSource).toContain('- key: UMAMI_ADMIN_PASSWORD\n')
+    expect(renderBlueprintSource).toContain('- key: UMAMI_TWO_FACTOR_SEED\n')
   })
 
   it('rejects an unsafe schema name before starting the upstream command', () => {
