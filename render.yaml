@@ -33,6 +33,46 @@ projects:
               - key: SEED_PUBLIC_CONCEPTS
                 value: 'false'
 
+          - type: web
+            name: saberistic-umami-staging
+            runtime: docker
+            plan: free
+            region: ohio
+            dockerfilePath: ./ops/umami/Dockerfile
+            dockerContext: .
+            healthCheckPath: /api/heartbeat
+            autoDeployTrigger: checksPass
+            buildFilter:
+              paths:
+                - ops/umami/**
+            envVars:
+              - key: UMAMI_DATABASE_ADMIN_URL
+                fromDatabase:
+                  name: saberistic-payload-db-staging
+                  property: connectionString
+              - key: UMAMI_DATABASE_PASSWORD
+                generateValue: true
+              - key: UMAMI_ADMIN_PASSWORD
+                generateValue: true
+              - key: UMAMI_DATABASE_SCHEMA
+                value: umami
+              - key: APP_SECRET
+                generateValue: true
+              - key: UMAMI_TWO_FACTOR_SEED
+                generateValue: true
+              - key: HOSTNAME
+                value: 0.0.0.0
+              - key: PORT
+                value: '3000'
+              - key: DISABLE_TELEMETRY
+                value: '1'
+              - key: PRIVATE_MODE
+                value: '1'
+              - key: DISABLE_UPDATES
+                value: '1'
+              - key: SALT_ROTATION
+                value: month
+
         databases:
           - name: saberistic-payload-db-staging
             plan: free
