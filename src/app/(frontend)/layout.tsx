@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
 
+import { UmamiAnalytics } from '@/components/analytics/UmamiAnalytics'
 import { SiteFooter } from '@/components/site/SiteFooter'
 import { SiteHeader } from '@/components/site/SiteHeader'
 import { SkipLink } from '@/components/site/SkipLink'
@@ -24,6 +25,7 @@ export default function FrontendLayout({ children }: { children: ReactNode }) {
         <SiteHeader />
         <main id="main-content">{children}</main>
         <SiteFooter />
+        <UmamiAnalytics />
       </body>
     </html>
   )

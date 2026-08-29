@@ -71,6 +71,8 @@ export interface Config {
     media: Media;
     'evidence-sources': EvidenceSource;
     prototypes: Prototype;
+    experience: Experience;
+    'case-studies': CaseStudy;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -82,6 +84,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     'evidence-sources': EvidenceSourcesSelect<false> | EvidenceSourcesSelect<true>;
     prototypes: PrototypesSelect<false> | PrototypesSelect<true>;
+    experience: ExperienceSelect<false> | ExperienceSelect<true>;
+    'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -303,6 +307,203 @@ export interface Prototype {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "experience".
+ */
+export interface Experience {
+  id: number;
+  title: string;
+  slug: string;
+  organization: string;
+  role: string;
+  /**
+   * Optional until an exact month or date is reviewed.
+   */
+  startDate?: string | null;
+  /**
+   * Leave empty for an ongoing role or an unverified exact date.
+   */
+  endDate?: string | null;
+  /**
+   * Reviewed display wording; do not infer missing dates.
+   */
+  timeframe?: string | null;
+  relationship:
+    | 'employment'
+    | 'contract'
+    | 'founder'
+    | 'team_role'
+    | 'saberistic_engagement'
+    | 'sanitized_diagnostic'
+    | 'independent'
+    | 'open_source'
+    | 'research';
+  summary: string;
+  selectedWork?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  evidenceSources?: (number | EvidenceSource)[] | null;
+  /**
+   * Material public statements must be reviewed individually and linked to exact evidence.
+   */
+  claims: {
+    claimId: string;
+    statement: string;
+    claimType: 'relationship' | 'role' | 'contribution' | 'outcome' | 'metric';
+    /**
+     * Required only for a relationship claim.
+     */
+    relationshipValue?:
+      | (
+          | 'employment'
+          | 'contract'
+          | 'founder'
+          | 'team_role'
+          | 'saberistic_engagement'
+          | 'sanitized_diagnostic'
+          | 'independent'
+          | 'open_source'
+          | 'research'
+        )
+      | null;
+    evidenceSources: (number | EvidenceSource)[];
+    claimStatus: 'publicly_corroborated' | 'founder_provided' | 'hold';
+    permissionStatus: 'public' | 'approval-required' | 'private-only';
+    allowedSurfaces: ('homepage' | 'work' | 'about' | 'proposal' | 'private-only')[];
+    permissionEvidence?: string | null;
+    permissionReviewer?: (number | null) | User;
+    permissionReviewedAt?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Calculated from the most restrictive selected claim.
+   */
+  claimStatus: 'publicly_corroborated' | 'founder_provided' | 'hold';
+  /**
+   * Calculated from the most restrictive selected claim.
+   */
+  permissionStatus: 'public' | 'approval-required' | 'private-only';
+  displayOrder?: number | null;
+  visibility: 'about' | 'homepage-and-about' | 'hidden';
+  relatedCaseStudy?: (number | null) | CaseStudy;
+  publicationApproval: 'not-reviewed' | 'approved' | 'blocked';
+  publicationReviewer?: (number | null) | User;
+  publicationApprovedAt?: string | null;
+  internalReviewNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies".
+ */
+export interface CaseStudy {
+  id: number;
+  title: string;
+  slug: string;
+  summary: string;
+  body: string;
+  organization: string;
+  relationship:
+    | 'employment'
+    | 'contract'
+    | 'founder'
+    | 'team_role'
+    | 'saberistic_engagement'
+    | 'sanitized_diagnostic'
+    | 'independent'
+    | 'open_source'
+    | 'research';
+  publicContentType: 'case_study' | 'experience_profile' | 'contribution_profile' | 'research_profile';
+  role?: string | null;
+  timeframe?: string | null;
+  situation?: string | null;
+  responsibility?: string | null;
+  decisions?:
+    | {
+        title: string;
+        detail: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Do not enter an outcome or metric that lacks claim-specific evidence.
+   */
+  outcome?: string | null;
+  capabilities?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  technologies?:
+    | {
+        name: string;
+        id?: string | null;
+      }[]
+    | null;
+  evidenceSources?: (number | EvidenceSource)[] | null;
+  /**
+   * Material public statements must be reviewed individually and linked to exact evidence.
+   */
+  claims: {
+    claimId: string;
+    statement: string;
+    claimType: 'relationship' | 'role' | 'contribution' | 'outcome' | 'metric';
+    /**
+     * Required only for a relationship claim.
+     */
+    relationshipValue?:
+      | (
+          | 'employment'
+          | 'contract'
+          | 'founder'
+          | 'team_role'
+          | 'saberistic_engagement'
+          | 'sanitized_diagnostic'
+          | 'independent'
+          | 'open_source'
+          | 'research'
+        )
+      | null;
+    evidenceSources: (number | EvidenceSource)[];
+    claimStatus: 'publicly_corroborated' | 'founder_provided' | 'hold';
+    permissionStatus: 'public' | 'approval-required' | 'private-only';
+    allowedSurfaces: ('homepage' | 'work' | 'about' | 'proposal' | 'private-only')[];
+    permissionEvidence?: string | null;
+    permissionReviewer?: (number | null) | User;
+    permissionReviewedAt?: string | null;
+    id?: string | null;
+  }[];
+  /**
+   * Calculated from the most restrictive selected claim.
+   */
+  claimStatus: 'publicly_corroborated' | 'founder_provided' | 'hold';
+  /**
+   * Calculated from the most restrictive selected claim.
+   */
+  permissionStatus: 'public' | 'approval-required' | 'private-only';
+  featured?: boolean | null;
+  sortOrder?: number | null;
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    socialImage?: (number | null) | Media;
+    noIndex?: boolean | null;
+  };
+  publicationApproval: 'not-reviewed' | 'approved' | 'blocked';
+  publicationReviewer?: (number | null) | User;
+  publicationApprovedAt?: string | null;
+  internalReviewNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -340,6 +541,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'prototypes';
         value: number | Prototype;
+      } | null)
+    | ({
+        relationTo: 'experience';
+        value: number | Experience;
+      } | null)
+    | ({
+        relationTo: 'case-studies';
+        value: number | CaseStudy;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -547,6 +756,129 @@ export interface PrototypesSelect<T extends boolean = true> {
   rollbackTestedAt?: T;
   renderServiceId?: T;
   operationalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "experience_select".
+ */
+export interface ExperienceSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  organization?: T;
+  role?: T;
+  startDate?: T;
+  endDate?: T;
+  timeframe?: T;
+  relationship?: T;
+  summary?: T;
+  selectedWork?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  evidenceSources?: T;
+  claims?:
+    | T
+    | {
+        claimId?: T;
+        statement?: T;
+        claimType?: T;
+        relationshipValue?: T;
+        evidenceSources?: T;
+        claimStatus?: T;
+        permissionStatus?: T;
+        allowedSurfaces?: T;
+        permissionEvidence?: T;
+        permissionReviewer?: T;
+        permissionReviewedAt?: T;
+        id?: T;
+      };
+  claimStatus?: T;
+  permissionStatus?: T;
+  displayOrder?: T;
+  visibility?: T;
+  relatedCaseStudy?: T;
+  publicationApproval?: T;
+  publicationReviewer?: T;
+  publicationApprovedAt?: T;
+  internalReviewNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "case-studies_select".
+ */
+export interface CaseStudiesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  summary?: T;
+  body?: T;
+  organization?: T;
+  relationship?: T;
+  publicContentType?: T;
+  role?: T;
+  timeframe?: T;
+  situation?: T;
+  responsibility?: T;
+  decisions?:
+    | T
+    | {
+        title?: T;
+        detail?: T;
+        id?: T;
+      };
+  outcome?: T;
+  capabilities?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  technologies?:
+    | T
+    | {
+        name?: T;
+        id?: T;
+      };
+  evidenceSources?: T;
+  claims?:
+    | T
+    | {
+        claimId?: T;
+        statement?: T;
+        claimType?: T;
+        relationshipValue?: T;
+        evidenceSources?: T;
+        claimStatus?: T;
+        permissionStatus?: T;
+        allowedSurfaces?: T;
+        permissionEvidence?: T;
+        permissionReviewer?: T;
+        permissionReviewedAt?: T;
+        id?: T;
+      };
+  claimStatus?: T;
+  permissionStatus?: T;
+  featured?: T;
+  sortOrder?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        socialImage?: T;
+        noIndex?: T;
+      };
+  publicationApproval?: T;
+  publicationReviewer?: T;
+  publicationApprovedAt?: T;
+  internalReviewNotes?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;

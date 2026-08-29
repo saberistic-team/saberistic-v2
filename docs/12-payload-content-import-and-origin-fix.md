@@ -10,7 +10,7 @@ The imported content is deliberately limited to the schema that exists today:
 - four verified GitHub `evidence-sources` records;
 - four evidence-linked `prototypes` records saved as drafts.
 
-Résumé experience, employer case studies, and service content are not forced into unrelated collections. They remain in the approved static site copy and the verified-content brief until dedicated Experience and Case Studies schemas are implemented.
+Résumé experience, employer case studies, and service content were not forced into unrelated collections in this import. Dedicated Experience and Case Studies schemas were subsequently implemented in [13](./13-prototype-approval-career-content-and-umami.md), with review-gated drafts rather than automatic publication.
 
 ## Incident and root cause
 
@@ -103,4 +103,4 @@ GitHub CI run [33259035170](https://github.com/saberistic-team/saberistic-v2/act
 
 ## Next content-model phase
 
-Implement dedicated Experience and Case Studies collections before importing the résumé career timeline or the Brave, BAXUS, Eternis, Fin, and Spiral Safe narratives into Payload. That phase should preserve the current provenance labels—prior employer role, founder venture, independent work, and sanitized diagnostic—and link every public claim to an evidence source. The résumé PDF itself should remain outside Media until an approved document-storage policy and object storage are available.
+The dedicated Experience and Case Studies collections are now implemented as documented in [13](./13-prototype-approval-career-content-and-umami.md). The first seed includes only evidence-bounded Brave, BAXUS, Eternis, and independent `solana-secrets-engine` drafts; Fin and the broader Spiral Safe narrative remain held. The résumé PDF itself remains outside Media until an approved document-storage policy and object storage are available.

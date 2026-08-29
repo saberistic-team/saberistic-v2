@@ -1,4 +1,5 @@
 import { revalidatePath } from 'next/cache'
+import { isDeepStrictEqual } from 'node:util'
 import type {
   CollectionAfterChangeHook,
   CollectionAfterDeleteHook,
@@ -8,6 +9,7 @@ import type {
 import { ValidationError } from 'payload'
 
 import { getRequestRole } from '@/access/roles'
+import { lockEvidenceSources } from '@/lib/evidenceLocks'
 import { normalizeSlug } from '@/lib/validation/content'
 import {
   type PrototypeEvidenceSnapshot,
@@ -53,6 +55,27 @@ const mergePrototype = (
   }
 }
 
+const launchReviewFields = new Set([
+  '_status',
+  'createdAt',
+  'id',
+  'launchApproval',
+  'launchApprovedAt',
+  'launchReviewer',
+  'operationalNotes',
+  'updatedAt',
+])
+
+const hasMaterialPrototypeChange = (
+  data: Record<string, unknown>,
+  originalDoc: Record<string, unknown> | undefined,
+) =>
+  Boolean(originalDoc) &&
+  Object.entries(data).some(
+    ([field, value]) =>
+      !launchReviewFields.has(field) && !isDeepStrictEqual(value, originalDoc?.[field]),
+  )
+
 export const normalizePrototypeSlug: CollectionBeforeValidateHook = ({ data, operation }) => {
   if (!data) return data
 
@@ -71,17 +94,31 @@ export const validatePrototypeBeforeChange: CollectionBeforeChangeHook = async (
   originalDoc,
   req,
 }) => {
-  const next = mergePrototype(originalDoc as Record<string, unknown> | undefined, data)
+  const original = originalDoc as Record<string, unknown> | undefined
+  const actorRole = context.allowSeedPublishConcepts === true ? 'admin' : getRequestRole(req)
+  const explicitlyReapproved =
+    actorRole === 'admin' &&
+    data.launchApproval === 'approved' &&
+    data.launchReviewer !== undefined &&
+    data.launchApprovedAt !== undefined
+
+  if (hasMaterialPrototypeChange(data, original) && !explicitlyReapproved) {
+    data.launchApproval = 'not-reviewed'
+    data.launchReviewer = null
+    data.launchApprovedAt = null
+  }
+
+  const next = mergePrototype(original, data)
 
   if (next._status !== 'published') return data
 
   const references = Array.isArray(next.evidenceSources)
-    ? next.evidenceSources
-        .map(relationID)
-        .filter((id): id is number | string => id !== undefined)
+    ? next.evidenceSources.map(relationID).filter((id): id is number | string => id !== undefined)
     : []
   const payloadReader = req.payload as unknown as InternalPayloadReader
   const evidence: PrototypeEvidenceSnapshot[] = []
+
+  await lockEvidenceSources(req, references, 'shared')
 
   for (const id of references) {
     try {
@@ -104,8 +141,7 @@ export const validatePrototypeBeforeChange: CollectionBeforeChangeHook = async (
   }
 
   const issues = validatePrototypePublication({
-    actorRole:
-      context.allowSeedPublishConcepts === true ? 'admin' : getRequestRole(req),
+    actorRole,
     data: next,
     evidence,
   })
@@ -170,11 +206,7 @@ export const revalidatePrototypeAfterDelete: CollectionAfterDeleteHook = async (
 }) => {
   if (context.skipRevalidate === true || doc._status !== 'published') return doc
 
-  await revalidatePrototypePaths(
-    doc as Record<string, unknown>,
-    undefined,
-    req.payload.logger,
-  )
+  await revalidatePrototypePaths(doc as Record<string, unknown>, undefined, req.payload.logger)
 
   return doc
 }

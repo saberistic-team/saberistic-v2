@@ -6,7 +6,10 @@ import {
   isStaff,
   proposedEvidenceOnlyForEditors,
 } from '@/access/roles'
-import { validateEvidenceSourceBeforeChange } from '@/hooks/evidenceSources'
+import {
+  protectEvidenceSourceBeforeDelete,
+  validateEvidenceSourceBeforeChange,
+} from '@/hooks/evidenceSources'
 import { validateHttpUrl } from '@/lib/validation/content'
 
 export const EvidenceSources: CollectionConfig = {
@@ -152,5 +155,6 @@ export const EvidenceSources: CollectionConfig = {
   ],
   hooks: {
     beforeChange: [validateEvidenceSourceBeforeChange],
+    beforeDelete: [protectEvidenceSourceBeforeDelete],
   },
 }

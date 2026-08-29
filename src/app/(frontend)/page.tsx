@@ -53,12 +53,12 @@ const offers = [
 
 const proof = [
   {
-    body: 'Worked across backend services and product interfaces supporting Brave’s privacy-preserving advertising and rewards ecosystem.',
+    body: 'Public contribution history covers advertiser workflow and reporting work in ads-ui plus credential-support changes in bat-go.',
     label: 'PRIOR EMPLOYER ROLE · BRAVE',
     title: 'Privacy-aligned advertising and rewards infrastructure',
   },
   {
-    body: 'Helped establish early durable workflows, cloud deployment, service communication, and Solana/Metaplex integration.',
+    body: 'Public evidence supports early platform architecture and Temporal-based transaction-workflow contributions.',
     label: 'PRIOR EMPLOYER ROLE · BAXUS',
     title: 'Early architecture joining physical assets and digital ownership',
   },
@@ -99,8 +99,8 @@ export default async function HomePage() {
               </Link>
             </div>
             <p className="trust-line">
-              Founder-led engineering experience across Brave, BAXUS, Eternis, Spiral Safe, and
-              open-source security systems. Relationships are labeled clearly.
+              Founder-led engineering experience across Brave, BAXUS, Eternis, and open-source
+              security systems. Relationships are labeled clearly.
             </p>
           </div>
           <ReadinessPreview compact />
@@ -142,9 +142,9 @@ export default async function HomePage() {
               Built inside systems where privacy, money, and reliability matter.
             </h2>
             <p>
-              Saberistic is led by AmirSaber Sharifi, a hands-on engineer and architect with more
-              than a decade of experience across privacy-preserving products, payments, marketplace
-              infrastructure, trusted execution, and cloud systems.
+              Saberistic is led by AmirSaber Sharifi, a hands-on engineer and architect with
+              experience across privacy-preserving products, payments, marketplace infrastructure,
+              trusted execution, and cloud systems.
             </p>
           </div>
           <div className="proof-grid">

@@ -7,15 +7,16 @@ The product direction, research record, content evidence rules, AI-readiness des
 ## Current slice
 
 - Payload Admin and APIs in the same Next.js application
-- PostgreSQL-backed prototypes, evidence sources, media, users, and site settings
+- PostgreSQL-backed prototypes, evidence sources, Experience, Case Studies, media, users, and site settings
 - draft-first seed data based on audited public repositories
 - public homepage, prototype index, and prototype detail pages
 - fail-closed launch buttons: a URL is never enough on its own
 - liveness (`/api/health`) and database readiness (`/api/ready`) endpoints
 - deterministic unit tests and browser smoke tests
-- multi-stage production image, GitHub Actions CI, and a Render Blueprint
+- conditional, privacy-oriented Umami tracker integration
+- multi-stage production images, GitHub Actions CI, and a Render Blueprint
 
-Umami analytics and the OpenRouter explanation layer are intentionally planned after this CMS-to-public-page deployment is proven. The AI feature will explain a deterministic Production Readiness Check; it will not control scores or accept code, files, logs, or arbitrary prompts.
+Self-hosted Umami staging and the OpenRouter explanation layer are the next operational milestones after the CMS-to-public-page deployment. The AI feature will explain a deterministic Production Readiness Check; it will not control scores or accept code, files, logs, or arbitrary prompts.
 
 ## Local development
 
@@ -77,8 +78,10 @@ Render fallback: <https://saberistic-web-staging.onrender.com>
 
 [`render.yaml`](./render.yaml) defines the first staging environment:
 
-- one Docker web service;
+- the Payload/Next.js Docker web service;
+- one additional Free Umami Docker web service using a pinned official base image;
 - one PostgreSQL database;
+- separate `public` (Payload) and `umami` (analytics staging) schemas in that database;
 - generated `PAYLOAD_SECRET`;
 - idempotent committed migration before the free staging server starts;
 - a draft-first idempotent seed command for controlled initialization;

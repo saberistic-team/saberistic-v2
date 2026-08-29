@@ -23,7 +23,7 @@ The product promise is:
 | Website and CMS  | Next.js and MIT-licensed Payload in one TypeScript application     | Payload is native to Next.js, self-hostable, keeps the admin and frontend in one codebase, and avoids an unnecessary API service. |
 | Primary database | Dedicated Render Postgres                                          | Managed backups, private-network access, and a clean migration path.                                                              |
 | Media            | S3-compatible object storage through Payload's official S3 adapter | Render service filesystems are ephemeral; a persistent disk would limit scaling and zero-downtime deploys.                        |
-| Analytics        | Self-hosted, MIT-licensed Umami with its own Render Postgres       | Privacy-first analytics remain operationally and permission-isolated from website content.                                        |
+| Analytics        | Self-hosted, MIT-licensed Umami; shared-schema Free staging, dedicated Postgres for production | Staging avoids an unapproved database charge; production restores workload, permission, backup, and failure-domain isolation. |
 | AI feature       | Deterministic readiness engine plus OpenRouter for explanation     | The score remains testable and defensible while the visitor still sees useful generative AI immediately.                          |
 | Abuse controls   | Render Key Value-backed rate limiting before public AI launch      | Prevents one visitor or bot from exhausting the OpenRouter budget.                                                                |
 | Hosting          | Render Blueprint for the core platform                             | Infrastructure is reviewable, reproducible, and grouped into staging and production environments.                                 |
@@ -46,6 +46,7 @@ The product promise is:
 | [10 — Architecture decision log](./10-architecture-decision-log.md)                                   | Decisions that should not be reopened without new evidence.                                                   |
 | [11 — Live staging deployment](./11-live-staging-deployment.md)                                       | Live URLs and resource IDs, deployment verification, retired resources, current limits, and operator handoff. |
 | [12 — Payload content import and origin fix](./12-payload-content-import-and-origin-fix.md)           | Custom-domain admin authentication, transactional content import, verification, and remaining résumé schema.  |
+| [13 — Prototype approval, career content, and Umami rollout](./13-prototype-approval-career-content-and-umami.md) | Live prototype decisions, Experience/Case Studies schemas and seeds, publication gates, and the zero-cost Umami staging rollout. |
 
 ## Recommended first release
 
@@ -63,7 +64,7 @@ Do not delay launch for a full blog, user accounts, repository ingestion, free-f
 
 ## Current repository state
 
-The first Payload/Next.js thin slice is implemented, tested, published to GitHub, and deployed to Render staging. The repository includes committed migrations, a production Dockerfile, a validated Blueprint, CI, health endpoints, public routes, Payload collections, an idempotent seed, and operational runbooks. See [11](./11-live-staging-deployment.md) for the exact live environment and remaining launch work.
+The first Payload/Next.js thin slice is implemented, tested, published to GitHub, and deployed to Render staging. The repository includes committed migrations, a production Dockerfile, a validated Blueprint, CI, health endpoints, public routes, Payload collections, idempotent seeds, and operational runbooks. BackThen and Story Sprout Pay are published; the review-gated Experience and Case Studies schemas plus the conditional Umami tracker are implemented for the next deployment. See [11](./11-live-staging-deployment.md) for the live environment and [13](./13-prototype-approval-career-content-and-umami.md) for this release.
 
 ## Source-of-truth rules
 
@@ -76,4 +77,4 @@ The first Payload/Next.js thin slice is implemented, tested, published to GitHub
 
 ## Definition of done
 
-V2 is ready to launch when a visitor can understand the offer in one screen, inspect evidence without trusting unsupported claims, try either of at least two functioning public prototypes, complete the readiness check, receive a useful result even if OpenRouter is unavailable, and book or request the next human step. Editors must be able to publish a new prototype without a code change, and the team must be able to restore both databases from a documented procedure.
+V2 is ready to launch when a visitor can understand the offer in one screen, inspect evidence without trusting unsupported claims, try either of at least two functioning public prototypes, complete the readiness check, receive a useful result even if OpenRouter is unavailable, and book or request the next human step. Editors must be able to prepare a new prototype without a code change, an administrator must be able to complete its gated publication review, and the team must be able to restore every production database from a documented procedure.

@@ -1,5 +1,6 @@
 import * as migration_20260828_221439_initial_platform from './20260828_221439_initial_platform'
 import * as migration_20260829_144500_seed_prepared_content from './20260829_144500_seed_prepared_content'
+import * as migration_20260829_151905 from './20260829_151905'
 
 export const migrations = [
   {
@@ -11,5 +12,10 @@ export const migrations = [
     up: migration_20260829_144500_seed_prepared_content.up,
     down: migration_20260829_144500_seed_prepared_content.down,
     name: '20260829_144500_seed_prepared_content',
+  },
+  {
+    up: migration_20260829_151905.up,
+    down: migration_20260829_151905.down,
+    name: '20260829_151905',
   },
 ]
