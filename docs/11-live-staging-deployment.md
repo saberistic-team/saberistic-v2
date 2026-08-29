@@ -2,15 +2,15 @@
 
 ## Status
 
-Saberistic V2 was deployed to Render on **2026-08-28** from the `main` branch of [`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
+Saberistic V2 was deployed to Render on **2026-08-28** and received its first-admin bootstrap hotfix on **2026-08-29** from the `main` branch of [`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
 
 - Primary public URL: <https://saberistic.com>
 - Render fallback URL: <https://saberistic-web-staging.onrender.com>
 - Payload admin: <https://saberistic.com/admin>
-- Deployed commit: `42bc691936fc54f4e3495042e3bfaaae794d4e38`
-- Final CI run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33220085334>
-- Final CodeQL run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33220084750>
-- Final active deploy: `dep-da91gnek1f9s73c29b30`
+- Deployed commit: `2879beb68c64d1886feb13ee48e11c20f925ac94`
+- Final CI run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33256673323>
+- Final CodeQL run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33256672961>
+- Final active deploy: `dep-da9ef40u01pc73d082t0`
 - Blueprint: `Saberistic V2` (`exs-da915615efls73ab4hjg`)
 
 The deployment uses only free Render plans. No paid resource was created for Saberistic V2.
@@ -49,7 +49,7 @@ The final live deployment returned HTTP 200 on `saberistic.com` for:
 
 The homepage was also inspected in a browser and rendered the authored offer, readiness preview, verified work labels, services, biography, GitHub links, and honest empty prototype state.
 
-GitHub CI passed dependency installation, TypeScript, ESLint, 29 unit/integration tests, and the production build for the deployed commit.
+GitHub CI passed dependency installation, TypeScript, ESLint, 36 unit/integration tests, and the production build for the deployed commit.
 
 The Render fallback URL also returned HTTP 200 for `/` and `/api/ready`. After the hardening deploy, GitHub reported no open Dependabot alerts and no open CodeQL alerts.
 
@@ -69,6 +69,24 @@ The remediated lockfile reports zero advisories through `pnpm audit`. It also pa
 The verification also found and fixed the PostgreSQL 18 Docker Compose volume target. Fresh local databases now mount at `/var/lib/postgresql`, as required by the PostgreSQL 18 image.
 
 One upstream limitation remains documented rather than hidden: Monaco Editor `0.56.0`, pulled in by Payload Admin, embeds an older DOMPurify copy inside its prebuilt browser assets even when the package dependency is overridden. This project currently defines no Payload code or JSON editor fields, so that Monaco path is not used by the current content model and remains limited to the authenticated admin surface. Do not add such fields without reassessing the exposure, and upgrade Payload/Monaco when upstream ships a stable bundle with the fixed sanitizer. Registry audits alone are not sufficient to close this item.
+
+## First-administrator bootstrap hotfix
+
+The initial live first-user form failed with `Only an administrator may change a user role.` Payload's built-in `/api/users/first-register` handler verifies that the auth collection is empty and then creates the first account with access checks overridden. Collection hooks still run, however, and the `users.role` default of `editor` was applied before the Saberistic role-protection hook. Because no user is authenticated yet, the hook rejected that default as an unauthorized role change.
+
+Commit `2879beb68c64d1886feb13ee48e11c20f925ac94` narrows the exception to Payload's unauthenticated `POST .../users/first-register` create operation and forces that account to `admin`. It does not create a general role bypass: ordinary creates, authenticated editors, and protected security-review metadata remain blocked. The trusted seed-only bootstrap context remains supported.
+
+Verification for the hotfix included:
+
+- seven focused role-protection regression tests;
+- all 36 unit/integration tests, TypeScript, ESLint, and the production build;
+- a real first-registration request against an isolated PostgreSQL 18 database, which returned HTTP 200 and an `admin` user;
+- a second request against the same first-registration endpoint, which returned HTTP 403;
+- successful CI and both CodeQL analyses;
+- Render migration and startup logs, plus live readiness and health responses identifying commit `2879beb68c64`; and
+- a browser reload of <https://saberistic.com/admin/create-first-user> after deployment.
+
+The isolated test database, throwaway account, response files, and temporary local app process were removed after verification. The existing local development database and its Docker volume were not changed.
 
 ## Current content and operational limits
 
