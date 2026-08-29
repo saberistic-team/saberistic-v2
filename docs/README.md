@@ -45,6 +45,7 @@ The product promise is:
 | [09 — Operations and security runbook](./09-operations-security-and-runbook.md)                       | Backups, monitoring, restores, incident response, privacy, and key rotation.                                  |
 | [10 — Architecture decision log](./10-architecture-decision-log.md)                                   | Decisions that should not be reopened without new evidence.                                                   |
 | [11 — Live staging deployment](./11-live-staging-deployment.md)                                       | Live URLs and resource IDs, deployment verification, retired resources, current limits, and operator handoff. |
+| [12 — Payload content import and origin fix](./12-payload-content-import-and-origin-fix.md)           | Custom-domain admin authentication, transactional content import, verification, and remaining résumé schema.  |
 
 ## Recommended first release
 

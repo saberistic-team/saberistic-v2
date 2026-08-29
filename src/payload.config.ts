@@ -13,11 +13,13 @@ import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const serverURL =
-  process.env.SITE_URL?.trim() ||
-  process.env.RENDER_EXTERNAL_URL?.trim() ||
-  'http://localhost:3000'
-const allowedOrigin = new URL(serverURL).origin
+const configuredURLs = [process.env.SITE_URL, process.env.RENDER_EXTERNAL_URL]
+  .map((value) => value?.trim())
+  .filter((value): value is string => Boolean(value))
+const serverURL = configuredURLs[0] || 'http://localhost:3000'
+const allowedOrigins = [
+  ...new Set([serverURL, ...configuredURLs].map((url) => new URL(url).origin)),
+]
 
 export default buildConfig({
   admin: {
@@ -27,8 +29,8 @@ export default buildConfig({
     },
   },
   collections: [Users, Media, EvidenceSources, Prototypes],
-  cors: [allowedOrigin],
-  csrf: [allowedOrigin],
+  cors: allowedOrigins,
+  csrf: allowedOrigins,
   serverURL,
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',

@@ -19,7 +19,6 @@ projects:
             region: ohio
             dockerfilePath: ./Dockerfile
             dockerContext: .
-            initialDeployHook: ./node_modules/.bin/tsx src/scripts/seed.ts
             healthCheckPath: /api/ready
             autoDeployTrigger: checksPass
             envVars:
@@ -29,8 +28,10 @@ projects:
                   property: connectionString
               - key: PAYLOAD_SECRET
                 generateValue: true
+              - key: SITE_URL
+                value: https://saberistic.com
               - key: SEED_PUBLIC_CONCEPTS
-                value: "false"
+                value: 'false'
 
         databases:
           - name: saberistic-payload-db-staging
@@ -38,5 +39,5 @@ projects:
             region: ohio
             databaseName: saberistic_v2_staging
             user: saberistic
-            postgresMajorVersion: "18"
+            postgresMajorVersion: '18'
             ipAllowList: []
