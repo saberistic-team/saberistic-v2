@@ -11,20 +11,36 @@ const fail = (path: string, message: string): never => {
 }
 
 export const protectUserRoles: CollectionBeforeChangeHook = ({
+  collection,
   context,
   data,
+  operation,
   originalDoc,
   req,
 }) => {
   const role = getRequestRole(req)
   const bootstrapAllowed = context.allowRoleBootstrap === true
+  // Payload verifies that the auth collection is empty immediately before this hook.
+  const isFirstUserRegistration =
+    operation === 'create' &&
+    !getRequestUser(req) &&
+    req.method === 'POST' &&
+    req.pathname.endsWith(`/${collection.slug}/first-register`)
 
   if (typeof data.name === 'string') {
     data.name = data.name.trim().replace(/\s+/g, ' ')
   }
 
+  if (isFirstUserRegistration) {
+    data.role = 'admin'
+  }
+
   if (role !== 'admin' && !bootstrapAllowed) {
-    if (data.role !== undefined && data.role !== originalDoc?.role) {
+    if (
+      !isFirstUserRegistration &&
+      data.role !== undefined &&
+      data.role !== originalDoc?.role
+    ) {
       fail('role', 'Only an administrator may change a user role.')
     }
 
