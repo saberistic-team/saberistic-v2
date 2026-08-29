@@ -87,17 +87,19 @@ Before deployment, the release passed:
 
 The two disposable databases, temporary container, and temporary image were removed after validation. The existing development database volume was preserved and returned to its prior stopped state.
 
-## Live acceptance checklist
+## Live acceptance record
 
-After the Render deploy:
+The release completed live acceptance on **2026-08-29**:
 
-1. Confirm the new migration completed once in the service logs.
-2. Confirm `/api/ready` returns HTTP 200.
-3. Confirm `saberistic.com` responses allow the custom origin and authenticated admin writes no longer produce form-state 401 errors.
-4. Confirm Evidence Sources shows four records.
-5. Confirm Prototypes shows four drafts and the public catalogue still contains no automatically published prototype.
-6. Confirm Site Settings includes three social links and two organization `sameAs` links.
-7. Confirm the existing administrator is unchanged.
+1. Blueprint deploy `dep-da9f7qdg1s2s73a88tjg` applied `20260829_144500_seed_prepared_content` once. Checks-gated deploy `dep-da9f8jjji3us73ej6m1g` then read the migration directory and reported `Done.` without rerunning it.
+2. `/api/ready` returned HTTP 200, and `/api/health` reported commit `bf7eae4ffc4c`.
+3. Responses from `saberistic.com` allowed the exact custom origin with credentials. No HTTP 401 or 403 requests appeared after the final deploy during authenticated browser acceptance.
+4. Evidence Sources showed exactly four verified records: BackThen, FrescoPay, TadaDing, and Story Sprout Pay.
+5. Prototypes showed exactly four Draft records. Every record was unfeatured and Not reviewed, and the public catalogue retained its intentional empty state.
+6. The public Site Settings API returned three social links and two organization `sameAs` links.
+7. The owner-created account remained an Administrator; no account or password was created, edited, or rotated by the migration.
+
+GitHub CI run [33259035170](https://github.com/saberistic-team/saberistic-v2/actions/runs/33259035170) and CodeQL run [33259035023](https://github.com/saberistic-team/saberistic-v2/actions/runs/33259035023) both passed for the deployed commit. Render recorded no error-level rollout messages. The only application warning was the already-documented absence of a production email adapter.
 
 ## Next content-model phase
 
