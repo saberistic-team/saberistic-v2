@@ -22,7 +22,9 @@ The repository's `render.yaml` now declares Umami staging inside the existing `s
 
 The shared database is a staging-only cost decision. It avoids silently starting a paid Render database while improving credential and table separation through a dedicated role and schema. It does not provide workload, storage, backup, expiry, or failure-domain isolation.
 
-This is infrastructure definition, not by itself proof of a live deployment. The production site has no tracker environment variables or Website ID in the Blueprint and must continue emitting no analytics. Do not create or connect the `saberistic.com` Website record until Umami has its own production-grade database and the privacy launch checks in this document pass.
+The service is live at <https://saberistic-umami-staging.onrender.com>; the resource and acceptance evidence are recorded in [11](./11-live-staging-deployment.md). This proves the disposable staging stack, not production analytics readiness. The production site has no tracker environment variables or Website ID and emits no analytics. Do not create or connect the `saberistic.com` Website record until Umami has its own production-grade database and the privacy launch checks in this document pass.
+
+The accepted staging deploy runs commit `59791ec6dc0a98bcc4cecae879943fcc881e1163` as Render deploy `dep-da9gs43l550s739vpvj0`. It completed 24 upstream migrations, returned HTTP 200 from `/api/heartbeat`, and rejected both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts with HTTP 401. The generated administrator secret was not inspected during automated acceptance. First supervised login, 2FA enablement, retention, backup, and upgrade acceptance remain operator work.
 
 ## Deployment shape
 

@@ -53,7 +53,7 @@ The `case_study` label is deliberately restricted. Prior employment cannot be pr
 
 Migration `20260829_151905` creates the collections and idempotently seeds:
 
-- 9 reviewed, public evidence-source records;
+- 9 additional reviewed, public career evidence-source records, producing 13 total when combined with the 4 earlier prototype sources;
 - 4 Case Study/experience-profile drafts;
 - 4 linked Experience drafts;
 - Brave, BAXUS, Eternis, and the independent `solana-secrets-engine` project.
@@ -135,3 +135,19 @@ The release is accepted only after the repository's normal `pnpm verify` workflo
 - frozen bootstrap dependency installation plus fail-closed exact-role, credential-reuse, ownership, direct-ACL, default-ACL, membership, and role-setting audit coverage without `ALTER ROLE`;
 - bootstrap-secret removal, UID/GID boundaries, deterministic 2FA-key derivation, and pre-server administrator password rotation;
 - absence of production tracker variables from the Blueprint.
+
+## Live staging result
+
+The CMS release reached Render through migration `20260829_151905`. Payload now contains 13 evidence records, 4 Experience drafts, and 4 Case Study/experience-profile drafts. Every career record remains `not-reviewed`. BackThen and Story Sprout Pay are published; FrescoPay remains held without a verified canonical app URL, and TadaDing remains held because its registered deployment returns HTTP 404.
+
+Umami was declared in commit `5df7d7237c2e9ad843d2b47a861734d77a802b74` as Free service `srv-da9gkrlg1s2s73acaau0`. Initial deploy `dep-da9gkrtg1s2s73acabr0` failed closed before HTTP because Render's managed PostgreSQL owner denied `ALTER ROLE`. Commit `59791ec6dc0a98bcc4cecae879943fcc881e1163` removed that dependency, and deploy `dep-da9gs43l550s739vpvj0` completed 24 upstream migrations and became live at <https://saberistic-umami-staging.onrender.com>.
+
+Acceptance evidence includes:
+
+- local `pnpm verify`: TypeScript, ESLint, 83 passing tests, one normal opt-in PostgreSQL integration skip, and a successful production build;
+- a separately passing real-PostgreSQL evidence-lock race test and four Playwright browser checks;
+- disposable PostgreSQL 18/Docker tests for fresh bootstrap, unchanged restart, the managed `ALTER ROLE` denial, wrong-credential failure without stored-password mutation, role-setting and cross-schema-ACL contamination, restricted-role denial on a `public` table, 24 migrations, and heartbeat HTTP 200;
+- live heartbeat HTTP 200 and HTTP 401 for both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts;
+- live website readiness HTTP 200 and rendered homepage HTML with no Umami script or Website ID.
+
+This accepts disposable staging only. No production Website record or tracker configuration exists. The shared Free database expires on 2026-09-27 and has no production backup or workload isolation. The operator must still reveal `UMAMI_ADMIN_PASSWORD` for the first supervised `saberistic_admin` login, enable and verify 2FA, and store recovery material securely. Dedicated analytics Postgres, retention, privacy disclosure, abuse monitoring, backup/restore, and upgrade acceptance remain required before production collection.

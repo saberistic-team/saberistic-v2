@@ -6,13 +6,13 @@ Run the public site, Payload, Umami, and AI abuse controls as a reproducible Ren
 
 The target is not “everything in one container.” It is one coherent Render Project whose services have explicit ownership and failure boundaries.
 
-## Current constraint
+## Current deployment and production boundary
 
-This workspace currently contains documentation only and is not a Git repository. Render Blueprints require a Git repository hosted through a supported provider, or separately managed image-backed services. The recommended path is to initialize Git after the application scaffold is created, push to GitHub/GitLab/Bitbucket, and add a tested `render.yaml` at the repository root.
+The repository is live from `saberistic-team/saberistic-v2` through the checked-in `render.yaml`. The current zero-cost staging environment contains two Free web services and one Free PostgreSQL instance: Payload owns `public`, while Umami uses a restricted role and the `umami` schema. The exact live record is in [11](./11-live-staging-deployment.md).
 
-Do not create live Render resources from the illustrative configuration below until service commands, database migrations, health endpoints, secrets, and backup ownership exist.
+That shared database is a disposable staging exception, not the target topology below. Production still requires service commands, pre-deploy migrations, dedicated Payload and Umami databases, protected networking, backups, retention, health monitoring, and named ownership before resources are created.
 
-## Target topology
+## Target production topology
 
 ```mermaid
 flowchart TB
@@ -45,17 +45,18 @@ saberistic-platform
 │  ├─ saberistic-rate-limits
 │  ├─ saberistic-payload-backup
 │  └─ saberistic-umami-backup
-└─ staging — isolated from production, smaller plans
+└─ staging — current zero-cost validation environment
    ├─ saberistic-web-staging
    ├─ saberistic-payload-db-staging
+   │  ├─ public schema: Payload
+   │  └─ umami schema: restricted analytics staging
    ├─ saberistic-umami-staging
-   ├─ saberistic-umami-db-staging
-   └─ saberistic-rate-limits-staging
+   └─ future saberistic-rate-limits-staging
 ```
 
-Use Render's environment protection for production and private-network isolation for both environments. Repository branch protection remains essential: a Blueprint commit can still change protected resources.
+Use Render's environment protection and private-network isolation for production. The current Free staging environment has those protections disabled and must not hold durable production data. Repository branch protection remains essential: a Blueprint commit can still change protected resources.
 
-Treat the staging Umami service and database as one upgrade target. The staging website may omit its tracker except during analytics tests, and the pair may be suspended or scaled down together when the plan permits, but do not leave an orphan database or test production upgrades without this pair.
+Treat the staging Umami service and its `umami` schema as one disposable upgrade target. The staging website omits its tracker, and the analytics service may be suspended when the plan permits. Never infer that this shared-schema test proves dedicated-database backup, restore, retention, performance, or failure isolation.
 
 Do not place unrelated prototypes in this Project. Give each durable prototype its own Render Project and Blueprint, with its own datastore if needed. A prototype must never connect to the production Payload database or rate-limit store.
 
@@ -70,7 +71,7 @@ The 2026-08-28 GitHub inventory creates a deployment shortlist, not deployable c
 | TadaDing | Separate Blueprint if selected, normally web/API plus a worker and its own datastore where the code audit confirms those components | Subscription charging stays disabled until payment behavior and operational ownership pass the launch packet |
 | Story Sprout Pay fallback | Keep the current Lovable endpoint only as a temporary, explicitly external sandbox or redeploy a payment-disabled build to its own Render Project | An HTTP-successful external page is not a Render deployment and does not satisfy payment, moderation, or recovery gates |
 
-The core website remains a complex multi-service Blueprint because it includes web/Payload, two Postgres databases, Umami, Key Value, and backup cron jobs. A genuinely single-service future prototype may use direct Render service creation, but it still needs a Git remote and the same launch packet. Do not create live resources until the chosen repository is pushed, the deployment definition is committed, required secrets are identified, and Blueprint validation passes.
+The production core remains a complex multi-service Blueprint target because it requires web/Payload, separate Payload and Umami databases, Umami, Key Value, and backup jobs. The current staging Blueprint deliberately contains only the two web services and one shared-schema database. A genuinely single-service future prototype may use direct Render service creation, but it still needs a Git remote and the same launch packet. Do not create additional live resources until the chosen repository is pushed, the deployment definition is committed, required secrets are identified, and Blueprint validation passes.
 
 ## Core resources
 

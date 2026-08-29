@@ -222,7 +222,7 @@ Start this only after Workstream 2A is green; it is the “full schemas and cont
 
 ### Tasks
 
-- Provision the staging Umami service and its dedicated staging database as one managed pair, then deploy a pinned image for validation. The tracker can remain disabled on normal staging pageviews when analytics is not under test.
+- Provision the pinned Umami service for validation. The implemented zero-cost staging exception shares Payload's Free PostgreSQL instance through a restricted role and `umami` schema; production still requires a dedicated analytics database. Keep the website tracker disabled throughout this disposable staging phase.
 - Set stable secrets, 2FA key, privacy flags, domain filtering, and query/hash exclusion.
 - Change default credentials and enable 2FA.
 - Add the typed event wrapper and exact taxonomy in [05](./05-umami-analytics-implementation.md).
@@ -233,7 +233,7 @@ Start this only after Workstream 2A is green; it is the “full schemas and cont
 ### Exit criteria
 
 - production domain traffic is separated from staging/internal traffic;
-- the staging service and database are upgraded together as the canonical pre-production target, even when the staging website normally omits the tracker;
+- the staging service and schema are validated together as a disposable pre-production target, while dedicated-database backup, restore, retention, and failure isolation remain separate production gates;
 - events have only allowed low-cardinality metadata;
 - tracker failure is invisible to core UX;
 - a database export and staged upgrade have been tested.

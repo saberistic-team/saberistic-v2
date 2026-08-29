@@ -127,9 +127,10 @@ describe('Umami container entrypoint', () => {
     expect(renderBlueprintSource).not.toContain('UMAMI_TRACK_DOMAINS')
   })
 
-  it('generates every bootstrap secret when the Umami service is declared', () => {
-    if (!renderBlueprintSource.includes('name: saberistic-umami-staging')) return
-
+  it('requires the Umami service and every generated bootstrap secret', () => {
+    expect(renderBlueprintSource).toContain('name: saberistic-umami-staging')
+    expect(renderBlueprintSource).toContain('- key: APP_SECRET\n')
+    expect(renderBlueprintSource).toContain('- key: UMAMI_DATABASE_PASSWORD\n')
     expect(renderBlueprintSource).toContain('- key: UMAMI_ADMIN_PASSWORD\n')
     expect(renderBlueprintSource).toContain('- key: UMAMI_TWO_FACTOR_SEED\n')
   })

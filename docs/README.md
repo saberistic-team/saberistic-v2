@@ -64,7 +64,7 @@ Do not delay launch for a full blog, user accounts, repository ingestion, free-f
 
 ## Current repository state
 
-The first Payload/Next.js thin slice is implemented, tested, published to GitHub, and deployed to Render staging. The repository includes committed migrations, a production Dockerfile, a validated Blueprint, CI, health endpoints, public routes, Payload collections, idempotent seeds, and operational runbooks. BackThen and Story Sprout Pay are published; the review-gated Experience and Case Studies schemas plus the conditional Umami tracker are implemented for the next deployment. See [11](./11-live-staging-deployment.md) for the live environment and [13](./13-prototype-approval-career-content-and-umami.md) for this release.
+The Payload/Next.js slice is implemented, tested, published to GitHub, and deployed to Render staging. BackThen and Story Sprout Pay are published; FrescoPay remains held without a verified canonical app URL, and TadaDing remains held because its registered deployment returns HTTP 404. Payload contains 13 evidence records plus four review-gated Experience and four Case Study drafts, all not reviewed. Self-hosted Umami staging is live on a separate Free web service, while production tracking remains disabled because analytics still shares Payload's expiring Free database. See [11](./11-live-staging-deployment.md) for the live record and [13](./13-prototype-approval-career-content-and-umami.md) for this release's controls and validation.
 
 ## Source-of-truth rules
 
