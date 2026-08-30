@@ -9,8 +9,8 @@ const endpoints = [
   {
     healthy: (body) => body?.ok === true,
     name: 'Umami analytics',
-    // The stable Render URL wakes the same service even while custom-domain TLS is propagating.
-    url: 'https://saberistic-umami-staging.onrender.com/api/heartbeat',
+    // Wake the service through the same custom host used by the production tracker.
+    url: 'https://umami.saberistic.com/api/heartbeat',
   },
 ]
 
