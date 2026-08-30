@@ -14,7 +14,6 @@ export function SiteHeader() {
             alt=""
             className="wordmark__mark"
             height={32}
-            loading="eager"
             src={saberisticMark}
             width={32}
           />
