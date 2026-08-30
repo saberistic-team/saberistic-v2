@@ -1788,6 +1788,35 @@ button.button {
   font-size: 0.74rem;
 }
 
+.article-image {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  margin: 3rem 0;
+  max-width: 55rem;
+}
+
+.article-image img {
+  display: block;
+  height: auto;
+  width: 100%;
+}
+
+.article-image figcaption {
+  border-top: 1px solid var(--rule);
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 1.25rem;
+}
+
+.article-image figcaption strong {
+  font-size: 0.84rem;
+}
+
+.article-image figcaption span {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
 .diagram-svg {
   display: block;
   height: auto;

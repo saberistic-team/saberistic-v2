@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
+import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
@@ -26,7 +27,9 @@ describe('Git-authored build notes', () => {
       for (const repository of note.repositories) {
         expect(repository.commit).toMatch(/^[a-f0-9]{40}$/)
         expect(repository.label.length).toBeGreaterThan(0)
-        expect(repository.url).toMatch(/^https:\/\/github\.com\/saberistic-team\/[a-z0-9-]+$/)
+        expect(repository.url).toMatch(
+          /^https:\/\/github\.com\/(?:saberistic-team|saberistic)\/[a-z0-9-]+$/,
+        )
       }
       expect(`${note.seoTitle} — Saberistic`.length).toBeLessThanOrEqual(60)
       expect(note.summary.length).toBeLessThanOrEqual(200)
@@ -45,6 +48,31 @@ describe('Git-authored build notes', () => {
       'f18da56',
     )
     expect(getBuildNote('three-lovable-prototypes')?.repositories).toHaveLength(3)
+    expect(getBuildNote('cryptopal-wallet-email-wallet')?.repositories).toHaveLength(3)
+    expect(getBuildNote('cryptopal-wallet-email-wallet')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      'e41f723',
+    )
+  })
+
+  it('renders CryptoPal with the two-hop protocol, measured evidence, and explicit privacy limits', () => {
+    const html = renderToStaticMarkup(createElement(CryptoPalArticle))
+
+    expect(html).toContain(
+      'The proof checks one relationship; blinding provides the unlinkability.',
+    )
+    expect(html).toContain('The adapter is real; multi-chain support is future work.')
+    expect(html).toContain('33 / 33')
+    expect(html).toContain('10/10 independent users')
+    expect(html).toContain('retained, independently auditable')
+    expect(html).toContain('step-preserving normalization')
+    expect(html).toContain('issuance returned')
+    expect(html).toContain('Only a resettable local Solana/Agave ledger')
+    expect(html).toContain('not a wire-compatible RFC 9497')
+    expect(html).toContain('Owner-supplied CryptoPal sender screen')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+    expect(html.match(/<svg aria-labelledby=/g)?.length).toBe(4)
+    expect(html.match(/<title id=/g)?.length).toBe(4)
+    expect(html.match(/<desc id=/g)?.length).toBe(4)
   })
 
   it('renders the harness article with labeled code, accessible diagrams, and explicit limits', () => {

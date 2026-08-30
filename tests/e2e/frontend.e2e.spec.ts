@@ -5,6 +5,7 @@ test.describe('Public site smoke', () => {
     '/',
     '/prototypes',
     '/build-notes',
+    '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/three-lovable-prototypes',

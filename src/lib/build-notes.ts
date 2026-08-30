@@ -20,6 +20,58 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'DAY 005 / CRYPTOPAL',
+    footerSummary:
+      'The three pinned repositories separate the original protocol idea, the runnable Solana demonstrator, and the blinded-token service it depends on.',
+    footerTitle: 'Inspect both privacy hops—and every boundary they do not hide.',
+    modifiedAt: '2026-08-30',
+    publishedAt: '2026-08-30',
+    readingMinutes: 29,
+    repositories: [
+      {
+        commit: 'e41f72319ca5b7d0bd6a5cc3de0ac46bf9f91d4d',
+        label: 'CryptoPal',
+        url: 'https://github.com/saberistic-team/cryptopal',
+      },
+      {
+        commit: 'de7c055e459167f66f39d56e4feceaa92caf12aa',
+        label: 'Original spec',
+        url: 'https://github.com/saberistic/cryptopal-spec',
+      },
+      {
+        commit: 'f18da5682c80fb1afe08348187e4c2f39bd4714a',
+        label: 'TurboPass',
+        url: 'https://github.com/saberistic-team/turbopass',
+      },
+    ],
+    sections: [
+      ['brief', 'The product idea'],
+      ['scope', 'What shipped'],
+      ['original-sketch', 'Original sketch'],
+      ['architecture', 'Architecture'],
+      ['local-demo', 'The interaction'],
+      ['hop-one', 'Wallet to email'],
+      ['hop-two', 'Email to wallet'],
+      ['zkp-precision', 'What ZKP means'],
+      ['browser-boundary', 'Browser boundary'],
+      ['retry-safety', 'State and retries'],
+      ['anychain', 'The anychain seam'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['load-testing', 'Load and replay'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'CryptoPal: private crypto claims by email',
+    slug: 'cryptopal-wallet-email-wallet',
+    summary:
+      'How I turned a 2022 PlantUML sketch into a local Solana demo that moves one cUSD from wallet to email to wallet through two independent blinded-token hops.',
+    tags: ['Privacy Pass', 'Solana', 'Rust/Wasm', 'Email payments'],
+    title: 'CryptoPal: two blind-token hops from wallet to email to wallet',
+  },
+  {
     eyebrow: 'DAY 004 / THREE LOVABLE PROTOTYPES',
     footerSummary:
       'The three pinned repositories show the working product loops, server boundaries, and unresolved launch gates described here.',

@@ -53,6 +53,7 @@ The product promise is:
 | [17 — TurboPass Rust + Temporal Build Note](./17-turbopass-rust-temporal-build-note.md)                           | FFI bridge removal, compatible token lifecycle, Temporal rotation, local integration harness, evidence, and rollout gates.       |
 | [18 — Harness Platform M1 Operator Loop](./18-harness-operator-loop-m1-build-note.md)                             | SQLite evidence, terminal viewer, golden eval, compiled policy, CI composition, truth boundaries, and release plan.              |
 | [19 — Three Lovable prototypes](./19-three-lovable-prototypes.md)                                                 | Source audits, Payload publication gates, shared product architecture, Build Note 004, and production acceptance.                |
+| [20 — CryptoPal Build Note](./20-cryptopal-build-note.md)                                                         | Original PlantUML, two blinded-token hops, local Solana protocol, privacy limits, load evidence, and release plan.               |
 
 ## Recommended first release
 
@@ -110,7 +111,12 @@ external launch action. Website commit `b8b6c2d` passed CI and CodeQL, Payload d
 `dep-daa5rlflk1mc738j6bm0` completed both publication migrations, and Static Site deploy
 `dep-daa5te2jnfac73fkic3g` built 22 pages from verified five-prototype content revision
 `2e8da5a6f350`. Full acceptance and the migration transaction-boundary fix are recorded in
-[19](./19-three-lovable-prototypes.md). The expiring shared database, missing
+[19](./19-three-lovable-prototypes.md). Build Note 005 now documents CryptoPal at pinned public commit
+`e41f723`: the original 2022 PlantUML, two independent blind-token hops, fixed 1 cUSD local Solana
+flow, Rust/Wasm browser boundary, retry-safe processor state, 33 passing API/web/Rust tests, guarded
+load harness, author-observed local session results, and explicit custody, metadata, anychain, and
+interoperability limits. Its implementation and pending production acceptance are recorded in
+[20](./20-cryptopal-build-note.md). The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and
