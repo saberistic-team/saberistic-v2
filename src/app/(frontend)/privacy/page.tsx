@@ -16,6 +16,7 @@ const measuredInteractions = [
   'Visits to the three service sections on the homepage.',
   'Starting one of the fixed readiness-preview examples.',
   'Opening a prototype card or detail page, launching an approved prototype, or following its source link.',
+  'Opening a build-note card or article, or following that article’s repository link.',
 ]
 
 const excludedInformation = [
@@ -90,8 +91,8 @@ export default function PrivacyPage() {
             <p className="long-copy">
               You can enable Do Not Track in your browser or block requests to umami.saberistic.com.
               Either choice prevents or limits collection and does not change the site&apos;s
-              content, readiness preview, or prototype links. Analytics failure also never blocks
-              those features.
+              content, build notes, readiness preview, or prototype links. Analytics failure also
+              never blocks those features.
             </p>
           </section>
 

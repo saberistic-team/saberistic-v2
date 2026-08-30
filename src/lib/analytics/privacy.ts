@@ -1,10 +1,12 @@
 import { validateAnalyticsEvent } from './events'
+import { isPublishedBuildNoteSlug } from '../build-notes'
 
 type UmamiPayload = Record<string, unknown>
 
 const approvedHostnames = new Set(['saberistic.com', 'www.saberistic.com'])
 const publicPathPattern =
   /^(?:\/|\/privacy|\/prototypes(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?|\/readiness)$/
+const buildNotePathPattern = /^\/build-notes\/([a-z0-9]+(?:-[a-z0-9]+)*)$/
 const emailPattern = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/
 const secretPattern = /\b(?:authorization|bearer|password|secret|token)\b/i
 const uuidPattern = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/i
@@ -20,24 +22,35 @@ function hasSensitiveText(value: string): boolean {
   return emailPattern.test(value) || secretPattern.test(value) || uuidPattern.test(value)
 }
 
+function isPublicPath(value: string): boolean {
+  if (value === '/build-notes' || publicPathPattern.test(value)) return true
+
+  const match = buildNotePathPattern.exec(value)
+
+  return isPublishedBuildNoteSlug(match?.[1])
+}
+
 function sanitizeCurrentPath(value: unknown): string | null {
   if (typeof value !== 'string' || !value || value.length > 240) return null
 
   try {
     const parsed = new URL(value, 'https://saberistic.com')
 
+    const normalizedPath =
+      parsed.pathname.length > 1 ? parsed.pathname.replace(/\/$/, '') : parsed.pathname
+
     if (
       !['http:', 'https:'].includes(parsed.protocol) ||
       !approvedHostnames.has(parsed.hostname.toLowerCase()) ||
       parsed.username ||
       parsed.password ||
-      hasSensitiveText(parsed.pathname) ||
-      !publicPathPattern.test(parsed.pathname)
+      hasSensitiveText(normalizedPath) ||
+      !isPublicPath(normalizedPath)
     ) {
       return null
     }
 
-    return parsed.pathname
+    return normalizedPath
   } catch {
     return null
   }

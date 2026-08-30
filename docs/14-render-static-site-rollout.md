@@ -4,7 +4,7 @@
 
 The public Saberistic site is a separate Next.js static export in `apps/site`. Render serves its
 `out` directory from the Static Site CDN, so the homepage, prototype directory, prototype detail
-pages, privacy page, and readiness page do not sleep.
+pages, Build Notes journal and articles, privacy page, and readiness page do not sleep.
 
 Payload remains the source of truth and continues to run as the Free Docker web service at
 `https://saberistic-web-staging.onrender.com`. Umami remains a separate Free Docker web service at
@@ -135,7 +135,9 @@ meaning or shape of version 1.
    delete, or change the runtime of Payload or Umami. Record the generated service URL and ID only
    after Render confirms them.
 4. Test the domainless Static Site URL, including `/`, `/prototypes/`, every exported prototype,
-   `/readiness/` with and without its supported query values, `/privacy/`, static assets, and a real 404. Confirm the output is multipage and has no SPA catch-all.
+   `/build-notes/`, every allowlisted Build Note, `/build-notes/feed.xml`, `/readiness/` with and
+   without its supported query values, `/privacy/`, static assets, and a real 404. Confirm the
+   output is multipage and has no SPA catch-all.
 5. Create the Static Site deploy hook in Render and place it only in Payload's
    `STATIC_SITE_DEPLOY_HOOK_URL`. Publish, edit, unpublish, republish, and delete a disposable reviewed
    record as appropriate; verify each relevant operation queues a successful static deploy and the

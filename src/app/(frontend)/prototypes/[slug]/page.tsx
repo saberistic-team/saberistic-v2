@@ -244,7 +244,7 @@ function PrototypeDetail({ prototype }: { prototype: PublicPrototype }) {
               <p className="availability-note">
                 <strong>Public demo under review.</strong>
                 <span>
-                  The build note is available, but the interactive version is not open yet.
+                  The prototype record is available, but the interactive version is not open yet.
                 </span>
               </p>
             )}

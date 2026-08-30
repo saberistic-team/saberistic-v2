@@ -14,10 +14,16 @@ const socialImage = {
 }
 
 export function createPageMetadata({
+  article,
   description,
   path,
   title,
 }: {
+  article?: {
+    modifiedTime?: string
+    publishedTime: string
+    tags?: string[]
+  }
   description: string
   path: string
   title?: string
@@ -29,12 +35,20 @@ export function createPageMetadata({
     alternates: { canonical },
     description,
     openGraph: {
+      ...(article
+        ? {
+            authors: ['https://saberistic.com/#about'],
+            modifiedTime: article.modifiedTime,
+            publishedTime: article.publishedTime,
+            tags: article.tags,
+            type: 'article' as const,
+          }
+        : { type: 'website' as const }),
       description,
       images: [socialImage],
       locale: 'en_US',
       siteName,
       title: resolvedTitle,
-      type: 'website',
       url: canonical,
     },
     title: title ?? { absolute: siteTitle },

@@ -40,4 +40,25 @@ describe('public SEO metadata', () => {
     expect(html).toContain('\\u003c/script>\\u003cscript>')
     expect(html).not.toContain('</script><script>')
   })
+
+  it('emits article-specific Open Graph dates and tags for a build note', () => {
+    const metadata = createPageMetadata({
+      article: {
+        modifiedTime: '2026-08-30',
+        publishedTime: '2026-08-30',
+        tags: ['Agent harnesses', 'TypeScript'],
+      },
+      description: 'A verified build note.',
+      path: '/build-notes/harness-from-scratch/',
+      title: 'Harness from Scratch',
+    })
+
+    expect(metadata.openGraph).toMatchObject({
+      modifiedTime: '2026-08-30',
+      publishedTime: '2026-08-30',
+      tags: ['Agent harnesses', 'TypeScript'],
+      type: 'article',
+      url: new URL('https://saberistic.com/build-notes/harness-from-scratch/'),
+    })
+  })
 })

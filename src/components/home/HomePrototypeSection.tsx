@@ -36,7 +36,7 @@ export function HomePrototypeSection({ feed }: { feed: HomepagePrototypeFeed }) 
         {feed.state === 'empty' ? (
           <EmptyState
             action={{ href: '/readiness', label: 'Check production readiness' }}
-            description="The first public build notes are being prepared. In the meantime, check your own system’s production readiness."
+            description="The first public prototype records are being prepared. In the meantime, check your own system’s production readiness."
             title="The workshop is being catalogued."
           />
         ) : null}

@@ -110,6 +110,11 @@ fails the deployment if exported icons, manifest, robots, sitemap, canonical/OG/
 structured data, or any published prototype route is missing. Unit coverage verifies SEO metadata,
 JSON-LD script escaping, CLS normalization, Render redirect declarations, and brand-cache policy.
 
+The later Build Notes rollout extends the same verifier to discover every allowlisted article and
+require its canonical URL, article Open Graph data, visible publication date, `BlogPosting` and
+breadcrumb structured data, sitemap entry, and RSS item. Its implementation and acceptance record
+live in [16 — Build Notes and Harness from Scratch](./16-build-notes-and-harness-from-scratch.md).
+
 ## Verification record
 
 - The full `pnpm verify` pipeline passed without lint warnings: root and Static Site type checks,

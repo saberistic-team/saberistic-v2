@@ -63,12 +63,33 @@ describe('Umami before-send privacy guard', () => {
     })
   })
 
+  it('normalizes static trailing slashes and allows bounded build-note events', () => {
+    expect(
+      guardUmamiPayload('event', {
+        ...pageview,
+        data: { note: 'harness-from-scratch' },
+        name: 'build_note_view',
+        url: '/build-notes/harness-from-scratch/?source=home#kernel',
+      }),
+    ).toMatchObject({
+      data: { note: 'harness-from-scratch' },
+      name: 'build_note_view',
+      url: '/build-notes/harness-from-scratch',
+    })
+
+    expect(
+      guardUmamiPayload('event', { ...pageview, url: '/prototypes/back-then/' }),
+    ).toMatchObject({ url: '/prototypes/back-then' })
+  })
+
   it.each([
     ['unexpected type', 'identify', pageview],
     ['unapproved hostname', 'event', { ...pageview, hostname: 'preview.onrender.com' }],
     ['unapproved absolute URL', 'event', { ...pageview, url: 'https://evil.example/readiness' }],
     ['private route', 'event', { ...pageview, url: '/admin/collections/users' }],
     ['near-prefix route', 'event', { ...pageview, url: '/readiness/private' }],
+    ['unknown build note path', 'event', { ...pageview, url: '/build-notes/private/draft' }],
+    ['unpublished build note', 'event', { ...pageview, url: '/build-notes/unpublished-note/' }],
     ['email in the title', 'event', { ...pageview, title: 'Report for visitor@example.com' }],
     [
       'unknown custom event',

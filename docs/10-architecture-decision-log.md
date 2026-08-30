@@ -242,6 +242,30 @@ explicit operational state.
 different hosting model provides equivalent non-sleeping delivery and atomic content deployments
 without weakening the strict snapshot boundary.
 
+## ADR-020 — Git-authored Build Notes as code-adjacent evidence
+
+**Status:** Accepted
+
+Publish Build Notes from an explicit typed manifest and reviewed React content in Git. Export the
+index, article routes, and RSS feed with the public Static Site. This is a narrow exception to
+ADR-014's Payload ownership of editorial content.
+
+**Why:** The journal's code excerpts, repository paths, pinned commits, diagrams, implementation
+limits, and renderer need one atomic review history. A Payload-backed first version would require a
+new snapshot contract and coordinated backend-first rollout before the first article could be
+published. Git-authored components provide that evidence boundary without executable CMS markup,
+an MDX dependency, or a static/backend version race.
+
+**Consequence:** Publishing currently requires a code review and static deployment. Every public
+note must be allowlisted in `src/lib/build-notes.ts`, have a corresponding typed content component,
+pin material repository claims to a commit, and pass metadata, structured-data, feed, sitemap,
+accessibility, and export checks. Payload remains the future authoring option when non-developer
+editing justifies a versioned safe-block schema and `/api/public/site-snapshot/v2` rollout.
+
+**Revisit when:** the publishing cadence or editor audience makes Git authoring a demonstrated
+constraint, or a safe Payload block model can preserve the same provenance and atomic deployment
+guarantees.
+
 ## Pending implementation choices
 
 These do not reopen the architecture:

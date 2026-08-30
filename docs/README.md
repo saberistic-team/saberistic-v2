@@ -49,6 +49,7 @@ The product promise is:
 | [13 — Prototype approval, career content, and Umami rollout](./13-prototype-approval-career-content-and-umami.md) | Live prototype decisions, Experience/Case Studies schemas and seeds, publication gates, and the zero-cost Umami staging rollout. |
 | [14 — Render Static Site rollout](./14-render-static-site-rollout.md)                                             | Static export contract, CMS-triggered builds, domain transfer, verification, rollback, and operations.                           |
 | [15 — Brand, SEO, Lighthouse, and Web Vitals](./15-brand-seo-lighthouse-and-web-vitals.md)                        | Supplied logo integration, metadata/crawl hardening, Lighthouse evidence, and the Umami CLS correction.                          |
+| [16 — Build Notes and Harness from Scratch](./16-build-notes-and-harness-from-scratch.md)                         | Git-authored journal architecture, first article evidence, SVG/code treatment, analytics, verification, and authoring workflow.  |
 
 ## Recommended first release
 
@@ -78,6 +79,10 @@ supplied Saberistic mark, favicon conventions, route canonicals, robots, sitemap
 structured data, legacy redirects, and Web Vitals zero-CLS normalization are deployed and passed
 the live acceptance recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). Final Lighthouse
 scores are 97/100/100/100 on mobile and 100/100/100/100 on desktop, with CLS 0 on both. The
+Git-authored Build Notes journal, RSS feed, and first source-verified Harness from Scratch article
+are implemented in the shared frontend and statically exported without changing the Payload
+snapshot contract. The article documents the Pi/Qwen bootstrap, M0 contracts, failures, passing
+40-test result, and incomplete boundaries with code and accessible SVG diagrams. The
 expiring shared database, missing backup/retention automation, backend cold starts, and one stale
 `www` DNS target remain unresolved operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and
@@ -86,8 +91,10 @@ expiring shared database, missing backup/retention automation, backend cold star
 ## Source-of-truth rules
 
 - Public claims must follow the evidence labels and claim holds in [03](./03-verified-content-and-ai-brief.md).
-- Payload owns editorial content, prototype records, SEO metadata, and evidence references.
-- Git owns collection schemas, migrations, readiness rules, prompts, event names, infrastructure, and security policy.
+- Payload owns general editable content, prototype records, CMS-projected SEO metadata, and evidence
+  references. ADR-020 makes Build Notes a narrow Git-authored exception for code-adjacent evidence.
+- Git owns Build Notes, collection schemas, migrations, readiness rules, prompts, event names,
+  infrastructure, and security policy.
 - Umami receives behavioral metadata only. It must never receive readiness answers, generated reports, contact details, email addresses, or other personal data.
 - OpenRouter receives normalized assessment choices plus, only when the visitor supplies it, one bounded optional symptom after local sensitive-data checks. Contact information and every other arbitrary visitor-text field stay outside the model request.
 - Production secrets live in Render, never in Git or Payload rich text.

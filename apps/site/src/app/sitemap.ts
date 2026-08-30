@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next'
 
+import { buildNotes } from '@/lib/build-notes'
 import { getPublicPrototypes } from '@/lib/public-content/prototypes'
 
 export const dynamic = 'force-static'
@@ -25,6 +26,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       url: 'https://saberistic.com/prototypes/',
     },
     {
+      changeFrequency: 'weekly',
+      priority: 0.8,
+      url: 'https://saberistic.com/build-notes/',
+    },
+    {
       changeFrequency: 'monthly',
       priority: 0.8,
       url: 'https://saberistic.com/readiness/',
@@ -47,5 +53,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   })
 
-  return [...staticRoutes, ...prototypeRoutes]
+  const buildNoteRoutes: MetadataRoute.Sitemap = buildNotes.map((note) => ({
+    changeFrequency: 'monthly',
+    lastModified: new Date(`${note.modifiedAt}T12:00:00Z`),
+    priority: 0.7,
+    url: `https://saberistic.com/build-notes/${note.slug}/`,
+  }))
+
+  return [...staticRoutes, ...buildNoteRoutes, ...prototypeRoutes]
 }

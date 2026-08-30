@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 
 test.describe('Public site smoke', () => {
-  for (const route of ['/', '/prototypes']) {
+  for (const route of ['/', '/prototypes', '/build-notes', '/build-notes/harness-from-scratch']) {
     test(`${route} renders without seeded content`, async ({ page }) => {
       const response = await page.goto(route)
 

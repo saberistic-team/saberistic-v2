@@ -19,6 +19,12 @@ const validEvents = [
   },
   { data: { prototype: 'back-then' }, name: 'prototype_source_clicked' },
   {
+    data: { note: 'harness-from-scratch', placement: 'home' },
+    name: 'build_note_card_clicked',
+  },
+  { data: { note: 'harness-from-scratch' }, name: 'build_note_view' },
+  { data: { note: 'harness-from-scratch' }, name: 'build_note_source_clicked' },
+  {
     data: { entry: 'home_preview', mode: 'example' },
     name: 'readiness_started',
   },
@@ -58,6 +64,18 @@ describe('analytics event contract', () => {
     {
       data: { prototype: 'a' + '-slug'.repeat(20) },
       name: 'prototype_source_clicked',
+    },
+    {
+      data: { note: 'harness-from-scratch', placement: 'detail' },
+      name: 'build_note_card_clicked',
+    },
+    {
+      data: { note: 'Harness From Scratch' },
+      name: 'build_note_view',
+    },
+    {
+      data: { note: 'unpublished-note' },
+      name: 'build_note_view',
     },
   ])('rejects undeclared or high-cardinality input: $name', (event) => {
     expect(validateAnalyticsEvent(event)).toBeNull()

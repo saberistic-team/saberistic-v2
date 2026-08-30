@@ -1,6 +1,7 @@
 import Link from 'next/link'
 
 import { TrackedLink } from '@/components/analytics/TrackedLink'
+import { HomeBuildNotesSection } from '@/components/home/HomeBuildNotesSection'
 import { HomePrototypeSection } from '@/components/home/HomePrototypeSection'
 import { ReadinessPreview } from '@/components/home/ReadinessPreview'
 import { JsonLd } from '@/components/seo/JsonLd'
@@ -190,10 +191,12 @@ export default async function HomePage() {
 
       <HomePrototypeSection feed={prototypeFeed} />
 
+      <HomeBuildNotesSection />
+
       <section aria-labelledby="situations-heading" className="section">
         <div className="shell">
           <div className="section-intro">
-            <p className="eyebrow">02 / WHERE I HELP</p>
+            <p className="eyebrow">03 / WHERE I HELP</p>
             <h2 id="situations-heading">Bring the difficult part.</h2>
             <p>
               Start with the situation you recognize. Each path leads to a specific next step—not a
@@ -222,7 +225,7 @@ export default async function HomePage() {
       <section aria-labelledby="proof-heading" className="section section--ink" id="work">
         <div className="shell">
           <div className="section-intro section-intro--light">
-            <p className="eyebrow">03 / SELECTED PROOF</p>
+            <p className="eyebrow">04 / SELECTED PROOF</p>
             <h2 id="proof-heading">
               Built inside systems where privacy, money, and reliability matter.
             </h2>
@@ -250,7 +253,7 @@ export default async function HomePage() {
       <section aria-labelledby="offers-heading" className="section" id="services">
         <div className="shell offer-layout">
           <div className="section-intro section-intro--sticky">
-            <p className="eyebrow">04 / WAYS TO WORK TOGETHER</p>
+            <p className="eyebrow">05 / WAYS TO WORK TOGETHER</p>
             <h2 id="offers-heading">Make the system legible. Then change it.</h2>
             <p>
               Assess the real constraint, separate blockers from distractions, and build the
@@ -273,7 +276,7 @@ export default async function HomePage() {
 
       <section aria-labelledby="about-heading" className="section section--about" id="about">
         <div className="shell about-layout">
-          <p className="eyebrow">05 / ABOUT</p>
+          <p className="eyebrow">06 / ABOUT</p>
           <div>
             <h2 id="about-heading">Engineering judgment, backed by implementation.</h2>
             <p>
