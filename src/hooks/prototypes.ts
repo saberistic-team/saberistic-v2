@@ -24,6 +24,7 @@ type InternalPayloadReader = {
     depth: number
     id: number | string
     overrideAccess: boolean
+    req: unknown
   }) => Promise<Record<string, unknown>>
 }
 
@@ -135,6 +136,7 @@ export const validatePrototypeBeforeChange: CollectionBeforeChangeHook = async (
         depth: 0,
         id,
         overrideAccess: true,
+        req,
       })
 
       evidence.push({

@@ -368,6 +368,7 @@ describe('publishLovablePrototypes', () => {
         req,
       } as never),
     ).resolves.toBe(prototype)
+    expect(findByID).toHaveBeenCalledWith(expect.objectContaining({ req }))
 
     try {
       await validatePrototypeBeforeChange({ context: {}, data: prototype, req } as never)
