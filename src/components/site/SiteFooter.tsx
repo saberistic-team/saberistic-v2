@@ -1,5 +1,7 @@
+import Image from 'next/image'
 import Link from 'next/link'
 
+import saberisticMark from '@/assets/saberistic-mark.png'
 import { TrackedLink } from '@/components/analytics/TrackedLink'
 
 const footerLinks = [
@@ -40,8 +42,15 @@ export function SiteFooter() {
 
         <div className="footer-grid">
           <div>
-            <Link className="wordmark wordmark--footer" href="/">
-              SABERISTIC
+            <Link className="wordmark wordmark--footer" href="/" prefetch={false}>
+              <Image
+                alt=""
+                className="wordmark__mark"
+                height={32}
+                src={saberisticMark}
+                width={32}
+              />
+              <span>SABERISTIC</span>
             </Link>
             <p className="footer-note">
               Saberistic is led by AmirSaber Sharifi. Senior engineering for ambitious products.
@@ -52,7 +61,9 @@ export function SiteFooter() {
             <ul className="footer-links">
               {footerLinks.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href}>{link.label}</Link>
+                  <Link href={link.href} prefetch={false}>
+                    {link.label}
+                  </Link>
                 </li>
               ))}
             </ul>

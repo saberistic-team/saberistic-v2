@@ -157,6 +157,14 @@ Start this only after Workstream 2A is green; it is the “full schemas and cont
 - no page uses unsupported logos or ambiguous client relationships;
 - current indexed URLs resolve or redirect intentionally.
 
+### 2026-08-30 implementation note
+
+The static public routes now have the supplied brand mark, favicon and Apple icon conventions,
+route-specific canonical/Open Graph/Twitter metadata, robots, sitemap, manifest, truthful JSON-LD,
+equivalent legacy redirects, and post-build export assertions. Lighthouse and the Umami CLS field
+diagnosis are recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). CMS-projected SEO,
+landscape social cards, and non-equivalent historical insight/work routes remain follow-up work.
+
 ## Workstream 4 — prototype hub
 
 ### Tasks

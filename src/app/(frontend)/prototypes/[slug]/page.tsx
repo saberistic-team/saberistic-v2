@@ -6,9 +6,11 @@ import { TrackEventOnMount } from '@/components/analytics/TrackEventOnMount'
 import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { PrototypePoster } from '@/components/prototypes/PrototypePoster'
 import { PrototypeStatusBadge } from '@/components/prototypes/PrototypeStatusBadge'
+import { JsonLd } from '@/components/seo/JsonLd'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getPublicPrototypeBySlug } from '@/lib/public-content/prototypes'
 import type { DataClassification, PublicPrototype } from '@/lib/public-content/types'
+import { createPageMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,15 +56,57 @@ export async function generateMetadata({ params }: PrototypePageProps): Promise<
 
   if (!result.item) return { title: 'Prototype' }
 
-  return {
+  return createPageMetadata({
     description: result.item.summary,
+    path: `/prototypes/${result.item.slug}/`,
     title: result.item.title,
-  }
+  })
 }
 
 function PrototypeDetail({ prototype }: { prototype: PublicPrototype }) {
+  const canonicalURL = `https://saberistic.com/prototypes/${prototype.slug}/`
+  const modifiedAt =
+    prototype.updatedAt && !Number.isNaN(Date.parse(prototype.updatedAt))
+      ? prototype.updatedAt
+      : undefined
+  const structuredData = [
+    {
+      '@context': 'https://schema.org',
+      '@type': 'BreadcrumbList',
+      itemListElement: [
+        {
+          '@type': 'ListItem',
+          item: 'https://saberistic.com/prototypes/',
+          name: 'Prototypes',
+          position: 1,
+        },
+        {
+          '@type': 'ListItem',
+          item: canonicalURL,
+          name: prototype.title,
+          position: 2,
+        },
+      ],
+    },
+    {
+      '@context': 'https://schema.org',
+      '@type': 'CreativeWork',
+      ...(modifiedAt ? { dateModified: modifiedAt } : {}),
+      author: {
+        '@type': 'Person',
+        name: 'AmirSaber Sharifi',
+        url: 'https://saberistic.com/#about',
+      },
+      description: prototype.summary,
+      mainEntityOfPage: canonicalURL,
+      name: prototype.title,
+      url: canonicalURL,
+    },
+  ]
+
   return (
     <article className="prototype-detail">
+      <JsonLd data={structuredData} id={`prototype-${prototype.slug}-structured-data`} />
       <TrackEventOnMount
         event={{
           data: { prototype: prototype.slug, status: prototype.status },

@@ -69,6 +69,13 @@ function isSafeTitle(value: unknown): value is string {
   )
 }
 
+function supportsLayoutShift(): boolean {
+  return (
+    typeof PerformanceObserver !== 'undefined' &&
+    PerformanceObserver.supportedEntryTypes?.includes('layout-shift') === true
+  )
+}
+
 function sanitizeCommonPayload(payload: UmamiPayload): UmamiPayload | null {
   if (
     typeof payload.hostname !== 'string' ||
@@ -124,6 +131,10 @@ function sanitizePerformancePayload(
 
     performance[key] = value
     metricCount += 1
+  }
+
+  if (metricCount > 0 && source.cls === undefined && supportsLayoutShift()) {
+    performance.cls = 0
   }
 
   return metricCount > 0 ? performance : false

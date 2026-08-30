@@ -48,6 +48,7 @@ The product promise is:
 | [12 — Payload content import and origin fix](./12-payload-content-import-and-origin-fix.md)                       | Custom-domain admin authentication, transactional content import, verification, and remaining résumé schema.                     |
 | [13 — Prototype approval, career content, and Umami rollout](./13-prototype-approval-career-content-and-umami.md) | Live prototype decisions, Experience/Case Studies schemas and seeds, publication gates, and the zero-cost Umami staging rollout. |
 | [14 — Render Static Site rollout](./14-render-static-site-rollout.md)                                             | Static export contract, CMS-triggered builds, domain transfer, verification, rollback, and operations.                           |
+| [15 — Brand, SEO, Lighthouse, and Web Vitals](./15-brand-seo-lighthouse-and-web-vitals.md)                        | Supplied logo integration, metadata/crawl hardening, Lighthouse evidence, and the Umami CLS correction.                          |
 
 ## Recommended first release
 
@@ -73,6 +74,9 @@ because its registered deployment returns HTTP 404. Payload contains 13 evidence
 review-gated Experience and four Case Study drafts, all not reviewed. Self-hosted Umami is live on a
 separate Free web service; the owner has enabled 2FA, and temporary public collection through
 `umami.saberistic.com` passed live tracker, ingestion, privacy-payload, and dashboard acceptance. The
+supplied Saberistic mark, favicon conventions, route canonicals, robots, sitemap, social metadata,
+structured data, legacy redirects, and Web Vitals zero-CLS normalization are implemented and await
+the live acceptance recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). The
 expiring shared database, missing backup/retention automation, backend cold starts, and one stale
 `www` DNS target remain unresolved operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and

@@ -3,10 +3,52 @@ import Link from 'next/link'
 import { TrackedLink } from '@/components/analytics/TrackedLink'
 import { HomePrototypeSection } from '@/components/home/HomePrototypeSection'
 import { ReadinessPreview } from '@/components/home/ReadinessPreview'
+import { JsonLd } from '@/components/seo/JsonLd'
 import type { AnalyticsEvent } from '@/lib/analytics/events'
 import { getHomepagePrototypes } from '@/lib/public-content/prototypes'
+import { createPageMetadata, siteDescription } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
+
+export const metadata = createPageMetadata({
+  description: siteDescription,
+  path: '/',
+})
+
+const homepageStructuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@id': 'https://saberistic.com/#website',
+      '@type': 'WebSite',
+      name: 'Saberistic',
+      publisher: { '@id': 'https://saberistic.com/#organization' },
+      url: 'https://saberistic.com/',
+    },
+    {
+      '@id': 'https://saberistic.com/#organization',
+      '@type': 'Organization',
+      founder: { '@id': 'https://saberistic.com/#amir-saber-sharifi' },
+      logo: {
+        '@type': 'ImageObject',
+        contentUrl: 'https://saberistic.com/brand/saberistic-mark.png',
+        height: 400,
+        width: 400,
+      },
+      name: 'Saberistic',
+      sameAs: ['https://github.com/saberistic-team'],
+      url: 'https://saberistic.com/',
+    },
+    {
+      '@id': 'https://saberistic.com/#amir-saber-sharifi',
+      '@type': 'Person',
+      name: 'AmirSaber Sharifi',
+      sameAs: ['https://github.com/saberistic'],
+      url: 'https://saberistic.com/#about',
+      worksFor: { '@id': 'https://saberistic.com/#organization' },
+    },
+  ],
+}
 
 const situations = [
   {
@@ -103,6 +145,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={homepageStructuredData} id="homepage-structured-data" />
       <section className="hero">
         <div className="shell hero__grid">
           <div className="hero__copy">

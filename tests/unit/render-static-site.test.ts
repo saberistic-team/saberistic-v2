@@ -49,6 +49,25 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).toContain('name: Content-Security-Policy')
   })
 
+  it('preserves equivalent legacy URLs and caches the committed brand asset safely', () => {
+    for (const source of [
+      '/about',
+      '/brief',
+      '/case-studies',
+      '/diagnostic',
+      '/services',
+      '/work/architecture-diagnostic',
+      '/work/baxus',
+      '/work/brave',
+      '/work/eternis',
+    ]) {
+      expect(staticService).toContain(`source: ${source}`)
+    }
+
+    expect(staticService).toContain('path: /brand/*')
+    expect(staticService).toContain('max-age=86400, stale-while-revalidate=604800')
+  })
+
   it('queues a daily refresh without committing the secret hook value', () => {
     expect(dailyWorkflow).toContain("cron: '35 11 * * *'")
     expect(dailyWorkflow).toContain('secrets.STATIC_SITE_DEPLOY_HOOK_URL')

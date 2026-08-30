@@ -27,6 +27,7 @@ html {
   background: var(--canvas);
   color: var(--ink);
   scroll-behavior: smooth;
+  scrollbar-gutter: stable;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -169,7 +170,7 @@ h3 {
 }
 
 .wordmark {
-  align-items: baseline;
+  align-items: center;
   display: inline-flex;
   flex: 0 0 auto;
   font-family: var(--font-mono);
@@ -178,6 +179,19 @@ h3 {
   gap: 0.8rem;
   letter-spacing: 0.08em;
   text-decoration: none;
+}
+
+.wordmark__mark {
+  display: block;
+  flex: 0 0 auto;
+  height: 2rem;
+  width: 2rem;
+}
+
+.wordmark__copy {
+  align-items: baseline;
+  display: inline-flex;
+  gap: 0.8rem;
 }
 
 .wordmark__descriptor {
@@ -203,9 +217,12 @@ h3 {
 }
 
 .site-nav__link {
+  align-items: center;
   color: var(--muted);
+  display: inline-flex;
   font-size: 0.84rem;
   font-weight: 600;
+  min-height: 2.75rem;
   text-decoration: none;
 }
 

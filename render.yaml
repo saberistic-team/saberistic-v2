@@ -83,7 +83,37 @@ projects:
               - path: /_next/static/*
                 name: Cache-Control
                 value: public, max-age=31536000, immutable
+              - path: /brand/*
+                name: Cache-Control
+                value: public, max-age=86400, stale-while-revalidate=604800
             routes:
+              - type: redirect
+                source: /about
+                destination: '/#about'
+              - type: redirect
+                source: /services
+                destination: '/#services'
+              - type: redirect
+                source: /case-studies
+                destination: '/#work'
+              - type: redirect
+                source: /brief
+                destination: '/readiness/?next=architecture-diagnostic'
+              - type: redirect
+                source: /diagnostic
+                destination: '/readiness/?next=architecture-diagnostic'
+              - type: redirect
+                source: /work/architecture-diagnostic
+                destination: '/readiness/?next=architecture-diagnostic'
+              - type: redirect
+                source: /work/brave
+                destination: '/#work'
+              - type: redirect
+                source: /work/baxus
+                destination: '/#work'
+              - type: redirect
+                source: /work/eternis
+                destination: '/#work'
               - type: redirect
                 source: /admin
                 destination: https://saberistic-web-staging.onrender.com/admin

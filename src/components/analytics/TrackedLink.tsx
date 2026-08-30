@@ -13,13 +13,18 @@ type TrackedAnchorProps = ComponentProps<'a'> & {
   analyticsEvent: AnalyticsEvent
 }
 
-export function TrackedLink({ analyticsEvent, onClick, ...props }: TrackedLinkProps) {
+export function TrackedLink({
+  analyticsEvent,
+  onClick,
+  prefetch = false,
+  ...props
+}: TrackedLinkProps) {
   function handleClick(event: MouseEvent<HTMLAnchorElement>) {
     trackAnalyticsEvent(analyticsEvent)
     onClick?.(event)
   }
 
-  return <Link {...props} onClick={handleClick} />
+  return <Link {...props} onClick={handleClick} prefetch={prefetch} />
 }
 
 export function TrackedAnchor({ analyticsEvent, onClick, ...props }: TrackedAnchorProps) {

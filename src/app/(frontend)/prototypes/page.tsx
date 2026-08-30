@@ -3,14 +3,16 @@ import type { Metadata } from 'next'
 import { PrototypeFilters } from '@/components/prototypes/PrototypeFilters'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { getPublicPrototypes } from '@/lib/public-content/prototypes'
+import { createPageMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   description:
     'Small products and technical experiments, with their status, decisions, and limitations left visible.',
+  path: '/prototypes/',
   title: 'Prototypes',
-}
+})
 
 export default async function PrototypesPage() {
   const result = await getPublicPrototypes()
@@ -31,7 +33,10 @@ export default async function PrototypesPage() {
         </p>
       </section>
 
-      <section aria-label="Prototype catalog" className="shell catalog-section">
+      <section aria-labelledby="prototype-catalog-heading" className="shell catalog-section">
+        <h2 className="sr-only" id="prototype-catalog-heading">
+          Prototype catalog
+        </h2>
         {result.state === 'ready' ? <PrototypeFilters prototypes={result.items} /> : null}
 
         {result.state === 'empty' ? (

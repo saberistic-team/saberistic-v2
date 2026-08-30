@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { guardUmamiPayload } from '@/lib/analytics/privacy'
 
@@ -11,6 +11,10 @@ const pageview = {
   url: '/readiness?profile=payments#evidence',
   website: '94db1cb1-74f4-4a40-ad6c-962362670409',
 }
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('Umami before-send privacy guard', () => {
   it('keeps a normal pageview while removing query, hash, and referrer paths', () => {
@@ -102,6 +106,37 @@ describe('Umami before-send privacy guard', () => {
         url: '/',
       }),
     ).toBe(false)
+  })
+
+  it('records an honest zero CLS when a supported browser omits the zero-value field', () => {
+    vi.stubGlobal('PerformanceObserver', {
+      supportedEntryTypes: ['layout-shift'],
+    })
+
+    expect(
+      guardUmamiPayload('performance', {
+        ...pageview,
+        duration: 3200,
+        lcp: 1200,
+        url: '/',
+      }),
+    ).toMatchObject({ cls: 0, duration: 3200, lcp: 1200 })
+  })
+
+  it('leaves missing CLS unknown when the browser does not report layout-shift support', () => {
+    vi.stubGlobal('PerformanceObserver', {
+      supportedEntryTypes: ['largest-contentful-paint'],
+    })
+
+    const result = guardUmamiPayload('performance', {
+      ...pageview,
+      duration: 3200,
+      lcp: 1200,
+      url: '/',
+    })
+
+    expect(result).not.toBe(false)
+    expect(result).not.toHaveProperty('cls')
   })
 
   it('does not mutate the tracker payload supplied by Umami', () => {

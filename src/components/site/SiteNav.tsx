@@ -29,6 +29,7 @@ export function SiteNav() {
               aria-current={isCurrent(pathname, link.href) ? 'page' : undefined}
               className="site-nav__link"
               href={link.href}
+              prefetch={false}
             >
               {link.label}
             </Link>

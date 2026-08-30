@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
 
+import { createPageMetadata } from '@/lib/seo'
+
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   description:
     'How Saberistic uses self-hosted, privacy-oriented analytics and what is deliberately excluded.',
+  path: '/privacy/',
   title: 'Privacy and analytics',
-}
+})
 
 const measuredInteractions = [
   'Clicks on the primary readiness, prototype, and architecture-diagnostic calls to action.',

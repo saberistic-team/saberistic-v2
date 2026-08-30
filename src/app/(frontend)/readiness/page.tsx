@@ -1,14 +1,16 @@
 import type { Metadata } from 'next'
 
 import { TrackedLink } from '@/components/analytics/TrackedLink'
+import { createPageMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   description:
     'A deterministic preview of the Saberistic Production Readiness Check and its AI boundary.',
+  path: '/readiness/',
   title: 'Production Readiness Preview',
-}
+})
 
 type ReadinessPageProps = {
   searchParams: Promise<{ next?: string | string[]; profile?: string | string[] }>
