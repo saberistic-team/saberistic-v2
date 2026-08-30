@@ -50,6 +50,7 @@ The product promise is:
 | [14 — Render Static Site rollout](./14-render-static-site-rollout.md)                                             | Static export contract, CMS-triggered builds, domain transfer, verification, rollback, and operations.                           |
 | [15 — Brand, SEO, Lighthouse, and Web Vitals](./15-brand-seo-lighthouse-and-web-vitals.md)                        | Supplied logo integration, metadata/crawl hardening, Lighthouse evidence, and the Umami CLS correction.                          |
 | [16 — Build Notes and Harness from Scratch](./16-build-notes-and-harness-from-scratch.md)                         | Git-authored journal architecture, first article evidence, SVG/code treatment, analytics, verification, and authoring workflow.  |
+| [17 — TurboPass Rust + Temporal Build Note](./17-turbopass-rust-temporal-build-note.md)                           | FFI bridge removal, compatible token lifecycle, Temporal rotation, local integration harness, evidence, and rollout gates.       |
 
 ## Recommended first release
 
@@ -83,7 +84,12 @@ Git-authored Build Notes journal, RSS feed, and first source-verified Harness fr
 are live on the Static Site without changing the Payload snapshot contract. The article documents
 the Pi/Qwen bootstrap, M0 contracts, failures, passing 40-test result, and incomplete boundaries
 with code and accessible SVG diagrams. Its production Lighthouse median is 99/100/100/100 on mobile
-and 100/100/100/100 on desktop, with CLS 0 on both. The expiring shared database, missing
+and 100/100/100/100 on desktop, with CLS 0 on both. Build Note 002 is implemented locally and
+documents TurboPass at public commit `f18da56`: the exact FFI error-channel constraint, direct use
+of the unchanged Ristretto crate, compatible v1/v2/v3 token lifecycle, PostgreSQL/DynamoDB split,
+secret-free Temporal rotation history, complete local stack, 56 passing Rust tests, and remaining
+production migration gates. Its deployment acceptance is tracked in
+[17](./17-turbopass-rust-temporal-build-note.md). The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and

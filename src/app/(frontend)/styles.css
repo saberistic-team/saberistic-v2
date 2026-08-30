@@ -1708,6 +1708,8 @@ button.button {
 
 .article-code figcaption a {
   color: #dce4ff;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .article-code pre {

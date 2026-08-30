@@ -78,6 +78,19 @@ describe('Umami before-send privacy guard', () => {
     })
 
     expect(
+      guardUmamiPayload('event', {
+        ...pageview,
+        data: { note: 'turbopass-rust-temporal' },
+        name: 'build_note_view',
+        url: '/build-notes/turbopass-rust-temporal/',
+      }),
+    ).toMatchObject({
+      data: { note: 'turbopass-rust-temporal' },
+      name: 'build_note_view',
+      url: '/build-notes/turbopass-rust-temporal',
+    })
+
+    expect(
       guardUmamiPayload('event', { ...pageview, url: '/prototypes/back-then/' }),
     ).toMatchObject({ url: '/prototypes/back-then' })
   })

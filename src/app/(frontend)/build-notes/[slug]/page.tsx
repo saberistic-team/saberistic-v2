@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import type { ComponentType } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
@@ -6,7 +7,8 @@ import { TrackEventOnMount } from '@/components/analytics/TrackEventOnMount'
 import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
-import { formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
+import { TurboPassArticle } from '@/content/build-notes/TurboPass'
+import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -17,24 +19,8 @@ type BuildNotePageProps = {
 
 const articleBySlug = {
   'harness-from-scratch': HarnessFromScratchArticle,
-} as const
-
-const tableOfContents = [
-  ['why-a-harness', 'Why a harness'],
-  ['mental-model', 'Mental model'],
-  ['scope-m0', 'M0 scope'],
-  ['bootstrap', 'Pi + Qwen'],
-  ['repository', 'Repository'],
-  ['task-contract', 'Task contract'],
-  ['events', 'Events'],
-  ['kernel', 'Kernel'],
-  ['policy-and-gate', 'Policy + gate'],
-  ['debugging', 'What broke'],
-  ['verification', 'Verification'],
-  ['limits', 'Current truth'],
-  ['files', 'File guide'],
-  ['next', 'What is next'],
-] as const
+  'turbopass-rust-temporal': TurboPassArticle,
+} as const satisfies Record<(typeof buildNotes)[number]['slug'], ComponentType>
 
 export async function generateMetadata({ params }: BuildNotePageProps): Promise<Metadata> {
   const { slug } = await params
@@ -174,7 +160,7 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
           <p className="eyebrow">IN THIS NOTE</p>
           <nav aria-label="Article contents">
             <ol>
-              {tableOfContents.map(([id, label], index) => (
+              {note.sections.map(([id, label], index) => (
                 <li key={id}>
                   <a href={`#${id}`}>
                     <span>{String(index + 1).padStart(2, '0')}</span>
@@ -193,8 +179,8 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
       <footer className="build-note__footer shell">
         <p className="eyebrow">CONTINUE EXPLORING</p>
         <div>
-          <h2>See the system, then watch it change.</h2>
-          <p>The repository is public, and the next milestone will become the next build note.</p>
+          <h2>{note.footerTitle}</h2>
+          <p>{note.footerSummary}</p>
         </div>
         <TrackedAnchor
           analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
@@ -202,7 +188,7 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
           href={note.repositoryUrl}
           rel="external"
         >
-          Open Harness Platform <span aria-hidden="true">↗</span>
+          Open {note.repositoryLabel} <span aria-hidden="true">↗</span>
         </TrackedAnchor>
       </footer>
     </article>
