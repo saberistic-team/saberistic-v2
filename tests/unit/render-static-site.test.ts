@@ -18,7 +18,8 @@ const staticService = blueprint.slice(
 describe('Render Static Site Blueprint', () => {
   it('builds the separate remote-content export and publishes only its out directory', () => {
     expect(staticService).toContain('runtime: static')
-    expect(staticService).toContain('pnpm install --frozen-lockfile && pnpm build:site')
+    expect(staticService).toContain('buildCommand: pnpm build:site')
+    expect(staticService).not.toContain('corepack enable')
     expect(staticService).toContain('staticPublishPath: ./apps/site/out')
     expect(staticService).toContain('value: https://saberistic-web-staging.onrender.com')
     expect(staticService).toContain('value: remote')

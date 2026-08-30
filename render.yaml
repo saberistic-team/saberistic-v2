@@ -45,7 +45,7 @@ projects:
             name: saberistic-site-staging
             runtime: static
             autoDeployTrigger: checksPass
-            buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build:site
+            buildCommand: pnpm build:site
             staticPublishPath: ./apps/site/out
             envVars:
               - key: PAYLOAD_PUBLIC_URL
