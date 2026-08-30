@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 
+export const dynamic = 'force-dynamic'
+
 export const metadata: Metadata = {
   description:
     'How Saberistic uses self-hosted, privacy-oriented analytics and what is deliberately excluded.',
