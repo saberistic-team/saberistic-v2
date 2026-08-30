@@ -222,10 +222,10 @@ Start this only after Workstream 2A is green; it is the “full schemas and cont
 
 ### Tasks
 
-- Provision the pinned Umami service for validation. The implemented zero-cost staging exception shares Payload's Free PostgreSQL instance through a restricted role and `umami` schema; production still requires a dedicated analytics database. Keep the website tracker disabled throughout this disposable staging phase.
-- Set stable secrets, 2FA key, privacy flags, domain filtering, and query/hash exclusion.
-- Change default credentials and enable 2FA.
-- Add the typed event wrapper and exact taxonomy in [05](./05-umami-analytics-implementation.md).
+- Provision the pinned Umami service for validation. The implemented zero-cost staging exception shares Payload's Free PostgreSQL instance through a restricted role and `umami` schema; production still requires a dedicated analytics database. The owner later authorized temporary public tracking on this disposable data store as a documented exception.
+- Set stable secrets, the derived 2FA key, privacy guard, domain filtering, and query/hash exclusion. Completed for temporary activation.
+- Change default credentials and enable 2FA. Completed under supervised administrator access.
+- Add the typed event wrapper and exact taxonomy in [05](./05-umami-analytics-implementation.md). Completed for the truthful interactions currently present in the UI.
 - Keep `identify()` and session replay disabled.
 - Verify SPA navigation, funnel events, ad/tracker failure behavior, and no PII leakage.
 - Document retention, upgrade, backup, and dashboard access.

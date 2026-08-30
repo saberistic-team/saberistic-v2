@@ -17,6 +17,8 @@
     "migrate:create": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:create",
     "migrate:status": "cross-env NODE_OPTIONS=--no-deprecation payload migrate:status",
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
+    "render:demo": "node scripts/render-warm.mjs --minutes 60",
+    "render:warm": "node scripts/render-warm.mjs",
     "seed": "cross-env NODE_OPTIONS=--no-deprecation tsx src/scripts/seed.ts",
     "seed:preview": "cross-env NODE_OPTIONS=--no-deprecation SEED_PUBLIC_CONCEPTS=true tsx src/scripts/seed.ts",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",

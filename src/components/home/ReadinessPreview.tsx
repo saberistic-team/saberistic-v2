@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { TrackedLink } from '@/components/analytics/TrackedLink'
 
 const profiles = [
   {
@@ -34,7 +34,14 @@ export function ReadinessPreview({ compact = false }: { compact?: boolean }) {
         <legend>Which profile is closest to what you’re building?</legend>
         <div className="readiness-options">
           {profiles.map((profile, index) => (
-            <Link href={profile.href} key={profile.href}>
+            <TrackedLink
+              analyticsEvent={{
+                data: { entry: 'home_preview', mode: 'example' },
+                name: 'readiness_started',
+              }}
+              href={profile.href}
+              key={profile.href}
+            >
               <span aria-hidden="true" className="readiness-options__index">
                 0{index + 1}
               </span>
@@ -43,7 +50,7 @@ export function ReadinessPreview({ compact = false }: { compact?: boolean }) {
                 <small>{profile.description}</small>
               </span>
               <span aria-hidden="true">→</span>
-            </Link>
+            </TrackedLink>
           ))}
         </div>
       </fieldset>

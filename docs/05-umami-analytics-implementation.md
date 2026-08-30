@@ -22,19 +22,19 @@ The repository's `render.yaml` now declares Umami staging inside the existing `s
 
 The shared database is a staging-only cost decision. It avoids silently starting a paid Render database while improving credential and table separation through a dedicated role and schema. It does not provide workload, storage, backup, expiry, or failure-domain isolation.
 
-The service is live at <https://saberistic-umami-staging.onrender.com>; the resource and acceptance evidence are recorded in [11](./11-live-staging-deployment.md). This proves the disposable staging stack, not production analytics readiness. The production site has no tracker environment variables or Website ID and emits no analytics. Do not create or connect the `saberistic.com` Website record until Umami has its own production-grade database and the privacy launch checks in this document pass.
+The service is live at <https://saberistic-umami-staging.onrender.com>; the resource and acceptance evidence are recorded in [11](./11-live-staging-deployment.md). On 2026-08-30, the owner explicitly authorized temporary public collection on this shared database despite the earlier production launch gate. This exception does not make the database durable or production-grade and does not waive the dedicated-database, retention, backup/restore, abuse-monitoring, or upgrade work.
 
-The accepted staging deploy runs commit `59791ec6dc0a98bcc4cecae879943fcc881e1163` as Render deploy `dep-da9gs43l550s739vpvj0`. It completed 24 upstream migrations, returned HTTP 200 from `/api/heartbeat`, and rejected both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts with HTTP 401. The generated administrator secret was not inspected during automated acceptance. First supervised login, 2FA enablement, retention, backup, and upgrade acceptance remain operator work.
+The `Saberistic Production` Website record has the public ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`. The website configuration uses `https://umami.saberistic.com/script.js` and the exact tracker-domain allowlist `saberistic.com,www.saberistic.com`. Render verified the custom-domain DNS record, issued its certificate, and returned HTTP 200 from the custom-host heartbeat and tracker script on 2026-08-30. Collection acceptance still requires the deployed website to render the exact configuration and deliver sanitized live pageview and custom-event data. The supervised administrator login is complete and 2FA is enabled. Analytics retention, backup/restore, and upgrade acceptance remain incomplete.
 
 ## Deployment shape
 
 Run Umami as a separate Render web service using an official, pinned container image. Free staging shares the existing Render Postgres instance through a dedicated restricted role and schema; production uses a dedicated database in the same region.
 
 ```text
-Future approved browser collection (currently disabled)
+Owner-approved temporary browser collection
   ├─ saberistic.com
-  ├─ selected prototype apps
-  └─ dedicated analytics host/script.js
+  ├─ www.saberistic.com
+  └─ umami.saberistic.com/script.js
                     │
                     ▼
              Umami web service
@@ -56,7 +56,7 @@ The separate database is the recommended production choice. It isolates migratio
 - The first migration inserts Umami's documented default administrator at a fixed ID. Before any HTTP server starts, the wrapper locks that row, renames it to `saberistic_admin`, replaces the public bcrypt hash with the stable Render-generated `UMAMI_ADMIN_PASSWORD`, and verifies the username, role, active state, and password. Only then does it spawn the explicit upstream `sh scripts/start-docker.sh` command as `nextjs`. Any migration, update, or verification failure prevents the server from binding.
 - The restricted role has no superuser, database-creation, role-creation, replication, row-security-bypass, or inheritance capability. It is limited to ten connections and receives only `CONNECT` plus the required rights in `umami`. Before reusing a role, the wrapper requires the exact original flags, connection limit, no password expiry, no global or per-database role settings, and a successful login with the generated credential. It rejects privilege-bearing or unrelated memberships; when a non-superuser PostgreSQL 18 bootstrap account with `CREATEROLE` receives the automatic creator grant, that is the only tolerated reverse membership, and only when `ADMIN` is true, `SET` and `INHERIT` are false, and the grantor is a superuser. The wrapper also fails closed if the role owns a database, extension, global object, or object outside `umami` (except TOAST objects tied to its `umami` tables); has an explicit database, schema, relation, column, routine, type, or global-object grant outside the expected boundary; or has cross-schema default privileges. This materially limits database privileges but cannot isolate CPU, memory, storage, privileges inherited from PostgreSQL's implicit `PUBLIC` role, or catalog state in another database that is not visible from the connected database.
 - The official image defaults to `0.0.0.0:3000`; set/test Render's service port as `3000` rather than assuming the native-runtime default. Use `/api/heartbeat` as the HTTP health-check path.
-- Reveal `UMAMI_ADMIN_PASSWORD` in the Render Dashboard only for the supervised first `saberistic_admin` login. Enable and verify 2FA, store the secret in the approved password manager, and create additional individually named administrators only when needed.
+- The supervised first `saberistic_admin` login and 2FA enablement are complete. Keep the generated administrator credential and 2FA recovery material in the approved password manager, and create additional individually named administrators only when needed.
 - The fixed bootstrap row and generated secret are a startup invariant. The wrapper restores the `saberistic_admin` username or generated password after drift; deleting, disabling, or demoting that row makes startup fail closed. It compares before hashing, so an ordinary restart does not change the bcrypt salt or invalidate sessions.
 - Do not expose the database externally unless an approved administrative or backup task requires it.
 - Verify PostgreSQL reports a UTC timezone, as Umami recommends.
@@ -93,43 +93,58 @@ Keep the default tracker path unless there is a concrete reason to change it. Re
 
 ## Render staging plans and cost boundary
 
-The Umami web service uses Render's Free plan for initial staging. This is useful for validating the stack, but it spins down after idle periods, shares the workspace's monthly Free instance-hour allowance, and can lose pageviews while waking. Upgrade it to an always-on paid web plan before treating it as production analytics.
+The Umami web service uses Render's Free plan for initial staging. Render spins a Free web service down after 15 minutes without inbound HTTP or WebSocket traffic. It can lose pageviews while waking and shares the workspace's 750 monthly Free instance hours with the website. Upgrade Umami to an always-on paid web plan before treating it as continuously available production analytics.
 
 Render permits only one active Free Postgres database per workspace, and `saberistic-payload-db-staging` already occupies it. A second isolated database would therefore start charges as soon as the Blueprint was synced. Free staging instead uses the existing instance's `umami` schema. The Umami child no longer receives the Payload owner credential, but the applications still share compute, storage, connection capacity, expiry, backup policy, and the database failure domain. Free Render Postgres expires after 30 days unless upgraded, and this staging database is currently scheduled to expire on 2026-09-27. Do not treat it as durable analytics storage.
 
-The public analytics ingestion endpoint can be spoofed or flooded. Even with the ten-connection restricted role, expensive queries or excessive events can exhaust shared database resources, consume its 1 GB limit, or degrade Payload. PostgreSQL `PUBLIC` grants and any security-definer functions created outside `umami` are also a shared-database boundary the wrapper cannot fully neutralize without risking Payload. Keep the official pinned image plugin-free, expose no production tracker, and regard all staging analytics as disposable.
+The public analytics ingestion endpoint can be spoofed or flooded. Even with the ten-connection restricted role, expensive queries or excessive events can exhaust shared database resources, consume its 1 GB limit, or degrade Payload. PostgreSQL `PUBLIC` grants and any security-definer functions created outside `umami` are also a shared-database boundary the wrapper cannot fully neutralize without risking Payload. Keep the official pinned image plugin-free and regard every event collected under the owner-approved temporary exception as disposable.
 
-Before production traffic, provision a dedicated Umami database, point the bootstrap owner reference at it (or simplify the wrapper after a separate security review), migrate or intentionally reset staging analytics data, and verify backup/restore independently. Only then create the `saberistic.com` Website record and add its script URL, Website ID, and exact domain allowlist to the web service. Never change this staging exception into a production default merely to save cost.
+Before this temporary collection is described as production-grade, provision a dedicated Umami database, point the bootstrap owner reference at it (or simplify the wrapper after a separate security review), migrate or intentionally reset staging analytics data, and verify backup/restore independently. Never turn this staging exception into the permanent data architecture merely to save cost.
+
+### Local demo warm-up
+
+Use the repository helper only to prepare for a review or a bounded live demo:
+
+```bash
+pnpm render:warm
+pnpm render:demo
+pnpm render:demo -- --minutes 90
+```
+
+`pnpm render:warm` requests the website readiness endpoint and the Umami heartbeat once, retrying while a cold service starts. `pnpm render:demo` defaults to a 60-minute window, repeats that check every 10 minutes, and has a hard maximum of 120 minutes. The helper deliberately is not a permanent anti-sleep daemon. Keeping both Free services awake continuously would consume two instance hours per wall-clock hour, or about 1,440 hours in a 30-day month, which exceeds the workspace's shared 750-hour allowance. Render health checks also do not keep an already spun-down service awake. Continuous availability requires an appropriate paid plan rather than an indefinite local loop.
 
 ## Blueprint sync runbook and consequences
 
 1. Review Render's proposed change set before syncing. It should add exactly one Free web service and no database to the existing staging environment; it must not replace either Payload resource. No Payload migration is required because the entrypoint owns schema bootstrap.
-2. Confirm the web service change removes `UMAMI_SCRIPT_URL`, `UMAMI_WEBSITE_ID`, and `UMAMI_TRACK_DOMAINS`. Also remove any manually managed equivalents in Render; Blueprint removal cannot be assumed to clean up unrelated manual variables.
+2. Confirm the website service has `UMAMI_SCRIPT_URL=https://umami.saberistic.com/script.js`, `UMAMI_WEBSITE_ID=8bdad921-34a9-43cb-bc70-9e1c71efa911`, and `UMAMI_TRACK_DOMAINS=saberistic.com,www.saberistic.com`. The Website ID is public; none of the Umami administrator, application, database, or 2FA secrets belongs in the website service.
 3. Sync the Blueprint. Render will generate stable values for `APP_SECRET`, `UMAMI_DATABASE_PASSWORD`, `UMAMI_ADMIN_PASSWORD`, and `UMAMI_TWO_FACTOR_SEED`, expose the existing database's private owner URL only as `UMAMI_DATABASE_ADMIN_URL`, build the derived image, and attempt the first Umami deploy. The wrapper creates the restricted role with its final flags/password, creates the schema without any `ALTER ROLE` operation, proves the generated role credential, derives the valid 2FA key, runs the upstream migrations, and renames/secures the fixed administrator before starting HTTP.
-4. Confirm `/api/heartbeat`, inspect startup logs for the restricted role and `umami` migration target, reveal `UMAMI_ADMIN_PASSWORD` for the supervised `saberistic_admin` login, enable and test 2FA, and store the credential securely.
+4. Confirm `/api/heartbeat`, inspect startup logs for the restricted role and `umami` migration target, verify the existing `saberistic_admin` login and 2FA challenge, and keep the credential and recovery material securely stored.
 5. Verify in PostgreSQL that the Umami tables are owned by `saberistic_umami`, that the role has exact safe flags and no privilege-bearing memberships, role settings, cross-schema ownership, explicit grants, or default grants, and that it cannot read Payload tables in `public`. The PostgreSQL 18 automatic creator membership may exist only with `ADMIN=true`, `SET=false`, and `INHERIT=false`. Deliberate credential drift or cross-schema contamination must stop before the HTTP listener, while an unchanged second start must remain healthy. Verify the database timezone is UTC and perform the acceptance tests below.
-6. Leave `saberistic.com` without an Umami Website record or tracker variables. The staging dashboard can be exercised directly without collecting production visits.
+6. Verify `https://umami.saberistic.com/script.js` over valid TLS, confirm the rendered Saberistic page contains the exact Website ID and domain allowlist, exercise one automatic pageview and one allowlisted custom event, and verify both in the Umami dashboard without sending free text or personal data.
 
 `autoDeployTrigger: checksPass` makes Git-triggered Umami deploys wait for repository checks. Its `buildFilter` limits those automatic deploys to `ops/umami/**`; changes only to analytics documentation or unrelated application code do not rebuild Umami. Blueprint configuration changes are still evaluated when the Blueprint is synced and can update or redeploy declared services regardless of the code-path filter. Sync can therefore affect the existing web service as well as adding Umami; review the proposed changes every time.
 
 Future Umami upgrades require changing the pinned base image in `ops/umami/Dockerfile`, reviewing the database migration, deliberately updating `ops/umami/package.json` and regenerating its lockfile with the pinned pnpm version if bootstrap dependencies change, rebuilding with the frozen lockfile, syncing the Blueprint, and verifying the deployment. Blueprint sync never deletes an existing resource merely because its definition was removed; deliberate removal requires deleting it from the file and then deleting the live resource separately in Render. Dropping the shared `umami` schema deletes the analytics data, so export it first.
 
-## Website-record launch gate
+## Website record and temporary launch exception
 
-No Website ID is configured by this Blueprint. In particular, the `saberistic.com` collection remains disabled while Umami shares Payload's expiring Free database. Creating a public Website record now would expose an unauthenticated ingestion path that can consume the same finite storage and compute needed by the CMS.
+The earlier gate required a dedicated analytics database, backup/restore, a retention procedure, privacy disclosure, and abuse monitoring before public collection. On 2026-08-30, the owner explicitly accepted activating analytics earlier for launch validation while preserving those items as unresolved production requirements.
 
-After a dedicated analytics database, backups, retention procedure, privacy disclosure, and abuse monitoring are ready, create `Saberistic Production` for `saberistic.com` and the approved `www` hostname. Add one separate record per mature prototype when it needs its own ownership and reporting boundary. Use a non-production staging property only during deliberate delivery tests, with an exact staging hostname allowlist and no production domain.
+The resulting `Saberistic Production` record is scoped to `saberistic.com` and `www.saberistic.com` and has public Website ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`. Do not reuse it for preview hosts or independent prototype applications. Add one separate record per mature prototype only when it needs its own ownership and reporting boundary.
+
+The exception increases risk: the unauthenticated ingestion path can consume finite compute and storage shared with Payload, detailed analytics has no automatic deletion policy, and the Free database expires on 2026-09-27 with no backup. The tracker therefore remains a directional launch signal rather than a security, billing, audit, or durable business record.
 
 ## Next.js tracker integration
 
-This section is the future integration plan; it is intentionally inactive until the website-record launch gate is satisfied. At that point, load the tracker with Next.js `Script` after the page becomes interactive and configure:
+The active frontend integration loads the tracker with Next.js `Script` after the page becomes interactive and configures:
 
-- the production Umami script URL;
-- the Website ID as a public environment value;
-- `data-domains` with exact production hostnames so preview/staging traffic is not mixed into production;
+- `https://umami.saberistic.com/script.js` as the analytics script URL;
+- public Website ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`;
+- `data-domains="saberistic.com,www.saberistic.com"` so preview/staging traffic is not mixed into this property;
 - `data-exclude-search="true"` and `data-exclude-hash="true"` so query/hash values cannot leak tokens or personal data;
-- `data-do-not-track="true"` if the final privacy choice is to honor the browser setting;
-- a reviewed `data-before-send` callback that cancels or normalizes events when URL path, page title, or referrer contains disallowed query values, tokens, personal data, or unexpected high-cardinality content;
+- `data-do-not-track="true"` to honor the browser setting;
+- a reviewed `data-before-send` callback registered before tracker hydration that rejects unapproved hosts and routes, strips query/hash components, reduces a valid referrer to its origin, and cancels invalid titles, performance data, and custom events;
+- `data-performance="true"` for validated standard web-performance measurements; and
 - automatic SPA pageview handling unless tests show duplicate navigation events.
 
 The Website ID is not a secret. The Umami login, API credentials, database URL, and app secret are secrets.
@@ -140,63 +155,47 @@ Design public routes and page titles so they never contain email addresses, name
 
 Do not call `umami.identify()` on this marketing site. Do not load Umami's optional session-replay recorder; replay can capture interactions that are intentionally out of scope around the readiness and lead forms.
 
-Centralize custom events in a typed wrapper rather than calling `window.umami` throughout components:
+Custom events are centralized in a typed, runtime-validated wrapper rather than calling `window.umami` throughout components. The implemented contract is:
 
 ```ts
 type AnalyticsEvent =
+  | { name: 'primary_cta_clicked'; data: { cta: string; placement: string } }
+  | { name: 'service_viewed'; data: { service: string } }
+  | {
+      name: 'prototype_card_clicked'
+      data: { prototype: string; status: string; placement: 'home' | 'index' }
+    }
   | { name: 'prototype_view'; data: { prototype: string; status: string } }
   | { name: 'prototype_launch'; data: { prototype: string; placement: string } }
-  | { name: 'readiness_started'; data: { mode: 'example' | 'custom'; entry: string } }
-  | {
-      name: 'readiness_completed'
-      data: { readiness_level: string; policy_version: string; latency_bucket: string }
-    }
+  | { name: 'prototype_source_clicked'; data: { prototype: string } }
+  | { name: 'readiness_started'; data: { mode: 'example'; entry: string } }
 ```
 
-Generate TypeScript types and runtime validation from one event contract. The wrapper should no-op when the tracker is unavailable, reject undeclared properties, constrain values to enums/known public slugs and short patterns, enforce length/cardinality limits, and never make product behavior depend on analytics success. TypeScript alone is not a privacy boundary because arbitrary browser values can still reach Umami. The `data-before-send` callback is a second line of defense, not the canonical validator.
+The runtime validator requires exact keys, constrains CTA, placement, service, readiness-entry, and status values to small enums, constrains prototype values to short public-slug syntax, and no-ops when Umami is unavailable. It rejects undeclared properties, and product behavior never depends on analytics success. TypeScript alone is not a privacy boundary because arbitrary browser values can still reach Umami. The `data-before-send` callback provides an independent second line of defense.
 
-Emit `readiness_completed` exactly once, only after a validated deterministic result (with or without the AI wording enhancement) has rendered successfully to the visitor. It is therefore the canonical “report viewed” event; `readiness_report_downloaded` measures the separate print/download action and must not be used as a proxy for viewing.
+The present readiness experience is a deterministic preview, so it emits only `readiness_started` with `mode=example` and an allowlisted entry point. Completion, report, handoff, contact, diagnostic-submission, and AI-result events remain unimplemented until those truthful product states exist.
 
 ## Event taxonomy
 
 Umami event names are limited to 50 characters. Use stable snake_case names.
 
-### Navigation and conversion
+### Implemented events
 
-| Event                  | Allowed properties                        |
-| ---------------------- | ----------------------------------------- |
-| `primary_cta_clicked`  | `cta`, `placement`                        |
-| `service_viewed`       | `service`                                 |
-| `diagnostic_started`   | `source`                                  |
-| `diagnostic_submitted` | `source`, `readiness_level`               |
-| `contact_started`      | `service_interest`                        |
-| `contact_submitted`    | `service_interest`                        |
-| `contact_failed`       | `service_interest`, generic `error_class` |
+| Event                      | Allowed properties                 | Truthful trigger                                                               |
+| -------------------------- | ---------------------------------- | ------------------------------------------------------------------------------ |
+| `primary_cta_clicked`      | `cta`, `placement`                 | An allowlisted primary CTA is clicked.                                         |
+| `service_viewed`           | `service`                          | One of the three named homepage service links is followed.                     |
+| `prototype_card_clicked`   | `prototype`, `status`, `placement` | A public prototype card is opened from the homepage or index.                  |
+| `prototype_view`           | `prototype`, `status`              | A public prototype detail view mounts, deduplicated across development mounts. |
+| `prototype_launch`         | `prototype`, `placement`           | A visitor follows an approved prototype launch link.                           |
+| `prototype_source_clicked` | `prototype`                        | A visitor follows a public prototype source link.                              |
+| `readiness_started`        | `mode`, `entry`                    | A fixed readiness example is selected; `mode` is always `example`.             |
 
-`contact_*` is exclusively the direct scoped-inquiry flow backed by `contact-requests`; `service_interest` is allowlisted to `prototype_to_production`, `engineering_rescue`, or `fractional_principal_engineer`. `readiness_handoff_*` is the post-report consented form backed by `diagnostic-requests`. Reserve `diagnostic_*` for the paid **Architecture Diagnostic** booking/request flow and emit `diagnostic_submitted` only after the chosen fulfillment integration can confirm success; do not infer a paid submission from a CTA click. Omit `readiness_level` when the diagnostic did not originate from a readiness result.
+Allowed property values are enums or validated public slugs. Search/filter text, selected readiness profile, full links, internal IDs, and arbitrary component state are not event properties. Automatic App Router pageviews remain separate from custom events; the application does not send an extra manual pageview during navigation.
 
-### Prototype hub
+### Reserved, not implemented
 
-| Event                        | Allowed properties                 |
-| ---------------------------- | ---------------------------------- |
-| `prototype_card_clicked`     | `prototype`, `status`, `placement` |
-| `prototype_view`             | `prototype`, `status`              |
-| `prototype_launch`           | `prototype`, `placement`           |
-| `prototype_source_clicked`   | `prototype`                        |
-| `prototype_feedback_started` | `prototype`                        |
-
-### Readiness check
-
-| Event                         | Allowed properties                                    |
-| ----------------------------- | ----------------------------------------------------- |
-| `readiness_started`           | `mode`, `entry`                                       |
-| `readiness_section_completed` | `section` as a small integer/string                   |
-| `readiness_completed`         | `readiness_level`, `latency_bucket`, `policy_version` |
-| `readiness_blocked`           | generic `guardrail_category`                          |
-| `readiness_failed`            | generic `error_class`, `fallback_used`                |
-| `readiness_report_downloaded` | `readiness_level`                                     |
-| `readiness_handoff_started`   | `readiness_level`                                     |
-| `readiness_handoff_submitted` | `readiness_level`                                     |
+Future flows may add `readiness_completed`, readiness handoff, contact, diagnostic-submission, or feedback events only when the corresponding product state and backend success signal exist. `contact_*` is reserved for a direct scoped-inquiry flow, `readiness_handoff_*` for a post-report consented flow, and `diagnostic_*` for a real Architecture Diagnostic booking/request flow. A CTA click is never reported as a submitted form, completed readiness result, paid diagnostic, or qualified conversation.
 
 Never send:
 
@@ -208,7 +207,9 @@ Never send:
 - full referrer/query strings that may contain tokens or personal data;
 - repository, document, or internal service identifiers.
 
-## Funnels
+## Planned funnels
+
+Only pageviews, CTA/service discovery, the fixed readiness-example start, and prototype interactions are implemented today. The downstream steps below remain the measurement plan for product flows that do not yet exist.
 
 ### Primary utility funnel
 
@@ -266,18 +267,18 @@ Treat repeat visits as approximate within the configured salt-rotation window, n
 
 ## Privacy and disclosure
 
-Umami's current documentation describes it as cookie-free, without cross-site tracking or personal-data collection by default. The Saberistic privacy page must still accurately disclose:
+Umami's current documentation describes it as cookie-free and without cross-site tracking by default. The public `/privacy` page discloses:
 
 - that analytics is self-hosted;
 - what pageview and custom-event metadata is collected;
 - the purpose of collection;
-- the retention decision;
+- the current absence of an automatic retention/deletion policy and backups;
 - whether and how visitors can opt out;
 - that contact and readiness content are not put into analytics.
 
 Privacy compliance depends on actual configuration, jurisdiction, and any added event data. Do not treat a product's “GDPR compliant” marketing statement as a substitute for reviewing the deployed behavior and privacy notice.
 
-Choose and document a retention period before launch. A practical starting policy is to keep detailed analytics only as long as it remains useful for year-over-year comparison. Umami does not document an automatic self-hosted TTL/aggregation feature, so do not promise date-based deletion or aggregation until a supported procedure has been implemented and restore-tested against the pinned version. Assign an owner and make backup expiration consistent with the public retention statement.
+The owner-authorized launch exception does not include a fabricated retention promise. Detailed analytics currently remains in the shared Free database until manual deletion or until the database is replaced or expires on 2026-09-27; there is no automatic TTL, aggregation, or backup. Umami does not document an automatic self-hosted TTL/aggregation feature, so do not promise date-based deletion or aggregation until a supported procedure has been implemented and restore-tested against the pinned version. Assign an owner and make backup expiration consistent with the public retention statement.
 
 Self-hosted Umami data otherwise remains in the operator's database indefinitely. The public Website ID and unauthenticated ingestion endpoint also mean analytics can be spoofed; treat dashboards as product signals, never as a security, billing, or audit ledger.
 
@@ -294,6 +295,8 @@ Self-hosted Umami data otherwise remains in the operator's database indefinitely
 The official container's startup script checks the database and applies Prisma migrations before starting the app. Stage upgrades at one instance and back up first; do not assume a rolling multi-instance start is a coordinated migration strategy.
 
 ## Analytics acceptance criteria
+
+The owner-authorized temporary launch is allowed to proceed while the dedicated database, backup/restore, automatic retention, and always-on service requirements remain open. It is not production-grade acceptance. Valid custom-domain TLS, successful script and ingestion requests, exact rendered tracker attributes, and live delivery of one sanitized pageview and custom event are still required before calling the temporary activation live.
 
 - no events are emitted outside approved hostnames, and the tracker component is omitted from non-analytics environments where possible;
 - normal site and SPA navigation produce one pageview each;
@@ -326,3 +329,5 @@ If analytics is ever embedded inside the Payload admin, protected Umami API call
 - [Render Blueprint specification](https://render.com/docs/blueprint-spec)
 - [Render prebuilt-image deployment behavior](https://render.com/docs/deploying-an-image)
 - [Render Free-plan limits](https://render.com/docs/free)
+- [Render health checks](https://render.com/docs/health-checks)
+- [Render acceptable-use policy](https://render.com/acceptable-use)

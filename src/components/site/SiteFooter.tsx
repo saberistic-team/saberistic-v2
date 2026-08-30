@@ -1,11 +1,14 @@
 import Link from 'next/link'
 
+import { TrackedLink } from '@/components/analytics/TrackedLink'
+
 const footerLinks = [
   { href: '/prototypes', label: 'Prototypes' },
   { href: '/#work', label: 'Work' },
   { href: '/#services', label: 'Services' },
   { href: '/#about', label: 'About' },
   { href: '/readiness', label: 'Readiness preview' },
+  { href: '/privacy', label: 'Privacy' },
 ]
 
 export function SiteFooter() {
@@ -23,9 +26,16 @@ export function SiteFooter() {
               the system, tradeoffs, and next steps.
             </p>
           </div>
-          <Link className="button" href="/readiness?next=architecture-diagnostic">
+          <TrackedLink
+            analyticsEvent={{
+              data: { cta: 'architecture_diagnostic', placement: 'footer' },
+              name: 'primary_cta_clicked',
+            }}
+            className="button"
+            href="/readiness?next=architecture-diagnostic"
+          >
             Start the Architecture Diagnostic
-          </Link>
+          </TrackedLink>
         </section>
 
         <div className="footer-grid">

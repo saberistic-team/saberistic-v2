@@ -83,16 +83,18 @@ Evidence is a durable publication dependency. A material source downgrade or cha
 
 ## Umami application integration
 
-The frontend contains a fail-closed Umami integration for a later production launch. It renders the tracker only when all required configuration is valid:
+The frontend contains a fail-closed Umami integration. It renders the tracker only when all required configuration is valid:
 
 - `UMAMI_SCRIPT_URL` must be HTTPS and cannot contain credentials, query parameters, a fragment, or a root-only path;
 - `UMAMI_WEBSITE_ID` must be a UUID;
 - `UMAMI_TRACK_DOMAINS` is normalized and defaults to `saberistic.com,www.saberistic.com`;
 - invalid or incomplete configuration disables analytics instead of breaking the site.
 
-The tracker loads after the page is interactive, honors Do Not Track, limits collection to the approved domains, excludes URL queries and fragments, and enables Umami's performance measurements. The Website ID is public; database, application, login, and 2FA secrets remain in Render.
+The tracker loads after the page is interactive, honors Do Not Track, limits collection to the approved domains, excludes URL queries and fragments, and enables Umami's performance measurements. A privacy guard registered before tracker hydration constrains page paths, titles, origin-only referrers, performance fields, and custom events. The Website ID is public; database, application, login, and 2FA secrets remain in Render.
 
-No tracker variables or Website ID are declared for the live `saberistic.com` service. Production collection remains disabled until Umami has a dedicated analytics database, backup/retention procedures, privacy disclosure, and abuse monitoring. The shared Free database is not an acceptable ingestion target for public traffic.
+On 2026-08-30, the owner completed Umami login and 2FA setup and explicitly authorized temporary collection on the shared database despite the earlier production launch gate. The `Saberistic Production` record has public Website ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`; the script URL is `https://umami.saberistic.com/script.js`, and the exact domain allowlist is `saberistic.com,www.saberistic.com`. This owner-approved exception does not make the shared database production-grade or remove the backup, retention, abuse-monitoring, expiry, and workload-isolation risks.
+
+The implemented custom-event contract includes `primary_cta_clicked`, `service_viewed`, `prototype_card_clicked`, `prototype_view`, `prototype_launch`, `prototype_source_clicked`, and `readiness_started`. Exact runtime schemas accept only allowlisted enums and public-slug-shaped prototype values. There is no visitor identification or session replay, and the tracker does not receive readiness answers, free text, contact data, prompts/results, search/filter text, full URLs, or internal identifiers.
 
 ## Zero-cost Render staging decision
 
@@ -122,7 +124,7 @@ This is a staging compromise, not the production target. The Umami child does no
 5. Verify the deploy generated all four stable secrets, completed the restricted-role/schema bootstrap and migrations, renamed/secured the fixed administrator, and serves `/api/heartbeat`.
 6. Reveal `UMAMI_ADMIN_PASSWORD` for a supervised `saberistic_admin` login, enable and verify 2FA, and store the credential securely. Do not delete, disable, or demote the fixed bootstrap row; that intentionally makes future startup fail closed.
 7. Verify `saberistic_umami` has exact safe flags, no expiry or role settings, no privilege-bearing memberships, and no ownership, direct ACLs, or default ACLs outside its expected boundary; owns the Umami tables; and cannot read Payload tables in `public`. If PostgreSQL's automatic creator membership is present, require `ADMIN=true`, `SET=false`, and `INHERIT=false`. Confirm an unchanged restart succeeds and credential drift or a deliberately contaminated disposable role fails before HTTP starts without altering the stored role password.
-8. Leave the Saberistic Website record and tracker variables unset. Confirm the frontend emits no analytics and that Umami failure or cold start cannot block the website or a prototype launch.
+8. At the original staging checkpoint, leave the Saberistic Website record and tracker variables unset and confirm the frontend emits no analytics. The later owner-authorized activation is a separate release and must still prove that Umami failure or cold start cannot block the website or a prototype launch.
 
 ## Verification commands
 
@@ -134,7 +136,7 @@ The release is accepted only after the repository's normal `pnpm verify` workflo
 - restricted-role URL construction and rejection of unsafe schema identifiers;
 - frozen bootstrap dependency installation plus fail-closed exact-role, credential-reuse, ownership, direct-ACL, default-ACL, membership, and role-setting audit coverage without `ALTER ROLE`;
 - bootstrap-secret removal, UID/GID boundaries, deterministic 2FA-key derivation, and pre-server administrator password rotation;
-- absence of production tracker variables from the Blueprint.
+- fail-closed tracker environment validation, the exact owner-authorized Blueprint values, the runtime event contract, privacy guard, and no-op behavior when Umami is unavailable.
 
 ## Live staging result
 
@@ -150,4 +152,6 @@ Acceptance evidence includes:
 - live heartbeat HTTP 200 and HTTP 401 for both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts;
 - live website readiness HTTP 200 and rendered homepage HTML with no Umami script or Website ID.
 
-This accepts disposable staging only. No production Website record or tracker configuration exists. The shared Free database expires on 2026-09-27 and has no production backup or workload isolation. The operator must still reveal `UMAMI_ADMIN_PASSWORD` for the first supervised `saberistic_admin` login, enable and verify 2FA, and store recovery material securely. Dedicated analytics Postgres, retention, privacy disclosure, abuse monitoring, backup/restore, and upgrade acceptance remain required before production collection.
+This accepted disposable staging only. On 2026-08-30, the owner subsequently completed supervised login and 2FA, created the public Website record, and authorized temporary tracker activation on the shared database. Render verified DNS and issued TLS for `umami.saberistic.com`; its custom-host heartbeat and tracker script both returned HTTP 200. The website release and sanitized end-to-end event delivery still require live acceptance. The shared Free database expires on 2026-09-27 and has no backup, automatic retention policy, or workload isolation. Dedicated analytics Postgres, retention automation, abuse monitoring, backup/restore, and upgrade acceptance remain required before this is described as production-grade analytics.
+
+For a scheduled demo, `pnpm render:warm` wakes the website and Umami once. `pnpm render:demo` keeps both warm for a default 60-minute window, and `pnpm render:demo -- --minutes 90` selects another bounded window up to a hard 120-minute maximum. The helper is not a permanent anti-sleep daemon: Render Free services spin down after 15 idle minutes, the workspace has 750 shared Free instance hours per month, and two continuously awake services would require about 1,440 hours in a 30-day month.

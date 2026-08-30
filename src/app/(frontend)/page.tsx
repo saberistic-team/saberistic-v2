@@ -1,7 +1,9 @@
 import Link from 'next/link'
 
+import { TrackedLink } from '@/components/analytics/TrackedLink'
 import { HomePrototypeSection } from '@/components/home/HomePrototypeSection'
 import { ReadinessPreview } from '@/components/home/ReadinessPreview'
+import type { AnalyticsEvent } from '@/lib/analytics/events'
 import { getHomepagePrototypes } from '@/lib/public-content/prototypes'
 
 export const dynamic = 'force-dynamic'
@@ -10,28 +12,50 @@ const situations = [
   {
     body: 'Find the gaps between demo and production.',
     cta: 'Check production readiness',
+    event: {
+      data: { cta: 'check_readiness', placement: 'situation' },
+      name: 'primary_cta_clicked',
+    },
     href: '/readiness',
     title: 'I built a prototype',
   },
   {
     body: 'Design and build the critical product path.',
     cta: 'Explore Prototype to Production',
+    event: {
+      data: { service: 'prototype_to_production' },
+      name: 'service_viewed',
+    },
     href: '/#prototype-to-production',
     title: 'I need to ship',
   },
   {
     body: 'Diagnose architecture, reliability, security, or cost.',
     cta: 'Explore Engineering Rescue',
+    event: {
+      data: { service: 'engineering_rescue' },
+      name: 'service_viewed',
+    },
     href: '/#engineering-rescue',
     title: 'Something is broken',
   },
   {
     body: 'Add hands-on principal-level judgment without a permanent hire.',
     cta: 'Explore Fractional Principal Engineer',
+    event: {
+      data: { service: 'fractional_principal_engineer' },
+      name: 'service_viewed',
+    },
     href: '/#fractional-principal-engineer',
     title: 'I need senior leadership',
   },
-]
+] satisfies Array<{
+  body: string
+  cta: string
+  event: AnalyticsEvent
+  href: string
+  title: string
+}>
 
 const offers = [
   {
@@ -91,12 +115,26 @@ export default async function HomePage() {
               survive real users, sensitive data, and operational reality.
             </p>
             <div className="action-row">
-              <Link className="button" href="/readiness">
+              <TrackedLink
+                analyticsEvent={{
+                  data: { cta: 'check_readiness', placement: 'home_hero' },
+                  name: 'primary_cta_clicked',
+                }}
+                className="button"
+                href="/readiness"
+              >
                 Check production readiness
-              </Link>
-              <Link className="button button--quiet" href="/prototypes">
+              </TrackedLink>
+              <TrackedLink
+                analyticsEvent={{
+                  data: { cta: 'explore_prototypes', placement: 'home_hero' },
+                  name: 'primary_cta_clicked',
+                }}
+                className="button button--quiet"
+                href="/prototypes"
+              >
                 Explore prototypes
-              </Link>
+              </TrackedLink>
             </div>
             <p className="trust-line">
               Founder-led engineering experience across Brave, BAXUS, Eternis, and open-source
@@ -125,9 +163,13 @@ export default async function HomePage() {
                 <span aria-hidden="true">0{index + 1}</span>
                 <h3>{situation.title}</h3>
                 <p>{situation.body}</p>
-                <Link className="text-link" href={situation.href}>
+                <TrackedLink
+                  analyticsEvent={situation.event}
+                  className="text-link"
+                  href={situation.href}
+                >
                   {situation.cta} <span aria-hidden="true">→</span>
-                </Link>
+                </TrackedLink>
               </article>
             ))}
           </div>

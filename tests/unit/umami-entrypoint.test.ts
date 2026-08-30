@@ -121,10 +121,17 @@ describe('Umami container entrypoint', () => {
     expect(upstreamStart).toBeGreaterThan(passwordBootstrap)
   })
 
-  it('keeps the production tracker disabled in every Blueprint phase', () => {
-    expect(renderBlueprintSource).not.toContain('UMAMI_WEBSITE_ID')
-    expect(renderBlueprintSource).not.toContain('UMAMI_SCRIPT_URL')
-    expect(renderBlueprintSource).not.toContain('UMAMI_TRACK_DOMAINS')
+  it('pins the production tracker to the verified Saberistic property and domains', () => {
+    expect(renderBlueprintSource).toContain(
+      '- key: UMAMI_SCRIPT_URL\n                value: https://umami.saberistic.com/script.js',
+    )
+    expect(renderBlueprintSource).toContain(
+      '- key: UMAMI_WEBSITE_ID\n                value: 8bdad921-34a9-43cb-bc70-9e1c71efa911',
+    )
+    expect(renderBlueprintSource).toContain(
+      '- key: UMAMI_TRACK_DOMAINS\n                value: saberistic.com,www.saberistic.com',
+    )
+    expect(renderBlueprintSource).toContain('domains:\n              - umami.saberistic.com')
   })
 
   it('requires the Umami service and every generated bootstrap secret', () => {

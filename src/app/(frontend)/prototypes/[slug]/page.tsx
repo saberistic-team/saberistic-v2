@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
+import { TrackEventOnMount } from '@/components/analytics/TrackEventOnMount'
+import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { PrototypePoster } from '@/components/prototypes/PrototypePoster'
 import { PrototypeStatusBadge } from '@/components/prototypes/PrototypeStatusBadge'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -61,6 +63,12 @@ export async function generateMetadata({ params }: PrototypePageProps): Promise<
 function PrototypeDetail({ prototype }: { prototype: PublicPrototype }) {
   return (
     <article className="prototype-detail">
+      <TrackEventOnMount
+        event={{
+          data: { prototype: prototype.slug, status: prototype.status },
+          name: 'prototype_view',
+        }}
+      />
       <header className="prototype-detail__header shell">
         <nav aria-label="Breadcrumb">
           <ol className="breadcrumb">
@@ -177,9 +185,17 @@ function PrototypeDetail({ prototype }: { prototype: PublicPrototype }) {
 
           <div className="prototype-facts__actions">
             {prototype.canLaunch && prototype.appUrl ? (
-              <a className="button" href={prototype.appUrl} rel="external">
+              <TrackedAnchor
+                analyticsEvent={{
+                  data: { placement: 'detail', prototype: prototype.slug },
+                  name: 'prototype_launch',
+                }}
+                className="button"
+                href={prototype.appUrl}
+                rel="external"
+              >
                 Open prototype <span aria-hidden="true">↗</span>
-              </a>
+              </TrackedAnchor>
             ) : (
               <p className="availability-note">
                 <strong>Public demo under review.</strong>
@@ -189,9 +205,17 @@ function PrototypeDetail({ prototype }: { prototype: PublicPrototype }) {
               </p>
             )}
             {prototype.sourceUrl ? (
-              <a className="button button--quiet" href={prototype.sourceUrl} rel="external">
+              <TrackedAnchor
+                analyticsEvent={{
+                  data: { prototype: prototype.slug },
+                  name: 'prototype_source_clicked',
+                }}
+                className="button button--quiet"
+                href={prototype.sourceUrl}
+                rel="external"
+              >
                 View source <span aria-hidden="true">↗</span>
-              </a>
+              </TrackedAnchor>
             ) : (
               <p className="availability-note">
                 <strong>Source is not public for this experiment.</strong>

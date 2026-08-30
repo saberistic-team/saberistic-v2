@@ -8,6 +8,7 @@ Saberistic V2 was deployed to Render on **2026-08-28** and received its reviewed
 - Render fallback URL: <https://saberistic-web-staging.onrender.com>
 - Payload admin: <https://saberistic.com/admin>
 - Umami staging: <https://saberistic-umami-staging.onrender.com>
+- Umami custom domain: <https://umami.saberistic.com> (DNS verified, certificate issued, custom-host heartbeat and tracker script HTTP 200 on 2026-08-30)
 - Current website commit/deploy: `59791ec6dc0a98bcc4cecae879943fcc881e1163` / `dep-da9gs43l550s739vpvf0`
 - Current Umami commit/deploy: `59791ec6dc0a98bcc4cecae879943fcc881e1163` / `dep-da9gs43l550s739vpvj0`
 - Umami Blueprint declaration commit: `5df7d7237c2e9ad843d2b47a861734d77a802b74`
@@ -19,13 +20,13 @@ Both current deploys finished successfully on 2026-08-29: Umami at 16:53:12 UTC 
 
 ## Render resources
 
-| Resource           | Render ID                    | Configuration                                                                                         |
-| ------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------- |
-| Project            | `prj-da915hpsrm7s73as7qk0`   | `saberistic-platform`                                                                                 |
-| Environment        | `evm-da915hpsrm7s73as7qkg`   | `staging`                                                                                             |
-| Website service    | `srv-da915r1srm7s73as8fq0`   | `saberistic-web-staging`, Free, Ohio                                                                 |
-| Umami service      | `srv-da9gkrlg1s2s73acaau0`   | `saberistic-umami-staging`, Free, Ohio, `/api/heartbeat`                                              |
-| PostgreSQL         | `dpg-da915hpsrm7s73as7qq0-a` | `saberistic-payload-db-staging`, PostgreSQL 18, Free, Ohio, `public` plus restricted `umami` schemas |
+| Resource        | Render ID                    | Configuration                                                                                        |
+| --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Project         | `prj-da915hpsrm7s73as7qk0`   | `saberistic-platform`                                                                                |
+| Environment     | `evm-da915hpsrm7s73as7qkg`   | `staging`                                                                                            |
+| Website service | `srv-da915r1srm7s73as8fq0`   | `saberistic-web-staging`, Free, Ohio                                                                 |
+| Umami service   | `srv-da9gkrlg1s2s73acaau0`   | `saberistic-umami-staging`, Free, Ohio, `/api/heartbeat`                                             |
+| PostgreSQL      | `dpg-da915hpsrm7s73as7qq0-a` | `saberistic-payload-db-staging`, PostgreSQL 18, Free, Ohio, `public` plus restricted `umami` schemas |
 
 The free database expires on **2026-09-27** unless it is upgraded or replaced. Treat this environment as disposable staging, not durable production.
 
@@ -57,7 +58,15 @@ The final local `pnpm verify` passed TypeScript, ESLint, 83 tests, and the produ
 
 Disposable PostgreSQL 18 and Docker acceptance covered a fresh non-superuser `CREATEROLE` bootstrap, 24 migrations, unchanged restart, reproduction of Render's `ALTER ROLE` denial, credential-drift rejection without password mutation, role-setting and cross-schema-ACL contamination rejection, denial of a restricted-role read from an owner-only `public` table, and heartbeat HTTP 200. All disposable containers, network, and image were removed afterward.
 
-Live Umami acceptance returned HTTP 200 from `/api/heartbeat`. Both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts returned HTTP 401 without revealing the generated administrator password. The main website still returned HTTP 200 from `/api/ready`, and its rendered homepage contained no Umami script or Website ID. First supervised Umami login, 2FA enablement, retention, backup, and upgrade acceptance are not complete.
+At the initial staging checkpoint, live Umami acceptance returned HTTP 200 from `/api/heartbeat`. Both known-default `admin` / `umami` and `saberistic_admin` / `umami` login attempts returned HTTP 401 without revealing the generated administrator password. The main website still returned HTTP 200 from `/api/ready`, and its rendered homepage contained no Umami script or Website ID. The later activation decision is recorded below.
+
+## Owner-authorized analytics activation
+
+On 2026-08-30, the owner completed the supervised Umami login, enabled 2FA, and explicitly authorized temporary public collection on the existing shared Free database. The `Saberistic Production` Website record has public ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`. The website configuration uses `https://umami.saberistic.com/script.js` and the exact tracker allowlist `saberistic.com,www.saberistic.com`.
+
+The integration honors Do Not Track, excludes query strings and URL fragments, enables web-performance measurements, registers a payload privacy guard before the tracker loads, and emits only runtime-validated, low-cardinality pageview and interaction data. Implemented custom events cover primary CTA clicks, service-section visits, fixed readiness-example starts, prototype-card and detail views, approved prototype launches, and public source-link clicks. It does not identify visitors or enable session replay, and it rejects readiness answers, free text, contact data, prompts/results, search/filter terms, full URLs, and internal identifiers.
+
+Render verified the `umami.saberistic.com` DNS record and issued its certificate after the new CNAME propagated. Direct acceptance returned HTTP 200 with `{"ok":true}` from `/api/heartbeat` and HTTP 200 JavaScript from `/script.js` over the custom host. Live collection acceptance remains pending until the new website release renders the exact tracker configuration and sanitized pageview and custom-event data appear in the dashboard.
 
 ## Post-deploy dependency hardening
 
@@ -117,13 +126,19 @@ At that initial import checkpoint, live Payload acceptance confirmed:
 
 The full incident analysis, import rules, record inventory, and verification procedure are recorded in [12](./12-payload-content-import-and-origin-fix.md).
 
+## Free-service demo warm-up
+
+Render spins a Free web service down after 15 minutes without inbound traffic. For a scheduled review, run `pnpm render:warm` once or use `pnpm render:demo` for its default 60-minute demo window. A specific bounded window can be requested with `pnpm render:demo -- --minutes 90`; the hard maximum is 120 minutes and checks run every 10 minutes.
+
+This is deliberately not a permanent anti-sleep daemon. The website and Umami consume two Free instance hours per wall-clock hour when both are awake. Keeping both running for a 30-day month would require about 1,440 hours, exceeding Render's 750 shared monthly Free instance hours. Continuous availability requires upgrading the service that must remain awake.
+
 ## Current content and operational limits
 
 - Payload is live with 13 evidence records, two published prototypes, two held prototype drafts, four Experience drafts, and four Case Study/experience-profile drafts. Every career record remains `not-reviewed`; none was automatically approved or published.
 - The static homepage uses conservative résumé- and public-source-derived positioning. It does not expose the unreviewed career drafts as published CMS content.
 - The deterministic readiness preview is live. OpenRouter generation is not connected yet and the UI says so explicitly.
-- Umami staging is live as a separate Free web service, but it shares Payload's expiring Free PostgreSQL instance. No Website record or tracker variables are configured for `saberistic.com`, so production analytics remains disabled.
-- Umami first login and 2FA, analytics retention, backup/restore, and upgrade acceptance remain incomplete. Staging analytics data must be treated as disposable.
+- Umami is live as a separate Free web service and now has an owner-authorized public Website record, issued custom-domain TLS certificate, and tracker configuration, but it still shares Payload's expiring Free PostgreSQL instance. The website release and sanitized end-to-end event delivery must still be accepted live.
+- Umami login and 2FA setup are complete. Analytics retention automation, backup/restore, abuse monitoring, and upgrade acceptance remain incomplete, so analytics data is disposable and not a durable business record.
 - Production media uploads remain disabled until S3-compatible object storage is connected.
 - A production email adapter is not configured; Payload currently logs email to the service console.
 - Payload's upstream Monaco bundle limitation is tracked in the hardening section above and must be rechecked before adding code/JSON editor fields.
@@ -141,10 +156,10 @@ The Render GitHub App remains limited to selected repositories. Access to `agent
 
 ## Next operator actions
 
-1. In Render, reveal `UMAMI_ADMIN_PASSWORD` only for a supervised login as `saberistic_admin`; enable and verify 2FA, then store the credential and recovery material securely. Do not delete, disable, or demote the fixed bootstrap row.
+1. Keep the generated `saberistic_admin` credential and enabled-2FA recovery material securely stored. Do not delete, disable, or demote the fixed bootstrap row.
 2. Review the four Experience and four Case Study drafts claim by claim in Payload. Publish only after administrator approval, evidence, relationship, permission, and surface checks pass.
 3. Keep FrescoPay and TadaDing in draft until each has a working canonical app URL and completes a fresh availability and safety review.
-4. Provision a dedicated production-grade Umami database, then complete retention, privacy disclosure, abuse monitoring, backup/restore, and upgrade tests before creating a Website record or enabling the production tracker.
+4. Deploy the tracker, verify exact rendered attributes, ingestion, and sanitized live events; then provision a dedicated production-grade Umami database and complete retention automation, abuse monitoring, backup/restore, and upgrade tests before describing analytics as production-grade.
 5. Upgrade or replace the shared Free PostgreSQL database before 2026-09-27, with a tested backup and rollback path.
 6. Connect S3-compatible object storage and a transactional email adapter before production media, password-reset, or contact workflows are enabled.
 7. Add OpenRouter only after rate limiting, redaction, model-output validation, and usage caps from [06](./06-openrouter-readiness-check-implementation.md) are implemented.

@@ -32,6 +32,12 @@ projects:
                 value: https://saberistic.com
               - key: SEED_PUBLIC_CONCEPTS
                 value: 'false'
+              - key: UMAMI_SCRIPT_URL
+                value: https://umami.saberistic.com/script.js
+              - key: UMAMI_WEBSITE_ID
+                value: 8bdad921-34a9-43cb-bc70-9e1c71efa911
+              - key: UMAMI_TRACK_DOMAINS
+                value: saberistic.com,www.saberistic.com
 
           - type: web
             name: saberistic-umami-staging
@@ -41,6 +47,8 @@ projects:
             dockerfilePath: ./ops/umami/Dockerfile
             dockerContext: .
             healthCheckPath: /api/heartbeat
+            domains:
+              - umami.saberistic.com
             autoDeployTrigger: checksPass
             buildFilter:
               paths:

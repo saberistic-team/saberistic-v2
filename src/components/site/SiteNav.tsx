@@ -3,6 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+import { TrackedLink } from '@/components/analytics/TrackedLink'
+
 const links = [
   { href: '/prototypes', label: 'Prototypes' },
   { href: '/#work', label: 'Work' },
@@ -33,9 +35,16 @@ export function SiteNav() {
           </li>
         ))}
       </ul>
-      <Link className="button button--small" href="/readiness">
+      <TrackedLink
+        analyticsEvent={{
+          data: { cta: 'check_readiness', placement: 'header' },
+          name: 'primary_cta_clicked',
+        }}
+        className="button button--small"
+        href="/readiness"
+      >
         Check readiness
-      </Link>
+      </TrackedLink>
     </nav>
   )
 }

@@ -56,7 +56,7 @@ saberistic-platform
 
 Use Render's environment protection and private-network isolation for production. The current Free staging environment has those protections disabled and must not hold durable production data. Repository branch protection remains essential: a Blueprint commit can still change protected resources.
 
-Treat the staging Umami service and its `umami` schema as one disposable upgrade target. The staging website omits its tracker, and the analytics service may be suspended when the plan permits. Never infer that this shared-schema test proves dedicated-database backup, restore, retention, performance, or failure isolation.
+Treat the staging Umami service and its `umami` schema as one disposable upgrade target. The owner has authorized temporary public tracking through `umami.saberistic.com` as an explicit exception, and the analytics service may still be suspended by its Free plan. Never infer that this shared-schema test or temporary collection proves dedicated-database backup, restore, retention, performance, or failure isolation.
 
 Do not place unrelated prototypes in this Project. Give each durable prototype its own Render Project and Blueprint, with its own datastore if needed. A prototype must never connect to the production Payload database or rate-limit store.
 
@@ -208,13 +208,13 @@ Render's current included custom-domain allowances depend on workspace plan and 
 |---|---|
 | `DATABASE_URL` | Blueprint `fromDatabase` internal connection |
 | `APP_SECRET` | Render-generated stable secret |
-| `TWO_FACTOR_ENCRYPTION_KEY` | `sync: false`; manually generated 64-character hex |
+| `TWO_FACTOR_ENCRYPTION_KEY` | derived inside the staging wrapper from a Render-generated seed; use an independently managed stable 64-character hex value for the target production service |
 | `DISABLE_TELEMETRY` | `1` |
 | `PRIVATE_MODE` | `1` after verifying required behavior |
 | `DISABLE_UPDATES` | `1` when upgrades are handled operationally |
 | `SALT_ROTATION` | explicit `month` default unless a documented measurement/privacy decision changes it |
 
-Render's `generateValue` creates a strong base64 secret, but Umami's 2FA key requires a 64-character hexadecimal value; create that key separately.
+Render's `generateValue` creates a strong base64 secret, but Umami's 2FA key requires a 64-character hexadecimal value. The implemented staging wrapper derives that value from a generated seed without exposing the seed to the Umami child; the target production service should retain an equally stable, recoverable key procedure.
 
 Blueprint placeholders marked `sync: false` are prompted only on initial creation and are not copied into preview environments. Maintain a secret inventory and provision preview/staging values deliberately.
 

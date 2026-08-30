@@ -73,7 +73,7 @@ export function PrototypeFilters({ prototypes }: { prototypes: PublicPrototype[]
       </p>
 
       {filtered.length ? (
-        <PrototypeGrid prototypes={filtered} />
+        <PrototypeGrid placement="index" prototypes={filtered} />
       ) : (
         <EmptyState
           description="Try a different term or clear the active filters."

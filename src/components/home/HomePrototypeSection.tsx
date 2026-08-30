@@ -1,5 +1,4 @@
-import Link from 'next/link'
-
+import { TrackedLink } from '@/components/analytics/TrackedLink'
 import type { HomepagePrototypeFeed } from '@/lib/public-content/types'
 
 import { PrototypeGrid } from '../prototypes/PrototypeGrid'
@@ -20,12 +19,19 @@ export function HomePrototypeSection({ feed }: { feed: HomepagePrototypeFeed }) 
               and data-safety notes are part of the work.
             </p>
           </div>
-          <Link className="text-link" href="/prototypes">
+          <TrackedLink
+            analyticsEvent={{
+              data: { cta: 'explore_prototypes', placement: 'home_prototypes' },
+              name: 'primary_cta_clicked',
+            }}
+            className="text-link"
+            href="/prototypes"
+          >
             View all prototypes <span aria-hidden="true">→</span>
-          </Link>
+          </TrackedLink>
         </div>
 
-        {feed.state === 'ready' ? <PrototypeGrid prototypes={feed.items} /> : null}
+        {feed.state === 'ready' ? <PrototypeGrid placement="home" prototypes={feed.items} /> : null}
 
         {feed.state === 'empty' ? (
           <EmptyState

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
+
+import { TrackedLink } from '@/components/analytics/TrackedLink'
 
 export const dynamic = 'force-dynamic'
 
@@ -108,7 +109,11 @@ export default async function ReadinessPage({ searchParams }: ReadinessPageProps
           <div className="readiness-profile-grid">
             {(Object.entries(profiles) as Array<[ProfileKey, (typeof profiles)[ProfileKey]]>).map(
               ([key, profile], index) => (
-                <Link
+                <TrackedLink
+                  analyticsEvent={{
+                    data: { entry: 'readiness_page', mode: 'example' },
+                    name: 'readiness_started',
+                  }}
                   aria-current={key === selectedKey ? 'step' : undefined}
                   href={`/readiness?profile=${key}`}
                   key={key}
@@ -116,7 +121,7 @@ export default async function ReadinessPage({ searchParams }: ReadinessPageProps
                   <span aria-hidden="true">0{index + 1}</span>
                   <strong>{profile.label}</strong>
                   <small>{profile.description}</small>
-                </Link>
+                </TrackedLink>
               ),
             )}
           </div>
@@ -154,9 +159,16 @@ export default async function ReadinessPage({ searchParams }: ReadinessPageProps
             <span aria-hidden="true">◇</span> Do not paste source code, credentials, logs, customer
             data, client names, or confidential project details.
           </p>
-          <Link className="button button--quiet" href="/prototypes">
+          <TrackedLink
+            analyticsEvent={{
+              data: { cta: 'explore_prototypes', placement: 'readiness_page' },
+              name: 'primary_cta_clicked',
+            }}
+            className="button button--quiet"
+            href="/prototypes"
+          >
             Explore current prototypes
-          </Link>
+          </TrackedLink>
         </aside>
       </div>
     </div>

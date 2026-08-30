@@ -1,5 +1,5 @@
-import Link from 'next/link'
-
+import { TrackedAnchor, TrackedLink } from '@/components/analytics/TrackedLink'
+import type { AnalyticsPrototypeCardPlacement } from '@/lib/analytics/events'
 import type { PublicPrototype } from '@/lib/public-content/types'
 
 import { PrototypePoster } from './PrototypePoster'
@@ -18,8 +18,18 @@ function formatDate(value?: string) {
   }).format(date)
 }
 
-export function PrototypeCard({ prototype }: { prototype: PublicPrototype }) {
+export function PrototypeCard({
+  placement,
+  prototype,
+}: {
+  placement: AnalyticsPrototypeCardPlacement
+  prototype: PublicPrototype
+}) {
   const checkedAt = prototype.lastVerifiedAt ?? prototype.updatedAt
+  const cardEvent = {
+    data: { placement, prototype: prototype.slug, status: prototype.status },
+    name: 'prototype_card_clicked',
+  } as const
 
   return (
     <article className="prototype-card">
@@ -37,20 +47,34 @@ export function PrototypeCard({ prototype }: { prototype: PublicPrototype }) {
           </span>
         </div>
         <h3>
-          <Link href={`/prototypes/${prototype.slug}`}>{prototype.title}</Link>
+          <TrackedLink analyticsEvent={cardEvent} href={`/prototypes/${prototype.slug}`}>
+            {prototype.title}
+          </TrackedLink>
         </h3>
         <p>{prototype.summary}</p>
         <p className="safety-line">
           <span aria-hidden="true">◇</span> {prototype.safetyNotice}
         </p>
         <div className="prototype-card__actions">
-          <Link className="text-link" href={`/prototypes/${prototype.slug}`}>
+          <TrackedLink
+            analyticsEvent={cardEvent}
+            className="text-link"
+            href={`/prototypes/${prototype.slug}`}
+          >
             View build note <span aria-hidden="true">→</span>
-          </Link>
+          </TrackedLink>
           {prototype.canLaunch && prototype.appUrl ? (
-            <a className="text-link" href={prototype.appUrl} rel="external">
+            <TrackedAnchor
+              analyticsEvent={{
+                data: { placement, prototype: prototype.slug },
+                name: 'prototype_launch',
+              }}
+              className="text-link"
+              href={prototype.appUrl}
+              rel="external"
+            >
               Open prototype <span aria-hidden="true">↗</span>
-            </a>
+            </TrackedAnchor>
           ) : null}
         </div>
       </div>
