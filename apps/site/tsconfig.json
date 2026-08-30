@@ -24,6 +24,7 @@
     "../../src/lib/analytics/**/*.ts",
     "../../src/lib/public-content/snapshot.ts",
     "../../src/lib/public-content/types.ts",
+    "../../src/types/**/*.d.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": ["node_modules"]
