@@ -10,6 +10,8 @@ import { ValidationError } from 'payload'
 
 import { getRequestRole } from '@/access/roles'
 import { lockEvidenceSources } from '@/lib/evidenceLocks'
+import { detailSelect } from '@/lib/public-content/mapping'
+import { triggerStaticSiteDeploy } from '@/lib/staticSiteDeploy'
 import { normalizeSlug } from '@/lib/validation/content'
 import {
   type PrototypeEvidenceSnapshot,
@@ -181,6 +183,18 @@ const revalidatePrototypePaths = async (
   }
 }
 
+const publicPrototypeFields = Object.keys(detailSelect)
+
+const requiresStaticRebuild = (
+  doc: Record<string, unknown>,
+  previousDoc: Record<string, unknown> | undefined,
+) => {
+  if (doc._status !== 'published' && previousDoc?._status !== 'published') return false
+  if (doc._status !== previousDoc?._status) return true
+
+  return publicPrototypeFields.some((field) => !isDeepStrictEqual(doc[field], previousDoc?.[field]))
+}
+
 export const revalidatePrototypeAfterChange: CollectionAfterChangeHook = async ({
   context,
   doc,
@@ -188,13 +202,12 @@ export const revalidatePrototypeAfterChange: CollectionAfterChangeHook = async (
   req,
 }) => {
   if (context.skipRevalidate === true) return doc
-  if (doc._status !== 'published' && previousDoc?._status !== 'published') return doc
+  const current = doc as Record<string, unknown>
+  const previous = previousDoc as Record<string, unknown> | undefined
+  if (!requiresStaticRebuild(current, previous)) return doc
 
-  await revalidatePrototypePaths(
-    doc as Record<string, unknown>,
-    previousDoc as Record<string, unknown> | undefined,
-    req.payload.logger,
-  )
+  await revalidatePrototypePaths(current, previous, req.payload.logger)
+  await triggerStaticSiteDeploy({ logger: req.payload.logger })
 
   return doc
 }
@@ -207,6 +220,7 @@ export const revalidatePrototypeAfterDelete: CollectionAfterDeleteHook = async (
   if (context.skipRevalidate === true || doc._status !== 'published') return doc
 
   await revalidatePrototypePaths(doc as Record<string, unknown>, undefined, req.payload.logger)
+  await triggerStaticSiteDeploy({ logger: req.payload.logger })
 
   return doc
 }

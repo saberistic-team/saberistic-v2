@@ -21,6 +21,7 @@ jobs:
       DATABASE_URL: postgres://build:build@127.0.0.1:5432/build
       NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
       PAYLOAD_SECRET: ci-build-placeholder-not-for-runtime
+      PUBLIC_SITE_URL: http://127.0.0.1:3000
       SITE_URL: http://127.0.0.1:3000
     steps:
       - name: Check out repository
@@ -40,6 +41,9 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
+      - name: Typecheck static site
+        run: pnpm typecheck:site
+
       - name: Lint
         run: pnpm lint
 
@@ -48,3 +52,6 @@ jobs:
 
       - name: Production build
         run: pnpm build
+
+      - name: Static export with reviewed fixtures
+        run: pnpm build:site:fixture

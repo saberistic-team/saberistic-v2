@@ -3,8 +3,9 @@
 const endpoints = [
   {
     healthy: (body) => body?.status === 'ready',
-    name: 'Saberistic website',
-    url: 'https://saberistic.com/api/ready',
+    name: 'Saberistic CMS',
+    // The public site is static and never sleeps; only the Payload service needs waking.
+    url: 'https://saberistic-web-staging.onrender.com/api/ready',
   },
   {
     healthy: (body) => body?.ok === true,
@@ -85,10 +86,10 @@ const warmAll = async () => {
 const showHelp = () => {
   console.log(`Usage:
   pnpm render:warm
-      Wake both services once and wait until they are ready.
+      Wake Payload and Umami once and wait until they are ready.
 
   pnpm render:demo -- --minutes 90
-      Keep both services warm for a time-bounded demo (1-${maximumDemoMinutes} minutes).
+      Keep Payload and Umami warm for a time-bounded demo (1-${maximumDemoMinutes} minutes).
 
 This helper is deliberately time-bounded. It is not a permanent Free-tier uptime daemon.`)
 }
@@ -108,7 +109,7 @@ const main = async () => {
 
   const endsAt = Date.now() + demoMinutes * 60_000
   console.log(
-    `Warming the two Free services for ${demoMinutes} minute(s). This consumes two Free instance-hours per wall-clock hour while both are running.`,
+    `Warming Payload and Umami for ${demoMinutes} minute(s). This consumes two Free instance-hours per wall-clock hour while both are running.`,
   )
 
   while (Date.now() < endsAt) {

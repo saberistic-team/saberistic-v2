@@ -7,7 +7,9 @@
   "type": "module",
   "scripts": {
     "build": "cross-env NODE_OPTIONS=\"--no-deprecation --max-old-space-size=8000\" next build --webpack",
-    "verify": "pnpm typecheck && pnpm lint && pnpm test:int && pnpm build",
+    "build:site": "cross-env STATIC_CONTENT_MODE=remote pnpm --filter @saberistic/site build",
+    "build:site:fixture": "cross-env STATIC_CONTENT_MODE=fixture pnpm --filter @saberistic/site build",
+    "verify": "pnpm typecheck && pnpm typecheck:site && pnpm lint && pnpm test:int && pnpm build && pnpm build:site:fixture",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation next dev",
     "devsafe": "rm -rf .next && cross-env NODE_OPTIONS=--no-deprecation next dev",
     "generate:importmap": "cross-env NODE_OPTIONS=--no-deprecation payload generate:importmap",
@@ -25,7 +27,8 @@
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "typecheck:site": "pnpm --filter @saberistic/site typecheck"
   },
   "dependencies": {
     "@payloadcms/next": "3.88.0",

@@ -58,6 +58,7 @@ const bootstrapAdmin = async (payload: SeedPayload) => {
 const main = async () => {
   const payload = (await getPayload({ config })) as unknown as SeedPayload
   const canonicalOrigin =
+    process.env.PUBLIC_SITE_URL?.trim() ||
     process.env.SITE_URL?.trim() ||
     process.env.RENDER_EXTERNAL_URL?.trim() ||
     'http://localhost:3000'

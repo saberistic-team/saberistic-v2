@@ -15,12 +15,17 @@ import { SiteSettings } from './globals/SiteSettings'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
-const configuredURLs = [process.env.SITE_URL, process.env.RENDER_EXTERNAL_URL]
+const configuredCMSURLs = [process.env.SITE_URL, process.env.RENDER_EXTERNAL_URL]
   .map((value) => value?.trim())
   .filter((value): value is string => Boolean(value))
-const serverURL = configuredURLs[0] || 'http://localhost:3000'
+const configuredPublicURL = process.env.PUBLIC_SITE_URL?.trim()
+const serverURL = configuredCMSURLs[0] || 'http://localhost:3000'
 const allowedOrigins = [
-  ...new Set([serverURL, ...configuredURLs].map((url) => new URL(url).origin)),
+  ...new Set(
+    [serverURL, ...configuredCMSURLs, configuredPublicURL]
+      .filter((value): value is string => Boolean(value))
+      .map((url) => new URL(url).origin),
+  ),
 ]
 
 export default buildConfig({
