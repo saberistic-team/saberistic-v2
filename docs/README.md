@@ -115,8 +115,10 @@ external launch action. Website commit `b8b6c2d` passed CI and CodeQL, Payload d
 `e41f723`: the original 2022 PlantUML, two independent blind-token hops, fixed 1 cUSD local Solana
 flow, Rust/Wasm browser boundary, retry-safe processor state, 33 passing API/web/Rust tests, guarded
 load harness, author-observed local session results, and explicit custody, metadata, anychain, and
-interoperability limits. Its implementation and pending production acceptance are recorded in
-[20](./20-cryptopal-build-note.md). The expiring shared database, missing
+interoperability limits. Website commit `3d5ea1e` passed CI and CodeQL, and Render Static Site deploy
+`dep-daa6t8n10e5c73bjntl0` generated 23 pages with five verified Build Notes. Its implementation,
+clean-build correction, and production acceptance are recorded in [20](./20-cryptopal-build-note.md).
+The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and

@@ -285,16 +285,32 @@ Git-authored exception defined by ADR-020, while Payload continues to own genera
 
 ## Production acceptance
 
-Production evidence will be appended after the checks-gated website release completes. Required
-acceptance is:
+Production acceptance completed on August 30, 2026.
 
-- the new route returns HTTP 200 from the Render Static Site;
-- the route exposes its canonical URL and all three pinned repository actions;
-- four diagram regions and the supplied interface image render without layout instability;
-- Build Notes index, homepage journal, RSS, and sitemap contain the new note;
-- CI and CodeQL pass at the released website commit; and
-- the live page preserves the local-demo, session-evidence, privacy, custody, and Solana-only
-  boundaries.
+The article shipped in website feature commit `1a23ef5`. Its first clean GitHub CI run exposed a
+real packaging gap that the warm local Next.js workspace had masked: root TypeScript did not know
+the `.webp` static-image module before Next generated its local type file. Follow-up commit
+`3d5ea1e` added the source-controlled declaration. The same root typecheck and lint then passed
+locally, and the replacement clean release gates completed successfully:
+
+- CI run `33326503438` passed install, root and static-site typechecks, lint, 163 active automated
+  tests, the Payload production build, and the fixture static export;
+- CodeQL run `33326503034` passed both Actions and JavaScript/TypeScript analysis; and
+- Render Static Site deploy `dep-daa6t8n10e5c73bjntl0` built commit `3d5ea1e`, fetched reviewed
+  Payload content revision `2e8da5a6f350` with five prototypes, generated 23 static pages, verified
+  static SEO and brand assets plus five Build Notes and five prototype routes, and reported the site
+  live at 1:58:08 PM EDT.
+
+Public acceptance at
+`https://saberistic.com/build-notes/cryptopal-wallet-email-wallet/` confirmed:
+
+- the production route returns HTTP 200 with the expected page title, H1, and canonical URL;
+- all three immutable repository pins and the article's source-linked code references are present;
+- four accessible inline SVG diagrams and the statically dimensioned owner-supplied image render;
+- the page emits no browser console errors or warnings;
+- the homepage journal, Build Notes index, RSS feed, and sitemap all contain the CryptoPal slug; and
+- the local-demo, session-evidence, privacy, custody, interoperability, and Solana-only boundaries
+  remain visible in the public output.
 
 ## Next CryptoPal engineering work
 
