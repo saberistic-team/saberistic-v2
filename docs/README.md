@@ -80,11 +80,12 @@ structured data, legacy redirects, and Web Vitals zero-CLS normalization are dep
 the live acceptance recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). Final Lighthouse
 scores are 97/100/100/100 on mobile and 100/100/100/100 on desktop, with CLS 0 on both. The
 Git-authored Build Notes journal, RSS feed, and first source-verified Harness from Scratch article
-are implemented in the shared frontend and statically exported without changing the Payload
-snapshot contract. The article documents the Pi/Qwen bootstrap, M0 contracts, failures, passing
-40-test result, and incomplete boundaries with code and accessible SVG diagrams. The
-expiring shared database, missing backup/retention automation, backend cold starts, and one stale
-`www` DNS target remain unresolved operational requirements. See
+are live on the Static Site without changing the Payload snapshot contract. The article documents
+the Pi/Qwen bootstrap, M0 contracts, failures, passing 40-test result, and incomplete boundaries
+with code and accessible SVG diagrams. Its production Lighthouse median is 99/100/100/100 on mobile
+and 100/100/100/100 on desktop, with CLS 0 on both. The expiring shared database, missing
+backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
+operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and
 [14](./14-render-static-site-rollout.md) for the static rollout and remaining DNS cleanup.
 

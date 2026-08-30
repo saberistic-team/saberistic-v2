@@ -289,6 +289,41 @@ only about 117 ms of element render delay. Production CDN Lighthouse is therefor
 measurement. Accessibility, best-practice, SEO, and CLS gates already pass independently of that
 serving difference.
 
+### Production acceptance — August 30, 2026
+
+The accepted release is Git commit `d92e6354b566e5c35a16afc4c732c1ed12765ff0`. GitHub CI run
+`33306651976` and CodeQL run `33306651627` passed before Render's checks-gated deployment began.
+Render Static Site deploy `dep-daa0dqgu01pc73dd3vlg` became live at 10:33:54 UTC.
+
+External endpoint checks returned:
+
+| URL                                                        | Result                                               |
+| ---------------------------------------------------------- | ---------------------------------------------------- |
+| `https://saberistic.com/`                                  | `200` HTML with homepage Build Notes discovery       |
+| `https://saberistic.com/build-notes/`                      | `200` HTML with exact RSS autodiscovery link         |
+| `https://saberistic.com/build-notes/harness-from-scratch/` | `200` article HTML                                   |
+| `https://saberistic.com/build-notes/feed.xml`              | `200 application/xml`                                |
+| `https://saberistic.com/sitemap.xml`                       | `200 application/xml` with index and article entries |
+| `/build-notes/not-published/`                              | real `404`                                           |
+
+Live phone-width browser acceptance confirmed the 58-character search title, exact canonical,
+Open Graph article type, `BlogPosting` structured data, one `h1`, 15 article sections, 11 code
+blocks, four diagrams, zero horizontal overflow, normal-flow mobile header, and balanced navigation.
+The Umami script loaded from `umami.saberistic.com` with the configured website ID and exact apex/
+`www` domain allowlist. No browser warning or error was recorded.
+
+Three independent production mobile Lighthouse runs scored 94, 100, and 99 for performance. The
+median result is recorded instead of selecting the fastest run:
+
+| Profile       | Performance | Accessibility | Best practices | SEO |    FCP |    LCP | Speed Index |  TBT | CLS |
+| ------------- | ----------: | ------------: | -------------: | --: | -----: | -----: | ----------: | ---: | --: |
+| Mobile median |          99 |           100 |            100 | 100 | 1.03 s | 2.21 s |      1.03 s | 8 ms |   0 |
+| Desktop       |         100 |           100 |            100 | 100 |  0.3 s |  0.5 s |       0.3 s | 0 ms |   0 |
+
+The first mobile run was slower than the two repetitions but still remained in Lighthouse's green
+performance range and retained CLS 0. No production change was made by choosing a favorable trace;
+the median above represents the run-to-run result.
+
 ## Adding the next Build Note
 
 1. Create a reviewed content component under `src/content/build-notes/` using the existing article
