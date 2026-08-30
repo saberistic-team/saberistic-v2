@@ -75,8 +75,9 @@ review-gated Experience and four Case Study drafts, all not reviewed. Self-hoste
 separate Free web service; the owner has enabled 2FA, and temporary public collection through
 `umami.saberistic.com` passed live tracker, ingestion, privacy-payload, and dashboard acceptance. The
 supplied Saberistic mark, favicon conventions, route canonicals, robots, sitemap, social metadata,
-structured data, legacy redirects, and Web Vitals zero-CLS normalization are implemented and await
-the live acceptance recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). The
+structured data, legacy redirects, and Web Vitals zero-CLS normalization are deployed and passed
+the live acceptance recorded in [15](./15-brand-seo-lighthouse-and-web-vitals.md). Final Lighthouse
+scores are 97/100/100/100 on mobile and 100/100/100/100 on desktop, with CLS 0 on both. The
 expiring shared database, missing backup/retention automation, backend cold starts, and one stale
 `www` DNS target remain unresolved operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and

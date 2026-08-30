@@ -110,7 +110,7 @@ fails the deployment if exported icons, manifest, robots, sitemap, canonical/OG/
 structured data, or any published prototype route is missing. Unit coverage verifies SEO metadata,
 JSON-LD script escaping, CLS normalization, Render redirect declarations, and brand-cache policy.
 
-## Verification record before deployment
+## Verification record
 
 - The full `pnpm verify` pipeline passed without lint warnings: root and Static Site type checks,
   lint, 139 passing integration/unit tests with one intentional skip, the Payload production build,
@@ -126,20 +126,48 @@ JSON-LD script escaping, CLS normalization, Render redirect declarations, and br
   `headers`/`routes` shapes, and has structural unit coverage; the checks-gated Render sync remains
   the authoritative remote validation.
 
-## Deployment and live acceptance plan
+### Production acceptance — August 30, 2026
 
-1. Run the full repository verification suite, including Payload and fixture Static Site production
-   builds.
-2. Commit and push the reviewed change to `main`.
-3. Wait for GitHub checks and Render's checks-gated Static Site deployment. Do not mark the work live
-   from a successful local build.
-4. Verify the apex icon, brand image, manifest, robots, sitemap, route canonicals, JSON-LD, security
-   headers, equivalent legacy redirects, real 404 behavior, and current prototype snapshot.
-5. Rerun mobile and desktop Lighthouse against the live CDN and record category scores and Web
-   Vitals. The minimum target is 95 performance and 100 accessibility/best-practices/SEO on a clean
-   representative run, with CLS at or below 0.1. Investigate run variance rather than hiding it.
-6. Confirm a new supported-browser performance row carries `cls: 0` when no shift occurs. Leave old
-   rows intact and monitor p75 after enough new visits or after the 24-hour window rolls forward.
+The accepted release is Git commit `dcfa02bdce0ffdf7805f174724dcfc73da787473`, published by Render
+Static Site deploy `dep-da9ucsnlk1mc738d3k80` at 08:15:26 UTC. GitHub CI run `33301037173` and the
+push CodeQL run `33301036953` both passed before the checks-gated deployment began.
+
+The first production mobile audits of the otherwise accepted feature build scored 94 performance,
+with LCP between 2.5 and 2.6 seconds and Speed Index between 3.9 and 4.0 seconds. The trace showed the
+32-pixel header mark being preloaded from the full 11,292-byte source even though the text heading
+was the LCP element. Removing only that non-critical image preload left the exact supplied logo and
+its reserved dimensions intact. The final CDN audits were:
+
+| Profile | Performance | Accessibility | Best practices | SEO |   FCP |   LCP | Speed Index |   TBT | CLS | Root response |
+| ------- | ----------: | ------------: | -------------: | --: | ----: | ----: | ----------: | ----: | --: | ------------: |
+| Mobile  |          97 |           100 |            100 | 100 | 1.8 s | 2.3 s |       1.8 s | 10 ms |   0 |        150 ms |
+| Desktop |         100 |           100 |            100 | 100 | 0.3 s | 0.4 s |       0.3 s |  0 ms |   0 |         40 ms |
+
+Live endpoint acceptance also passed:
+
+- `/`, both published prototype detail routes, `/icon.png`, `/apple-icon.png`, the public brand
+  image, manifest, robots, and sitemap returned HTTP 200;
+- the three downloaded logo variants remained 400 by 400 RGBA PNGs with the exact supplied digest;
+- the homepage exposed the expected canonical, Open Graph, Twitter, and JSON-LD metadata;
+- `/about` and `/diagnostic` returned the intended permanent HTTP 301 redirects, while a fabricated
+  route returned a real HTTP 404;
+- the apex response carried the configured CSP, permissions, referrer, framing, and MIME-sniffing
+  protections; and
+- the public brand response carried the one-day cache plus one-week stale revalidation policy.
+
+### Umami field acceptance
+
+The authenticated last-24-hours Performance report grew from six to ten samples during acceptance.
+Its p75 CLS still showed the historical `0.343`, but a captured production request proved that a
+supported Chrome visit with no layout shifts sent a performance payload containing `cls: 0` along
+with genuine FCP, LCP, TTFB, and duration measurements. After ingestion, the dashboard's CLS p50
+moved from `0.343` to `0.172`, confirming that zero is now stored and participates in the
+distribution.
+
+No analytics rows were deleted or rewritten. With such a small sample, the 24-hour p75 will remain
+sensitive to the old nonzero row until more genuine zero-shift visits arrive or the selected window
+advances. Lighthouse and repeated Performance Observer acceptance remain CLS 0 across the public
+surface.
 
 ## Remaining SEO and measurement work
 
