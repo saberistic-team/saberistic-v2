@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { guardUmamiPayload } from '@/lib/analytics/privacy'
+import { buildNotes } from '@/lib/build-notes'
 
 const pageview = {
   hostname: 'saberistic.com',
@@ -64,31 +65,20 @@ describe('Umami before-send privacy guard', () => {
   })
 
   it('normalizes static trailing slashes and allows bounded build-note events', () => {
-    expect(
-      guardUmamiPayload('event', {
-        ...pageview,
-        data: { note: 'harness-from-scratch' },
+    for (const note of buildNotes) {
+      expect(
+        guardUmamiPayload('event', {
+          ...pageview,
+          data: { note: note.slug },
+          name: 'build_note_view',
+          url: `/build-notes/${note.slug}/?source=home#section`,
+        }),
+      ).toMatchObject({
+        data: { note: note.slug },
         name: 'build_note_view',
-        url: '/build-notes/harness-from-scratch/?source=home#kernel',
-      }),
-    ).toMatchObject({
-      data: { note: 'harness-from-scratch' },
-      name: 'build_note_view',
-      url: '/build-notes/harness-from-scratch',
-    })
-
-    expect(
-      guardUmamiPayload('event', {
-        ...pageview,
-        data: { note: 'turbopass-rust-temporal' },
-        name: 'build_note_view',
-        url: '/build-notes/turbopass-rust-temporal/',
-      }),
-    ).toMatchObject({
-      data: { note: 'turbopass-rust-temporal' },
-      name: 'build_note_view',
-      url: '/build-notes/turbopass-rust-temporal',
-    })
+        url: `/build-notes/${note.slug}`,
+      })
+    }
 
     expect(
       guardUmamiPayload('event', { ...pageview, url: '/prototypes/back-then/' }),

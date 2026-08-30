@@ -1756,6 +1756,17 @@ button.button {
   padding: clamp(0.4rem, 2vw, 1.2rem);
 }
 
+.article-diagram__canvas--scrollable {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-color: var(--muted) var(--surface);
+}
+
+.article-diagram__canvas--scrollable:focus-visible {
+  outline: 3px solid var(--blue);
+  outline-offset: -3px;
+}
+
 .article-diagram figcaption {
   border-top: 1px solid var(--rule);
   display: grid;
@@ -2460,6 +2471,10 @@ button.button {
   .diagram-detail,
   .diagram-sequence text {
     font-size: 17px;
+  }
+
+  .article-diagram__canvas--scrollable .diagram-svg {
+    min-width: 44rem;
   }
 }
 

@@ -50,15 +50,24 @@ export function ArticleCallout({
 export function DiagramFrame({
   children,
   description,
+  scrollable = false,
   title,
 }: {
   children: ReactNode
   description: string
+  scrollable?: boolean
   title: string
 }) {
   return (
     <figure className="article-diagram">
-      <div className="article-diagram__canvas">{children}</div>
+      <div
+        aria-label={scrollable ? `${title} diagram` : undefined}
+        className={`article-diagram__canvas${scrollable ? ' article-diagram__canvas--scrollable' : ''}`}
+        role={scrollable ? 'region' : undefined}
+        tabIndex={scrollable ? 0 : undefined}
+      >
+        {children}
+      </div>
       <figcaption>
         <strong>{title}</strong>
         <span>{description}</span>

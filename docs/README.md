@@ -51,6 +51,7 @@ The product promise is:
 | [15 — Brand, SEO, Lighthouse, and Web Vitals](./15-brand-seo-lighthouse-and-web-vitals.md)                        | Supplied logo integration, metadata/crawl hardening, Lighthouse evidence, and the Umami CLS correction.                          |
 | [16 — Build Notes and Harness from Scratch](./16-build-notes-and-harness-from-scratch.md)                         | Git-authored journal architecture, first article evidence, SVG/code treatment, analytics, verification, and authoring workflow.  |
 | [17 — TurboPass Rust + Temporal Build Note](./17-turbopass-rust-temporal-build-note.md)                           | FFI bridge removal, compatible token lifecycle, Temporal rotation, local integration harness, evidence, and rollout gates.       |
+| [18 — Harness Platform M1 Operator Loop](./18-harness-operator-loop-m1-build-note.md)                             | SQLite evidence, terminal viewer, golden eval, compiled policy, CI composition, truth boundaries, and release plan.              |
 
 ## Recommended first release
 

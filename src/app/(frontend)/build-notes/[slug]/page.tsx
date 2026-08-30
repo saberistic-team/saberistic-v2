@@ -7,6 +7,7 @@ import { TrackEventOnMount } from '@/components/analytics/TrackEventOnMount'
 import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
+import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
@@ -19,6 +20,7 @@ type BuildNotePageProps = {
 
 const articleBySlug = {
   'harness-from-scratch': HarnessFromScratchArticle,
+  'harness-operator-loop-m1': HarnessOperatorLoopArticle,
   'turbopass-rust-temporal': TurboPassArticle,
 } as const satisfies Record<(typeof buildNotes)[number]['slug'], ComponentType>
 

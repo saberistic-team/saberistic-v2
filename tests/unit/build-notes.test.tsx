@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
+import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, getBuildNote } from '@/lib/build-notes'
 import { createBuildNotesRSS } from '@/lib/build-notes-feed'
@@ -29,6 +30,7 @@ describe('Git-authored build notes', () => {
       buildNotes,
     )
     expect(getBuildNote('harness-from-scratch')?.repositoryCommit.slice(0, 7)).toBe('88ef2f4')
+    expect(getBuildNote('harness-operator-loop-m1')?.repositoryCommit.slice(0, 7)).toBe('a596fc5')
     expect(getBuildNote('turbopass-rust-temporal')?.repositoryCommit.slice(0, 7)).toBe('f18da56')
   })
 
@@ -64,6 +66,28 @@ describe('Git-authored build notes', () => {
     expect(html.match(/<desc id=/g)?.length).toBe(4)
     expect(html).toContain('56 / 56')
     expect(html).toContain('no committed capacity report')
+  })
+
+  it('renders the M1 operator-loop article with durable evidence and explicit limits', () => {
+    const html = renderToStaticMarkup(createElement(HarnessOperatorLoopArticle))
+
+    expect(html).toContain('Six roadmap bullets, five dogfooded tasks')
+    expect(html).toContain('This is a regression gate—not a complete per-PR scope gate.')
+    expect(html).toContain('no protection on')
+    expect(html).toContain('intentionally ignored')
+    expect(html).toContain('one-writer assumption')
+    expect(html).toContain('Calibration seed, not eval credibility')
+    expect(html).toContain('M2 should make the evidence representative')
+    expect(html).toContain('falls through to <code>spawnSync</code>')
+    expect(html).toContain('such as <code>/pull/123</code>')
+    expect(html.match(/role="region"/g)?.length).toBe(4)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+    expect(html.match(/<svg aria-labelledby=/g)?.length).toBe(4)
+    expect(html.match(/<title id=/g)?.length).toBe(4)
+    expect(html.match(/<desc id=/g)?.length).toBe(4)
+    expect(html).toContain('80 / 80')
+    expect(html).toContain('1 / 1')
   })
 
   it('emits a valid RSS item for every published note', () => {

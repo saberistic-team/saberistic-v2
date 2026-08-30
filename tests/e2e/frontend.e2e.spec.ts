@@ -6,6 +6,7 @@ test.describe('Public site smoke', () => {
     '/prototypes',
     '/build-notes',
     '/build-notes/harness-from-scratch',
+    '/build-notes/harness-operator-loop-m1',
     '/build-notes/turbopass-rust-temporal',
   ]) {
     test(`${route} renders without seeded content`, async ({ page }) => {
