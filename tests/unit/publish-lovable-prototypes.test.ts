@@ -241,6 +241,7 @@ describe('publishLovablePrototypes', () => {
     expect(prototypeWrites).toHaveLength(3)
     for (const { args } of prototypeWrites) {
       expect(args.req).toEqual(req)
+      expect(args).not.toHaveProperty('draft')
       expect(args.context).toEqual({
         allowLovablePrototypePublicationMigrationAdmin: true,
         skipRevalidate: true,
@@ -424,7 +425,8 @@ describe('publishLovablePrototypes', () => {
     })
   })
 
-  it('registers the dated migration', () => {
-    expect(migrations.at(-1)?.name).toBe('20260830_160500_publish_lovable_prototypes')
+  it('registers the publication and repair migrations', () => {
+    expect(migrations.at(-2)?.name).toBe('20260830_160500_publish_lovable_prototypes')
+    expect(migrations.at(-1)?.name).toBe('20260830_163500_retry_lovable_prototype_publication')
   })
 })

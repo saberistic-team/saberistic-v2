@@ -504,7 +504,6 @@ export const publishLovablePrototypes = async ({
         evidenceSources,
         launchReviewer: reviewerID,
       },
-      draft: false,
       overrideAccess: true,
       req,
     }
