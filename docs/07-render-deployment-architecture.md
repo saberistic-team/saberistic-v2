@@ -12,7 +12,10 @@ The target is not “everything in one container.” It is one coherent Render P
 
 ## Current deployment and production boundary
 
-The repository is live from `saberistic-team/saberistic-v2` through the checked-in `render.yaml`. The current zero-cost staging environment contains two Free web services and one Free PostgreSQL instance: Payload owns `public`, while Umami uses a restricted role and the `umami` schema. The exact live record is in [11](./11-live-staging-deployment.md).
+The repository is live from `saberistic-team/saberistic-v2` through the checked-in `render.yaml`.
+The current zero-cost staging environment contains one CDN-backed Static Site, two Free web
+services, and one Free PostgreSQL instance: Payload owns `public`, while Umami uses a restricted role
+and the `umami` schema. The exact live record is in [11](./11-live-staging-deployment.md).
 
 That shared database is a disposable staging exception, not the target topology below. Production still requires service commands, pre-deploy migrations, dedicated Payload and Umami databases, protected networking, backups, retention, health monitoring, and named ownership before resources are created.
 
@@ -79,7 +82,13 @@ The 2026-08-28 GitHub inventory creates a deployment shortlist, not deployable c
 | TadaDing                  | Separate Blueprint if selected, normally web/API plus a worker and its own datastore where the code audit confirms those components                                             | Subscription charging stays disabled until payment behavior and operational ownership pass the launch packet                                  |
 | Story Sprout Pay fallback | Keep the current Lovable endpoint only as a temporary, explicitly external sandbox or redeploy a payment-disabled build to its own Render Project                               | An HTTP-successful external page is not a Render deployment and does not satisfy payment, moderation, or recovery gates                       |
 
-The production core remains a complex multi-service Blueprint target because it requires web/Payload, separate Payload and Umami databases, Umami, Key Value, and backup jobs. The current staging Blueprint deliberately contains only the two web services and one shared-schema database. A genuinely single-service future prototype may use direct Render service creation, but it still needs a Git remote and the same launch packet. Do not create additional live resources until the chosen repository is pushed, the deployment definition is committed, required secrets are identified, and Blueprint validation passes.
+The production core remains a complex multi-service Blueprint target because it requires the Static
+Site, web/Payload, separate Payload and Umami databases, Umami, Key Value, and backup jobs. The
+current staging Blueprint deliberately contains the Static Site, two web services, and one
+shared-schema database. A genuinely single-service future prototype may use direct Render service
+creation, but it still needs a Git remote and the same launch packet. Do not create additional live
+resources until the chosen repository is pushed, the deployment definition is committed, required
+secrets are identified, and Blueprint validation passes.
 
 ## Core resources
 

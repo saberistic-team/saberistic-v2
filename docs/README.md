@@ -65,7 +65,18 @@ Do not delay launch for a full blog, user accounts, repository ingestion, free-f
 
 ## Current repository state
 
-The Payload/Next.js slice is implemented, tested, published to GitHub, and deployed to Render staging. BackThen and Story Sprout Pay are published; FrescoPay remains held without a verified canonical app URL, and TadaDing remains held because its registered deployment returns HTTP 404. Payload contains 13 evidence records plus four review-gated Experience and four Case Study drafts, all not reviewed. Self-hosted Umami is live on a separate Free web service; the owner has enabled 2FA, and temporary public collection through `umami.saberistic.com` passed live tracker, ingestion, privacy-payload, and dashboard acceptance. The expiring shared database, missing backup/retention automation, and always-on availability remain unresolved production requirements. See [11](./11-live-staging-deployment.md) for the live record and [13](./13-prototype-approval-career-content-and-umami.md) for this release's controls and validation.
+The Payload/Next.js slice is implemented, tested, published to GitHub, and deployed to Render
+staging. The public homepage and prototype hub now run on a Render Static Site CDN, so public-page
+availability no longer depends on a warm Payload process. BackThen and Story Sprout Pay are
+published; FrescoPay remains held without a verified canonical app URL, and TadaDing remains held
+because its registered deployment returns HTTP 404. Payload contains 13 evidence records plus four
+review-gated Experience and four Case Study drafts, all not reviewed. Self-hosted Umami is live on a
+separate Free web service; the owner has enabled 2FA, and temporary public collection through
+`umami.saberistic.com` passed live tracker, ingestion, privacy-payload, and dashboard acceptance. The
+expiring shared database, missing backup/retention automation, backend cold starts, and one stale
+`www` DNS target remain unresolved operational requirements. See
+[11](./11-live-staging-deployment.md) for the live record and
+[14](./14-render-static-site-rollout.md) for the static rollout and remaining DNS cleanup.
 
 ## Source-of-truth rules
 

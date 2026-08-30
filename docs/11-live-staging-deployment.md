@@ -2,21 +2,30 @@
 
 ## Status
 
-Saberistic V2 was deployed to Render on **2026-08-28**, received its reviewed prototype, career-content, and disposable Umami staging release on **2026-08-29**, and activated its owner-authorized privacy-safe analytics release on **2026-08-30** from the `main` branch of [`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
+Saberistic V2 was deployed to Render on **2026-08-28**, received its reviewed prototype,
+career-content, and disposable Umami staging release on **2026-08-29**, activated its
+owner-authorized privacy-safe analytics release on **2026-08-30**, and moved its public surface to a
+Render Static Site CDN on **2026-08-30** from the `main` branch of
+[`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
 
 - Primary public URL: <https://saberistic.com>
-- Render fallback URL: <https://saberistic-web-staging.onrender.com>
-- Payload admin: <https://saberistic.com/admin>
+- Static Site fallback URL: <https://saberistic-site-staging.onrender.com>
+- Payload origin: <https://saberistic-web-staging.onrender.com>
+- Payload admin: <https://saberistic-web-staging.onrender.com/admin> (`/admin` on the public site redirects here)
 - Umami staging: <https://saberistic-umami-staging.onrender.com>
 - Umami custom domain: <https://umami.saberistic.com> (DNS verified, certificate issued, custom-host heartbeat and tracker script HTTP 200 on 2026-08-30)
-- Current website commit/deploy: `57e1844f24bc0c39b8e7702514463745226cb0ff` / `dep-da9sm8nlk1mc738c1mb0`
+- Accepted static cutover commit/deploy: `cca2f288eba43ba5656a2f8a611e8db4d4a2e7b0` / `dep-da9tlnon74is7396ugm0`
+- Accepted Payload hook deploy: `dep-da9tkb9srm7s73dacu20`
 - Current Umami commit/deploy: `59791ec6dc0a98bcc4cecae879943fcc881e1163` / `dep-da9gs43l550s739vpvj0`
 - Umami Blueprint declaration commit: `5df7d7237c2e9ad843d2b47a861734d77a802b74`
 - Final CI run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33296529785>
 - Final CodeQL run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33296529183>
 - Blueprint: `Saberistic V2` (`exs-da915615efls73ab4hjg`)
 
-The current Umami deploy finished successfully on 2026-08-29 at 16:53:12 UTC. The current website deploy finished successfully on 2026-08-30 at 06:21:24 UTC. The deployment uses only free Render plans. No paid resource was created for Saberistic V2.
+The recorded Umami release deploy finished successfully on 2026-08-29 at 16:53:12 UTC. The last
+pre-static public web-service release finished successfully on 2026-08-30 at 06:21:24 UTC. The
+deployment uses only free Render plans and a free Static Site. No paid resource was created for
+Saberistic V2.
 
 ## Render resources
 
@@ -24,7 +33,8 @@ The current Umami deploy finished successfully on 2026-08-29 at 16:53:12 UTC. Th
 | --------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------- |
 | Project         | `prj-da915hpsrm7s73as7qk0`   | `saberistic-platform`                                                                                |
 | Environment     | `evm-da915hpsrm7s73as7qkg`   | `staging`                                                                                            |
-| Website service | `srv-da915r1srm7s73as8fq0`   | `saberistic-web-staging`, Free, Ohio                                                                 |
+| Payload service | `srv-da915r1srm7s73as8fq0`   | `saberistic-web-staging`, Free Docker web service, Ohio                                              |
+| Public site     | `srv-da9tdgu7bikc73esbqvg`   | `saberistic-site-staging`, Static Site CDN, `saberistic.com`                                         |
 | Umami service   | `srv-da9gkrlg1s2s73acaau0`   | `saberistic-umami-staging`, Free, Ohio, `/api/heartbeat`                                             |
 | PostgreSQL      | `dpg-da915hpsrm7s73as7qq0-a` | `saberistic-payload-db-staging`, PostgreSQL 18, Free, Ohio, `public` plus restricted `umami` schemas |
 
@@ -32,8 +42,8 @@ The free database expires on **2026-09-27** unless it is upgraded or replaced. T
 
 ## Deployment behavior
 
-- Render builds the checked-in website and Umami Dockerfiles. The website runs as non-root `nextjs`; Umami keeps a root-only bootstrap/signal supervisor but runs migration and HTTP children as the pinned non-root `nextjs` UID/GID.
-- The website receives `DATABASE_URL` from the Blueprint-managed database. Umami receives the owner URL only as a bootstrap secret, constructs restricted runtime URLs for `saberistic_umami`, and removes the owner URL and bootstrap secrets from the application-child environment.
+- Render builds the checked-in Payload and Umami Dockerfiles plus the separate `apps/site` static export. Payload runs as non-root `nextjs`; Umami keeps a root-only bootstrap/signal supervisor but runs migration and HTTP children as the pinned non-root `nextjs` UID/GID.
+- Payload receives `DATABASE_URL` from the Blueprint-managed database. Umami receives the owner URL only as a bootstrap secret, constructs restricted runtime URLs for `saberistic_umami`, and removes the owner URL and bootstrap secrets from the application-child environment.
 - `PAYLOAD_SECRET` is generated by Render and is not stored in Git.
 - The committed Payload migrations run before every website container start. Earlier deploys applied `20260828_221439_initial_platform` and `20260829_144500_seed_prepared_content`; deploy `dep-da9gibm7bikc73av3uog` applied career migration `20260829_151905`. The current deploy found the ledger current and completed cleanly.
 - `/api/ready` is the website/database health check. `/api/heartbeat` is Umami process liveness only and does not prove ongoing database connectivity.
@@ -41,7 +51,40 @@ The free database expires on **2026-09-27** unless it is upgraded or replaced. T
 - Initial Umami deploy `dep-da9gkrtg1s2s73acabr0` failed closed before HTTP with `permission denied to alter role`; Render's managed PostgreSQL owner can create the restricted role but cannot perform the original follow-up role mutation. Commit `59791ec6dc0a98bcc4cecae879943fcc881e1163` removed every `ALTER ROLE` dependency, made safe role state immutable after creation, and verifies the generated credential through a real restricted login.
 - Umami runs 24 pinned upstream migrations through the restricted `saberistic_umami` role and the `umami` schema. Its bootstrap renames and secures the fixed administrator before the HTTP server binds.
 
-## Verification record
+## Static CDN cutover — 2026-08-30
+
+The public homepage, prototype catalogue/details, readiness page, and privacy page now come from
+Render Static Site service `srv-da9tdgu7bikc73esbqvg`. The last accepted hook-driven build was
+`dep-da9tlnon74is7396ugm0`, created by successful GitHub Actions run `33299159323`. Render recorded
+its trigger as `deploy_hook`, proving the scheduled workflow secret and private Render hook work
+end to end.
+
+External acceptance returned HTTP 200 from the apex with Render CDN caching and the configured CSP,
+permissions, referrer, content-type, and frame headers. All exported routes and deep links returned
+HTTP 200, a made-up route returned 404, and `https://www.saberistic.com/` returned 301 to the apex.
+Render verified `saberistic.com` and issued its certificate. `/admin` returns 301 to the stable
+Payload origin, whose `/api/ready` and versioned public snapshot both returned HTTP 200.
+
+The accepted snapshot revision is
+`5cd17cdaa03c347a6e36c92f9e1b81cc50a4de4a38e56fde6f5d1a9d23c0ed48`; the acceptance read at
+`2026-08-30T07:27:31.409Z` contained exactly two published prototypes. The browser rendered both
+records, the client-side prototype search filtered correctly after hydration, and no console errors
+were observed.
+
+The live export loaded the exact Umami script URL, website ID, and apex/`www` domain allowlist. One
+allowlisted Architecture Diagnostic CTA click navigated normally without console errors and appeared
+as `primary_cta_clicked` in the authenticated Umami Events view.
+
+The private deploy-hook URL is stored on Payload as `STATIC_SITE_DEPLOY_HOOK_URL` and as an Actions
+secret; its value is not in Git or these documents. The Blueprint marks the Payload value
+`sync: false`, and only the public build variables are present on the Static Site.
+
+DigitalOcean remains the authoritative DNS provider. The apex A record is `216.24.57.1`. The `www`
+CNAME still names `saberistic-web-staging.onrender.com`; external redirect behavior works through
+Render's edge, but the record must be changed to `saberistic-site-staging.onrender.com` after the
+owner signs in so Render can complete `www` DNS verification. No paid domain was added.
+
+## Pre-static web-service verification record
 
 The final live deployment returned HTTP 200 on `saberistic.com` for:
 
@@ -135,9 +178,17 @@ The full incident analysis, import rules, record inventory, and verification pro
 
 ## Free-service demo warm-up
 
-Render spins a Free web service down after 15 minutes without inbound traffic. For a scheduled review, run `pnpm render:warm` once or use `pnpm render:demo` for its default 60-minute demo window. A specific bounded window can be requested with `pnpm render:demo -- --minutes 90`; the hard maximum is 120 minutes and checks run every 10 minutes.
+Render spins a Free web service down after inactivity. For a scheduled CMS or analytics review, run
+`pnpm render:warm` once or use `pnpm render:demo` for its default 60-minute demo window. A specific
+bounded window can be requested with `pnpm render:demo -- --minutes 90`; the hard maximum is 120
+minutes and checks run every 10 minutes. The public Static Site is CDN-hosted and is intentionally
+absent from this helper because it does not sleep.
 
-This is deliberately not a permanent anti-sleep daemon. The website and Umami consume two Free instance hours per wall-clock hour when both are awake. Keeping both running for a 30-day month would require about 1,440 hours, exceeding Render's 750 shared monthly Free instance hours. Continuous availability requires upgrading the service that must remain awake.
+This is deliberately not a permanent anti-sleep daemon. Payload and Umami consume two Free instance
+hours per wall-clock hour when both are awake. Keeping both running for a 30-day month would require
+about 1,440 hours, exceeding Render's 750 shared monthly Free instance hours. Continuous backend or
+analytics availability requires upgrading the service that must remain awake; public-page
+availability no longer depends on either service remaining warm.
 
 ## Current content and operational limits
 
@@ -163,10 +214,11 @@ The Render GitHub App remains limited to selected repositories. Access to `agent
 
 ## Next operator actions
 
-1. Keep the generated `saberistic_admin` credential and enabled-2FA recovery material securely stored. Do not delete, disable, or demote the fixed bootstrap row.
-2. Review the four Experience and four Case Study drafts claim by claim in Payload. Publish only after administrator approval, evidence, relationship, permission, and surface checks pass.
-3. Keep FrescoPay and TadaDing in draft until each has a working canonical app URL and completes a fresh availability and safety review.
-4. Provision a dedicated production-grade Umami database and complete retention automation, abuse monitoring, backup/restore, and upgrade tests before describing analytics as production-grade.
-5. Upgrade or replace the shared Free PostgreSQL database before 2026-09-27, with a tested backup and rollback path.
-6. Connect S3-compatible object storage and a transactional email adapter before production media, password-reset, or contact workflows are enabled.
-7. Add OpenRouter only after rate limiting, redaction, model-output validation, and usage caps from [06](./06-openrouter-readiness-check-implementation.md) are implemented.
+1. Sign in to DigitalOcean and change the `www` CNAME from `saberistic-web-staging.onrender.com` to `saberistic-site-staging.onrender.com`; then verify Render reports both DNS and certificate completion.
+2. Keep the generated `saberistic_admin` credential and enabled-2FA recovery material securely stored. Do not delete, disable, or demote the fixed bootstrap row.
+3. Review the four Experience and four Case Study drafts claim by claim in Payload. Publish only after administrator approval, evidence, relationship, permission, and surface checks pass.
+4. Keep FrescoPay and TadaDing in draft until each has a working canonical app URL and completes a fresh availability and safety review.
+5. Provision a dedicated production-grade Umami database and complete retention automation, abuse monitoring, backup/restore, and upgrade tests before describing analytics as production-grade.
+6. Upgrade or replace the shared Free PostgreSQL database before 2026-09-27, with a tested backup and rollback path.
+7. Connect S3-compatible object storage and a transactional email adapter before production media, password-reset, or contact workflows are enabled.
+8. Add OpenRouter only after rate limiting, redaction, model-output validation, and usage caps from [06](./06-openrouter-readiness-check-implementation.md) are implemented.

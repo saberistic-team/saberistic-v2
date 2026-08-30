@@ -32,6 +32,8 @@ projects:
                 value: https://saberistic-web-staging.onrender.com
               - key: PUBLIC_SITE_URL
                 value: https://saberistic.com
+              - key: STATIC_SITE_DEPLOY_HOOK_URL
+                sync: false
               - key: SEED_PUBLIC_CONCEPTS
                 value: 'false'
               - key: UMAMI_SCRIPT_URL
@@ -44,6 +46,8 @@ projects:
           - type: web
             name: saberistic-site-staging
             runtime: static
+            domains:
+              - saberistic.com
             autoDeployTrigger: checksPass
             buildCommand: pnpm build:site
             staticPublishPath: ./apps/site/out

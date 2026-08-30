@@ -14,6 +14,10 @@ const staticService = blueprint.slice(
   blueprint.indexOf('name: saberistic-site-staging'),
   blueprint.indexOf('name: saberistic-umami-staging'),
 )
+const payloadService = blueprint.slice(
+  blueprint.indexOf('name: saberistic-web-staging'),
+  blueprint.indexOf('name: saberistic-site-staging'),
+)
 
 describe('Render Static Site Blueprint', () => {
   it('builds the separate remote-content export and publishes only its out directory', () => {
@@ -21,6 +25,7 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).toContain('buildCommand: pnpm build:site')
     expect(staticService).not.toContain('corepack enable')
     expect(staticService).toContain('staticPublishPath: ./apps/site/out')
+    expect(staticService).toContain('domains:\n              - saberistic.com')
     expect(staticService).toContain('value: https://saberistic-web-staging.onrender.com')
     expect(staticService).toContain('value: remote')
   })
@@ -30,6 +35,11 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).not.toContain('PAYLOAD_SECRET')
     expect(staticService).not.toContain('STATIC_SITE_DEPLOY_HOOK_URL')
     expect(staticService).not.toContain('UMAMI_ADMIN_PASSWORD')
+  })
+
+  it('declares the externally managed deploy hook only on Payload', () => {
+    expect(payloadService).toMatch(/- key: STATIC_SITE_DEPLOY_HOOK_URL\n\s+sync: false/)
+    expect(staticService).not.toContain('STATIC_SITE_DEPLOY_HOOK_URL')
   })
 
   it('uses real exported routes and redirects only CMS paths to Payload', () => {

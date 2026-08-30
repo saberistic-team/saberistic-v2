@@ -11,9 +11,9 @@ Payload remains the source of truth and continues to run as the Free Docker web 
 `https://umami.saberistic.com`. Only Payload and Umami can cold-start; a cold or unavailable backend
 must not take the last successful public static deploy offline.
 
-This is a deployment and operations record, not evidence that the live cutover has happened. All
-live service IDs, deploy IDs, domain state, certificates, and acceptance results remain **pending
-verification** until recorded in the final checklist below.
+The live cutover completed on **2026-08-30 at 07:25 UTC**. The evidence table at the end of this
+document records the service IDs, deploys, domain state, certificates, content revision, and
+remaining DNS cleanup precisely; it does not treat an unverified item as complete.
 
 ## Target architecture
 
@@ -113,9 +113,9 @@ retry the deploy manually or with a newly verified hook.
 
 `featureUntil` is evaluated while Payload creates the snapshot. Once HTML is exported, time passing
 alone cannot remove an expired feature from the homepage. Configure one daily deploy-hook call as a
-safety rebuild even when editors make no changes. The daily schedule is required before relying on
-automatic feature expiry and is **pending verification**. A content editor can also trigger an
-immediate rebuild after changing the feature state.
+safety rebuild even when editors make no changes. The GitHub Actions schedule and secret were
+enabled and manually accepted on 2026-08-30. A content editor can also trigger an immediate rebuild
+after changing the feature state.
 
 Introduce future public content by extending a new versioned snapshot contract. Keep `/v1`
 compatible until every deployed static build has moved to the successor; do not silently change the
@@ -129,7 +129,7 @@ meaning or shape of version 1.
    Verify the CMS still starts, admin login works on the `onrender.com` URL, CORS/CSRF accepts the
    canonical public origin, and `/api/public/site-snapshot/v1` returns a strict `200` response.
 2. Add a new Render Static Site service to the Blueprint without `saberistic.com`. Use the repository
-   root as its root directory, the locked pnpm install plus `pnpm build:site` as its build, and
+   root as its root directory, Render's automatic locked pnpm install plus `pnpm build:site` as its build, and
    `apps/site/out` as `staticPublishPath`. Set only the public/build-time environment listed above.
 3. Sync the Blueprint and verify the preview creates one new static service; it must not replace,
    delete, or change the runtime of Payload or Umami. Record the generated service URL and ID only
@@ -238,26 +238,29 @@ rollback from the recorded pre-cutover state.
 
 ## Live rollout record
 
-Complete this table from Render, the DNS provider, Payload, and Umami. Do not infer identifiers from
-names or old documentation.
+This table records the accepted 2026-08-30 rollout. Secret values are deliberately omitted.
 
-| Evidence                                                      | Verified value/status                                       |
-| ------------------------------------------------------------- | ----------------------------------------------------------- |
-| Static Site Blueprint name and service ID                     | Pending verification                                        |
-| Static Site `onrender.com` URL                                | Pending verification                                        |
-| First successful Static Site deploy ID and commit             | Pending verification                                        |
-| Accepted version-1 `contentRevision` and generation time      | Pending verification                                        |
-| Payload `/api/ready` and snapshot endpoint status             | Pending verification                                        |
-| Deploy hook stored on Payload and last `200`/`202` acceptance | Pending verification                                        |
-| Publish/unpublish/public-edit/delete rebuild acceptance       | Pending verification                                        |
-| `saberistic.com` attachment and TLS certificate               | Pending verification                                        |
-| `www.saberistic.com` redirect result                          | Pending verification                                        |
-| Authoritative DNS records/provider check                      | Pending verification                                        |
-| Umami build-time variables and live event receipt             | Pending verification                                        |
-| Daily `featureUntil` rebuild and failure notification         | Pending verification                                        |
-| Free PostgreSQL live expiry/upgrade/backup state              | Pending verification; last documented expiry was 2026-09-27 |
-| Last known-good domain and deploy rollback checkpoints        | Pending verification                                        |
-| Cutover operator and timestamp                                | Pending verification                                        |
+| Evidence                                          | Verified value/status                                                                                                                                       |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Static Site Blueprint name and service ID         | `saberistic-site-staging` / `srv-da9tdgu7bikc73esbqvg`                                                                                                      |
+| Static Site `onrender.com` URL                    | `https://saberistic-site-staging.onrender.com`                                                                                                              |
+| First successful Static Site deploy ID and commit | `dep-da9tes67bikc73eser3g` / `cca2f288eba43ba5656a2f8a611e8db4d4a2e7b0`; checks-gated successor `dep-da9tfrgu01pc73db23qg`                                  |
+| Accepted `contentRevision` and generation time    | `5cd17cdaa03c347a6e36c92f9e1b81cc50a4de4a38e56fde6f5d1a9d23c0ed48`; `2026-08-30T07:27:31.409Z`; two published prototypes                                    |
+| Payload readiness and snapshot endpoints          | Both HTTP 200 at `https://saberistic-web-staging.onrender.com`; snapshot is `no-store`                                                                      |
+| Deploy hook storage and last acceptance           | Secret present on Payload and GitHub Actions; workflow `33299159323` passed and created `deploy_hook` deploy `dep-da9tlnon74is7396ugm0`                     |
+| Live editor-operation acceptance                  | Hook selection/request behavior is tested; destructive acceptance was deliberately not performed on production evidence records                             |
+| `saberistic.com` attachment and TLS               | Attached to the Static Site, Render verified, certificate issued, external HTTPS HTTP 200 with CDN and security headers                                     |
+| `www.saberistic.com` redirect                     | External HTTPS returns 301 to the apex; Render reports DNS pending because the authoritative CNAME remains stale                                            |
+| Authoritative DNS records/provider check          | DigitalOcean NS; apex A `216.24.57.1`; `www` still points to `saberistic-web-staging.onrender.com` and must point to `saberistic-site-staging.onrender.com` |
+| Umami build variables and live service            | Exact script URL, website ID, and apex/`www` allowlist exported; script/heartbeat HTTP 200; live `primary_cta_clicked` appeared in Umami Events             |
+| Daily rebuild and failure visibility              | Schedule `35 11 * * *`; manual run `33299159323` passed; GitHub account notification delivery was not independently audited                                 |
+| Free PostgreSQL expiry/upgrade/backup             | Last verified expiry `2026-09-27`; still disposable staging; upgrade/backup remains required                                                                |
+| Last known-good rollback checkpoints              | Static `dep-da9tlnon74is7396ugm0`; Payload `dep-da9tkb9srm7s73dacu20`; Payload remains reachable on its Render origin                                       |
+| Cutover operator and timestamp                    | Owner-confirmed Codex-assisted cutover, `2026-08-30`, completed at approximately `07:25 UTC`                                                                |
+
+The only cutover cleanup still requiring owner authentication is the DigitalOcean `www` CNAME.
+The current redirect works through Render's shared edge, but the record must be updated to the
+Static Site target so Render can verify it and the DNS intent matches the deployed architecture.
 
 ## Official Render references
 
