@@ -97,14 +97,20 @@ export const validatePrototypeBeforeChange: CollectionBeforeChangeHook = async (
   req,
 }) => {
   const original = originalDoc as Record<string, unknown> | undefined
-  const actorRole = context.allowSeedPublishConcepts === true ? 'admin' : getRequestRole(req)
-  const explicitlyReapproved =
+  const actorRole =
+    context.allowSeedPublishConcepts === true ||
+    context.allowLovablePrototypePublicationMigrationAdmin === true
+      ? 'admin'
+      : getRequestRole(req)
+  const explicitlyReviewed =
     actorRole === 'admin' &&
-    data.launchApproval === 'approved' &&
-    data.launchReviewer !== undefined &&
-    data.launchApprovedAt !== undefined
+    relationID(data.launchReviewer) !== undefined &&
+    (data.launchApproval === 'blocked' ||
+      (data.launchApproval === 'approved' &&
+        data.launchApprovedAt !== undefined &&
+        data.launchApprovedAt !== null))
 
-  if (hasMaterialPrototypeChange(data, original) && !explicitlyReapproved) {
+  if (hasMaterialPrototypeChange(data, original) && !explicitlyReviewed) {
     data.launchApproval = 'not-reviewed'
     data.launchReviewer = null
     data.launchApprovedAt = null

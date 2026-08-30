@@ -1554,6 +1554,11 @@ button.button {
   width: 100%;
 }
 
+.build-note__source-actions {
+  display: grid;
+  gap: 0.55rem;
+}
+
 .build-note__layout {
   display: grid;
   gap: clamp(3rem, 7vw, 7rem);
@@ -2167,6 +2172,10 @@ button.button {
   color: var(--muted);
   margin-bottom: 0;
   max-width: 38rem;
+}
+
+.build-note__footer .build-note__source-actions {
+  min-width: 13rem;
 }
 
 .error-state {

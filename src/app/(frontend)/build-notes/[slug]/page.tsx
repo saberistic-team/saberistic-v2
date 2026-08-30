@@ -8,6 +8,7 @@ import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
+import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
@@ -21,6 +22,7 @@ type BuildNotePageProps = {
 const articleBySlug = {
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
+  'three-lovable-prototypes': LovablePrototypeTrioArticle,
   'turbopass-rust-temporal': TurboPassArticle,
 } as const satisfies Record<(typeof buildNotes)[number]['slug'], ComponentType>
 
@@ -135,9 +137,13 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
                 <dd>{note.readingMinutes} minutes</dd>
               </div>
               <div>
-                <dt>Verified commit</dt>
+                <dt>{note.repositories.length === 1 ? 'Verified commit' : 'Verified sources'}</dt>
                 <dd>
-                  <code>{note.repositoryCommit.slice(0, 7)}</code>
+                  {note.repositories.length === 1 ? (
+                    <code>{note.repositories[0].commit.slice(0, 7)}</code>
+                  ) : (
+                    `${note.repositories.length} pinned commits`
+                  )}
                 </dd>
               </div>
               <div>
@@ -145,14 +151,19 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
                 <dd>AmirSaber Sharifi</dd>
               </div>
             </dl>
-            <TrackedAnchor
-              analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
-              className="button button--quiet"
-              href={note.repositoryUrl}
-              rel="external"
-            >
-              Inspect the repository <span aria-hidden="true">↗</span>
-            </TrackedAnchor>
+            <div className="build-note__source-actions">
+              {note.repositories.map((repository) => (
+                <TrackedAnchor
+                  analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
+                  className="button button--quiet"
+                  href={repository.url}
+                  key={repository.url}
+                  rel="external"
+                >
+                  Open {repository.label} <span aria-hidden="true">↗</span>
+                </TrackedAnchor>
+              ))}
+            </div>
           </aside>
         </div>
       </header>
@@ -184,14 +195,19 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
           <h2>{note.footerTitle}</h2>
           <p>{note.footerSummary}</p>
         </div>
-        <TrackedAnchor
-          analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
-          className="button"
-          href={note.repositoryUrl}
-          rel="external"
-        >
-          Open {note.repositoryLabel} <span aria-hidden="true">↗</span>
-        </TrackedAnchor>
+        <div className="build-note__source-actions">
+          {note.repositories.map((repository) => (
+            <TrackedAnchor
+              analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
+              className="button"
+              href={repository.url}
+              key={repository.url}
+              rel="external"
+            >
+              Open {repository.label} <span aria-hidden="true">↗</span>
+            </TrackedAnchor>
+          ))}
+        </div>
       </footer>
     </article>
   )

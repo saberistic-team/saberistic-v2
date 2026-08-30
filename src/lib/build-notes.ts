@@ -5,9 +5,11 @@ export type BuildNote = {
   modifiedAt: string
   publishedAt: string
   readingMinutes: number
-  repositoryCommit: string
-  repositoryLabel: string
-  repositoryUrl: string
+  repositories: readonly {
+    commit: string
+    label: string
+    url: string
+  }[]
   sections: readonly (readonly [id: string, label: string])[]
   seoTitle: string
   slug: string
@@ -18,6 +20,51 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'DAY 004 / THREE LOVABLE PROTOTYPES',
+    footerSummary:
+      'The three pinned repositories show the working product loops, server boundaries, and unresolved launch gates described here.',
+    footerTitle: 'Inspect the systems—and the evidence that keeps two launch buttons closed.',
+    modifiedAt: '2026-08-30',
+    publishedAt: '2026-08-30',
+    readingMinutes: 22,
+    repositories: [
+      {
+        commit: '169df55cec710c269ddbf4cfc98a8e41a6d37392',
+        label: 'The Last Press',
+        url: 'https://github.com/saberistic-team/the-last-press',
+      },
+      {
+        commit: 'b47cfa4690e389ca5119ded54c509c434f23d583',
+        label: 'Psych Lab',
+        url: 'https://github.com/saberistic-team/psych-test-forge',
+      },
+      {
+        commit: 'dadf92f699ff47f95e4f274463ea4b0ed0e8e92b',
+        label: 'Borrowed Brain',
+        url: 'https://github.com/saberistic-team/borrowed-thinking-lab',
+      },
+    ],
+    sections: [
+      ['brief', 'Three product questions'],
+      ['shared-pattern', 'Shared build pattern'],
+      ['last-press', 'The Last Press'],
+      ['psych-lab', 'Psych Lab'],
+      ['borrowed-brain', 'Borrowed Brain'],
+      ['ai-boundaries', 'AI boundaries'],
+      ['data-boundaries', 'Data boundaries'],
+      ['verification', 'Verified result'],
+      ['launch-gates', 'Launch gates'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+    ],
+    seoTitle: 'Three Lovable prototypes, audited',
+    slug: 'three-lovable-prototypes',
+    summary:
+      'How The Last Press, Psych Lab, and Borrowed Brain turn game state, questionnaire authoring, and decision support into deployed products—and what their audits still block.',
+    tags: ['Lovable', 'Product prototypes', 'Supabase', 'AI systems'],
+    title: 'Three Lovable prototypes: turning product questions into working systems',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 1',
     footerSummary:
       'The pinned public commit contains the five task manifests, SQLite store, terminal viewer, eval runner, rule compiler, and CI workflow described here.',
@@ -25,9 +72,13 @@ export const buildNotes = [
     modifiedAt: '2026-08-30',
     publishedAt: '2026-08-30',
     readingMinutes: 25,
-    repositoryCommit: 'a596fc54af8b4581ac9619d01b6ad364cfde25cb',
-    repositoryLabel: 'Harness Platform',
-    repositoryUrl: 'https://github.com/saberistic-team/harness-platform',
+    repositories: [
+      {
+        commit: 'a596fc54af8b4581ac9619d01b6ad364cfde25cb',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
     sections: [
       ['brief', 'Milestone contract'],
       ['m0-to-m1', 'From foundation to loop'],
@@ -60,9 +111,13 @@ export const buildNotes = [
     modifiedAt: '2026-08-30',
     publishedAt: '2026-08-30',
     readingMinutes: 24,
-    repositoryCommit: 'f18da5682c80fb1afe08348187e4c2f39bd4714a',
-    repositoryLabel: 'TurboPass',
-    repositoryUrl: 'https://github.com/saberistic-team/turbopass',
+    repositories: [
+      {
+        commit: 'f18da5682c80fb1afe08348187e4c2f39bd4714a',
+        label: 'TurboPass',
+        url: 'https://github.com/saberistic-team/turbopass',
+      },
+    ],
     sections: [
       ['brief', 'The rebuild brief'],
       ['archaeology', 'Repository archaeology'],
@@ -95,9 +150,13 @@ export const buildNotes = [
     modifiedAt: '2026-08-30',
     publishedAt: '2026-08-30',
     readingMinutes: 18,
-    repositoryCommit: '88ef2f4030ea7cb07a7d183032dc23a43eea734e',
-    repositoryLabel: 'Harness Platform',
-    repositoryUrl: 'https://github.com/saberistic-team/harness-platform',
+    repositories: [
+      {
+        commit: '88ef2f4030ea7cb07a7d183032dc23a43eea734e',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
     sections: [
       ['why-a-harness', 'Why a harness'],
       ['mental-model', 'Mental model'],

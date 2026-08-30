@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
+import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, getBuildNote } from '@/lib/build-notes'
 import { createBuildNotesRSS } from '@/lib/build-notes-feed'
@@ -21,7 +22,12 @@ describe('Git-authored build notes', () => {
       expect(note.modifiedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(Date.parse(note.modifiedAt)).toBeGreaterThanOrEqual(Date.parse(note.publishedAt))
       expect(note.readingMinutes).toBeGreaterThan(0)
-      expect(note.repositoryCommit).toMatch(/^[a-f0-9]{40}$/)
+      expect(note.repositories.length).toBeGreaterThan(0)
+      for (const repository of note.repositories) {
+        expect(repository.commit).toMatch(/^[a-f0-9]{40}$/)
+        expect(repository.label.length).toBeGreaterThan(0)
+        expect(repository.url).toMatch(/^https:\/\/github\.com\/saberistic-team\/[a-z0-9-]+$/)
+      }
       expect(`${note.seoTitle} — Saberistic`.length).toBeLessThanOrEqual(60)
       expect(note.summary.length).toBeLessThanOrEqual(200)
     }
@@ -29,9 +35,16 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(getBuildNote('harness-from-scratch')?.repositoryCommit.slice(0, 7)).toBe('88ef2f4')
-    expect(getBuildNote('harness-operator-loop-m1')?.repositoryCommit.slice(0, 7)).toBe('a596fc5')
-    expect(getBuildNote('turbopass-rust-temporal')?.repositoryCommit.slice(0, 7)).toBe('f18da56')
+    expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      '88ef2f4',
+    )
+    expect(getBuildNote('harness-operator-loop-m1')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      'a596fc5',
+    )
+    expect(getBuildNote('turbopass-rust-temporal')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      'f18da56',
+    )
+    expect(getBuildNote('three-lovable-prototypes')?.repositories).toHaveLength(3)
   })
 
   it('renders the harness article with labeled code, accessible diagrams, and explicit limits', () => {
@@ -88,6 +101,25 @@ describe('Git-authored build notes', () => {
     expect(html.match(/<desc id=/g)?.length).toBe(4)
     expect(html).toContain('80 / 80')
     expect(html).toContain('1 / 1')
+  })
+
+  it('renders the Lovable prototype trio with source pins, diagrams, and launch boundaries', () => {
+    const html = renderToStaticMarkup(createElement(LovablePrototypeTrioArticle))
+
+    expect(html).toContain('The database owns the button')
+    expect(html).toContain('Nothing durable owns the moment the clock expires')
+    expect(html).toContain('AI authors the instrument; fixed code scores the person')
+    expect(html).toContain('A staged argument produces a decision board, not a decision')
+    expect(html).toContain('Six open high-severity CodeQL alerts')
+    expect(html).toContain('Publish only the bounded, sample-data demonstration')
+    expect(html).toContain('None of the repositories contains an automated test suite')
+    expect(html).toContain('declares an open-source license')
+    expect(html).toContain('no scheduled executor')
+    expect(html.match(/role="region"/g)?.length).toBe(4)
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(8)
+    expect(html.match(/<svg aria-labelledby=/g)?.length).toBe(4)
+    expect(html.match(/<title id=/g)?.length).toBe(4)
+    expect(html.match(/<desc id=/g)?.length).toBe(4)
   })
 
   it('emits a valid RSS item for every published note', () => {
