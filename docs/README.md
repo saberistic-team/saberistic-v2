@@ -18,16 +18,16 @@ The product promise is:
 
 ## Accepted architecture
 
-| Concern          | Decision                                                                                       | Reason                                                                                                                            |
-| ---------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Website and CMS  | Next.js and MIT-licensed Payload in one TypeScript application                                 | Payload is native to Next.js, self-hostable, keeps the admin and frontend in one codebase, and avoids an unnecessary API service. |
-| Primary database | Dedicated Render Postgres                                                                      | Managed backups, private-network access, and a clean migration path.                                                              |
-| Media            | S3-compatible object storage through Payload's official S3 adapter                             | Render service filesystems are ephemeral; a persistent disk would limit scaling and zero-downtime deploys.                        |
-| Analytics        | Self-hosted, MIT-licensed Umami; shared-schema Free staging, dedicated Postgres for production | Staging avoids an unapproved database charge; production restores workload, permission, backup, and failure-domain isolation.     |
-| AI feature       | Deterministic readiness engine plus OpenRouter for explanation                                 | The score remains testable and defensible while the visitor still sees useful generative AI immediately.                          |
-| Abuse controls   | Render Key Value-backed rate limiting before public AI launch                                  | Prevents one visitor or bot from exhausting the OpenRouter budget.                                                                |
-| Hosting          | Render Blueprint for the core platform                                                         | Infrastructure is reviewable, reproducible, and grouped into staging and production environments.                                 |
-| Prototypes       | Hub-and-spoke: independent apps registered in Payload                                          | Each experiment can use its own stack and deployment cadence without endangering the main site.                                   |
+| Concern          | Decision                                                                                       | Reason                                                                                                                               |
+| ---------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| Website and CMS  | Next.js static export for the public surface; MIT-licensed Payload remains the dynamic CMS/API | Public pages stay on the CDN during CMS cold starts while schemas, views, and content contracts remain in one TypeScript repository. |
+| Primary database | Dedicated Render Postgres                                                                      | Managed backups, private-network access, and a clean migration path.                                                                 |
+| Media            | S3-compatible object storage through Payload's official S3 adapter                             | Render service filesystems are ephemeral; a persistent disk would limit scaling and zero-downtime deploys.                           |
+| Analytics        | Self-hosted, MIT-licensed Umami; shared-schema Free staging, dedicated Postgres for production | Staging avoids an unapproved database charge; production restores workload, permission, backup, and failure-domain isolation.        |
+| AI feature       | Deterministic readiness engine plus OpenRouter for explanation                                 | The score remains testable and defensible while the visitor still sees useful generative AI immediately.                             |
+| Abuse controls   | Render Key Value-backed rate limiting before public AI launch                                  | Prevents one visitor or bot from exhausting the OpenRouter budget.                                                                   |
+| Hosting          | Render Static Site plus Blueprint-managed Payload and Umami services                           | The public site does not sleep; infrastructure remains reviewable and reproducible.                                                  |
+| Prototypes       | Hub-and-spoke: independent apps registered in Payload                                          | Each experiment can use its own stack and deployment cadence without endangering the main site.                                      |
 
 ## Documentation map
 
@@ -47,6 +47,7 @@ The product promise is:
 | [11 — Live staging deployment](./11-live-staging-deployment.md)                                                   | Live URLs and resource IDs, deployment verification, retired resources, current limits, and operator handoff.                    |
 | [12 — Payload content import and origin fix](./12-payload-content-import-and-origin-fix.md)                       | Custom-domain admin authentication, transactional content import, verification, and remaining résumé schema.                     |
 | [13 — Prototype approval, career content, and Umami rollout](./13-prototype-approval-career-content-and-umami.md) | Live prototype decisions, Experience/Case Studies schemas and seeds, publication gates, and the zero-cost Umami staging rollout. |
+| [14 — Render Static Site rollout](./14-render-static-site-rollout.md)                                             | Static export contract, CMS-triggered builds, domain transfer, verification, rollback, and operations.                           |
 
 ## Recommended first release
 

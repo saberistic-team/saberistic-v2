@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { requiresStaticRebuild } from '@/hooks/prototypes'
 import { triggerStaticSiteDeploy } from '@/lib/staticSiteDeploy'
 
 const hookURL = 'https://api.render.com/deploy/srv-static-site?key=super-secret-hook-key'
@@ -9,6 +10,33 @@ function logger() {
 }
 
 describe('Render static site deploy hook', () => {
+  it('rebuilds only when a public prototype projection can change', () => {
+    expect(
+      requiresStaticRebuild(
+        { _status: 'draft', summary: 'Draft edit' },
+        { _status: 'draft', summary: 'Earlier draft' },
+      ),
+    ).toBe(false)
+    expect(
+      requiresStaticRebuild(
+        { _status: 'published', operationalNotes: 'Private note B', summary: 'Public copy' },
+        { _status: 'published', operationalNotes: 'Private note A', summary: 'Public copy' },
+      ),
+    ).toBe(false)
+    expect(
+      requiresStaticRebuild(
+        { _status: 'published', summary: 'New public copy' },
+        { _status: 'published', summary: 'Old public copy' },
+      ),
+    ).toBe(true)
+    expect(
+      requiresStaticRebuild(
+        { _status: 'draft', summary: 'Unpublished' },
+        { _status: 'published', summary: 'Public copy' },
+      ),
+    ).toBe(true)
+  })
+
   it('queues a rebuild with POST and accepts an asynchronous response', async () => {
     const log = logger()
     const fetchImpl = vi.fn(async () => new Response(null, { status: 202 }))

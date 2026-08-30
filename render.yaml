@@ -42,6 +42,55 @@ projects:
                 value: saberistic.com,www.saberistic.com
 
           - type: web
+            name: saberistic-site-staging
+            runtime: static
+            autoDeployTrigger: checksPass
+            buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm build:site
+            staticPublishPath: ./apps/site/out
+            envVars:
+              - key: PAYLOAD_PUBLIC_URL
+                value: https://saberistic-web-staging.onrender.com
+              - key: PUBLIC_SITE_URL
+                value: https://saberistic.com
+              - key: STATIC_CONTENT_MODE
+                value: remote
+              - key: UMAMI_SCRIPT_URL
+                value: https://umami.saberistic.com/script.js
+              - key: UMAMI_WEBSITE_ID
+                value: 8bdad921-34a9-43cb-bc70-9e1c71efa911
+              - key: UMAMI_TRACK_DOMAINS
+                value: saberistic.com,www.saberistic.com
+            headers:
+              - path: /*
+                name: Content-Security-Policy
+                value: "default-src 'self'; base-uri 'self'; connect-src 'self' https://umami.saberistic.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; object-src 'none'; script-src 'self' 'unsafe-inline' https://umami.saberistic.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
+              - path: /*
+                name: Permissions-Policy
+                value: camera=(), geolocation=(), microphone=(), payment=(), usb=()
+              - path: /*
+                name: Referrer-Policy
+                value: strict-origin-when-cross-origin
+              - path: /*
+                name: X-Content-Type-Options
+                value: nosniff
+              - path: /*
+                name: X-Frame-Options
+                value: DENY
+              - path: /_next/static/*
+                name: Cache-Control
+                value: public, max-age=31536000, immutable
+            routes:
+              - type: redirect
+                source: /admin
+                destination: https://saberistic-web-staging.onrender.com/admin
+              - type: redirect
+                source: /admin/*
+                destination: https://saberistic-web-staging.onrender.com/admin/*
+              - type: redirect
+                source: /api/*
+                destination: https://saberistic-web-staging.onrender.com/api/*
+
+          - type: web
             name: saberistic-umami-staging
             runtime: docker
             plan: free

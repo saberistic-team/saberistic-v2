@@ -16,7 +16,7 @@ Use Payload inside the Next.js application rather than a detached SaaS or WordPr
 
 ## ADR-002 — One web runtime for Next.js and Payload
 
-**Status:** Accepted
+**Status:** Superseded by ADR-019
 
 The public frontend and Payload admin/API deploy as `saberistic-web`.
 
@@ -24,7 +24,7 @@ The public frontend and Payload admin/API deploy as `saberistic-web`.
 
 **Consequence:** `/admin` shares deployment fate with the public site, though access/data remain protected.
 
-**Revisit when:** independent scaling, compliance boundaries, or release ownership demonstrably require separation.
+**Revisit when:** historical decision; ADR-019 records the accepted split.
 
 ## ADR-003 — Render Postgres, separate instances for Payload and Umami
 
@@ -219,6 +219,28 @@ Use the supplied company organization and personal profile to seed evidence sour
 **Consequence:** GitHub ingestion never auto-publishes a Payload record or assigns `alpha`, `beta`, or `live`. Launch status requires a separate functional test and the documented security, privacy, data, accessibility, analytics, monitoring, rollback, and support gates. Forks require specific contribution evidence before they appear as Saber's work.
 
 **Revisit when:** only the import mechanism may change; the separation between provenance and maturity remains a trust requirement.
+
+## ADR-019 — Static public delivery with a sleeping Payload control plane
+
+**Status:** Accepted
+
+Export the homepage, prototype directory, prototype detail pages, readiness page, and privacy page as
+a separate Next.js application served by a Render Static Site. Keep Payload Admin/API in the existing
+Docker web service. A versioned, allowlisted snapshot is fetched once before each static build, and
+reviewed public content changes request a new build through a secret Render deploy hook.
+
+**Why:** Render's CDN-hosted Static Sites do not sleep. Visitors receive the last successful complete
+artifact even while the Free Payload service cold-starts, its database is temporarily unavailable,
+or a later content build fails validation.
+
+**Consequence:** CMS writes are not public until a static deployment succeeds. Dynamic slugs require
+build-time enumeration, time-based `featureUntil` behavior requires a daily reconciliation build,
+and administrators use the Payload `onrender.com` origin. The deploy hook and domain transfer become
+explicit operational state.
+
+**Revisit when:** the public surface genuinely requires authenticated/request-time rendering, or a
+different hosting model provides equivalent non-sleeping delivery and atomic content deployments
+without weakening the strict snapshot boundary.
 
 ## Pending implementation choices
 

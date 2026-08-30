@@ -6,7 +6,8 @@ The product direction, research record, content evidence rules, AI-readiness des
 
 ## Current slice
 
-- Payload Admin and APIs in the same Next.js application
+- a separate Next.js static export for the public site, served by Render's CDN without sleeping
+- Payload Admin and APIs in the existing Docker web service
 - PostgreSQL-backed prototypes, evidence sources, Experience, Case Studies, media, users, and site settings
 - draft-first seed data based on audited public repositories
 - public homepage, prototype index, and prototype detail pages
@@ -15,6 +16,7 @@ The product direction, research record, content evidence rules, AI-readiness des
 - deterministic unit tests and browser smoke tests
 - privacy-guarded, self-hosted Umami pageviews and a small validated event contract
 - multi-stage production images, GitHub Actions CI, and a Render Blueprint
+- CMS publication hooks plus a daily reconciliation build for the public static site
 
 Self-hosted Umami is live as disposable validation infrastructure. The owner has authorized temporary collection from the public site through `umami.saberistic.com` while the service still shares the expiring Free database; this is an explicit launch exception, not production-grade analytics acceptance. The next product milestone is the OpenRouter explanation layer: it will explain a deterministic Production Readiness Check, not control scores or accept code, files, logs, or arbitrary prompts.
 
@@ -55,6 +57,7 @@ pnpm typecheck
 pnpm lint
 pnpm test:int
 pnpm build
+pnpm build:site:fixture
 # additional release checks:
 pnpm generate:types
 pnpm test:e2e
@@ -73,9 +76,9 @@ Generated migrations belong in source control. The free staging container applie
 
 Live staging: <https://saberistic.com>
 
-Payload Admin: <https://saberistic.com/admin>
+Payload Admin: <https://saberistic-web-staging.onrender.com/admin>
 
-Render fallback: <https://saberistic-web-staging.onrender.com>
+Payload CMS/API: <https://saberistic-web-staging.onrender.com>
 
 Umami staging: <https://saberistic-umami-staging.onrender.com>
 
@@ -84,6 +87,7 @@ Umami custom host: <https://umami.saberistic.com> (DNS verified, certificate iss
 [`render.yaml`](./render.yaml) defines the first staging environment:
 
 - the Payload/Next.js Docker web service;
+- the public Next.js Static Site, built from a strict versioned Payload snapshot;
 - one additional Free Umami Docker web service using a pinned official base image;
 - one PostgreSQL database;
 - separate `public` (Payload) and `umami` (analytics staging) schemas in that database;
@@ -92,11 +96,11 @@ Umami custom host: <https://umami.saberistic.com> (DNS verified, certificate iss
 - draft-first, idempotent content migrations that preserve editorial decisions;
 - `/api/ready` for website/database readiness and `/api/heartbeat` for Umami process health.
 
-The Blueprint currently uses Render's free staging plans. Its single PostgreSQL instance is temporary, expires on 2026-09-27 unless replaced or upgraded, has no backups, and is not the production data plan. Umami uses an isolated role and schema in that shared instance. The public `Saberistic Production` Website record has ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`; the tracker is limited to `saberistic.com,www.saberistic.com`, honors Do Not Track, strips queries and fragments, and validates pageview and event payloads before sending. Free web services also cannot use Render's pre-deploy phase, so startup migrations are an explicit single-instance staging compromise. Before production, choose paid web/database plans, run migrations in `preDeployCommand`, override the Docker start command to `node server.js`, give Umami a dedicated database with backup/retention procedures, add S3-compatible object storage for Payload media, and complete the backup/restore runbook in [`docs/09-operations-security-and-runbook.md`](./docs/09-operations-security-and-runbook.md). The exact live resource record and handoff are in [`docs/11-live-staging-deployment.md`](./docs/11-live-staging-deployment.md).
+The Blueprint currently uses Render's free staging plans. Its single PostgreSQL instance is temporary, expires on 2026-09-27 unless replaced or upgraded, has no backups, and is not the production data plan. Umami uses an isolated role and schema in that shared instance. The public `Saberistic Production` Website record has ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`; the tracker is limited to `saberistic.com,www.saberistic.com`, honors Do Not Track, strips queries and fragments, and validates pageview and event payloads before sending. Free web services also cannot use Render's pre-deploy phase, so startup migrations are an explicit single-instance staging compromise. The last successful public static deployment remains available if Payload sleeps or a later content build fails, but it is not a database backup. Before production, choose paid web/database plans, run migrations in `preDeployCommand`, override the Docker start command to `node server.js`, give Umami a dedicated database with backup/retention procedures, add S3-compatible object storage for Payload media, and complete the backup/restore runbook in [`docs/09-operations-security-and-runbook.md`](./docs/09-operations-security-and-runbook.md). The static publishing and cutover record is in [`docs/14-render-static-site-rollout.md`](./docs/14-render-static-site-rollout.md).
 
 ### Waking the Free services for a demo
 
-Render Free web services spin down after 15 minutes without inbound traffic. Use the local helper to wake the website and Umami once before a review, or keep both warm for a short, deliberate demo window:
+Render Free web services spin down after 15 minutes without inbound traffic. The public Static Site does not sleep. Use the local helper to wake Payload and Umami once before an editorial or analytics review, or keep those two services warm for a short, deliberate demo window:
 
 ```bash
 pnpm render:warm

@@ -185,7 +185,7 @@ const revalidatePrototypePaths = async (
 
 const publicPrototypeFields = Object.keys(detailSelect)
 
-const requiresStaticRebuild = (
+export const requiresStaticRebuild = (
   doc: Record<string, unknown>,
   previousDoc: Record<string, unknown> | undefined,
 ) => {

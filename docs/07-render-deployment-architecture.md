@@ -1,5 +1,9 @@
 # Render deployment architecture
 
+The accepted public-delivery architecture now separates the Render Static Site from the sleeping
+Payload web service. [Document 14](./14-render-static-site-rollout.md) is the implementation and
+cutover source of truth; the paid production topology below remains the longer-term durability plan.
+
 ## Deployment goal
 
 Run the public site, Payload, Umami, and AI abuse controls as a reproducible Render platform while keeping each independent app prototype isolated from the core website.
@@ -17,16 +21,18 @@ That shared database is a disposable staging exception, not the target topology 
 ```mermaid
 flowchart TB
     Visitor[Visitor] --> DNS[Managed DNS and Render TLS]
-    DNS --> Web[Next.js + Payload web service]
+    DNS --> Site[Next.js Static Site CDN]
     DNS --> Umami[Umami web service]
+    Editor[Editor] --> Web[Payload web service]
     Web --> PayloadDB[(Payload Render Postgres)]
+    Web -. reviewed snapshot + deploy hook .-> Site
     Web --> KV[(Render Key Value)]
     Web --> Storage[S3-compatible media storage]
     Web --> OR[OpenRouter]
     Umami --> UmamiDB[(Umami Render Postgres)]
-    Web -. anonymous events .-> Umami
+    Site -. anonymous events .-> Umami
     Prototype[Independent prototype service] -. anonymous events .-> Umami
-    Web --> Prototype
+    Site --> Prototype
 ```
 
 All Render resources in one environment use the same region and internal datastore URLs.
@@ -39,6 +45,7 @@ Create one core Project named `saberistic-platform`:
 saberistic-platform
 ├─ production — protected, private-network isolation enabled
 │  ├─ saberistic-web
+│  ├─ saberistic-site
 │  ├─ saberistic-payload-db
 │  ├─ saberistic-umami
 │  ├─ saberistic-umami-db
@@ -47,6 +54,7 @@ saberistic-platform
 │  └─ saberistic-umami-backup
 └─ staging — current zero-cost validation environment
    ├─ saberistic-web-staging
+   ├─ saberistic-site-staging
    ├─ saberistic-payload-db-staging
    │  ├─ public schema: Payload
    │  └─ umami schema: restricted analytics staging
@@ -64,16 +72,26 @@ Do not place unrelated prototypes in this Project. Give each durable prototype i
 
 The 2026-08-28 GitHub inventory creates a deployment shortlist, not deployable configuration. Each selected repository still needs its own codebase analysis for build/start commands, port binding, health checks, migrations, workers, storage, and secrets before a `render.yaml` is written.
 
-| Candidate | Render adoption path | Boundary |
-|---|---|---|
-| BackThen | Prefer a separate Git-backed Blueprint after the end-to-end and privacy review; decide explicitly whether the current Vercel URL is retired, retained as preview, or redirected | Do not copy a local Supabase assumption into production blindly; inventory database, auth, voice/photo storage, and migration ownership first |
-| FrescoPay | Separate multi-service Blueprint for the smallest guided educational demo that actually needs to run; split public web/API from private worker/orchestration components | Do not deploy an entire local Docker Compose graph as one public container, and never add real-money or wallet credentials to the demo |
-| TadaDing | Separate Blueprint if selected, normally web/API plus a worker and its own datastore where the code audit confirms those components | Subscription charging stays disabled until payment behavior and operational ownership pass the launch packet |
-| Story Sprout Pay fallback | Keep the current Lovable endpoint only as a temporary, explicitly external sandbox or redeploy a payment-disabled build to its own Render Project | An HTTP-successful external page is not a Render deployment and does not satisfy payment, moderation, or recovery gates |
+| Candidate                 | Render adoption path                                                                                                                                                            | Boundary                                                                                                                                      |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| BackThen                  | Prefer a separate Git-backed Blueprint after the end-to-end and privacy review; decide explicitly whether the current Vercel URL is retired, retained as preview, or redirected | Do not copy a local Supabase assumption into production blindly; inventory database, auth, voice/photo storage, and migration ownership first |
+| FrescoPay                 | Separate multi-service Blueprint for the smallest guided educational demo that actually needs to run; split public web/API from private worker/orchestration components         | Do not deploy an entire local Docker Compose graph as one public container, and never add real-money or wallet credentials to the demo        |
+| TadaDing                  | Separate Blueprint if selected, normally web/API plus a worker and its own datastore where the code audit confirms those components                                             | Subscription charging stays disabled until payment behavior and operational ownership pass the launch packet                                  |
+| Story Sprout Pay fallback | Keep the current Lovable endpoint only as a temporary, explicitly external sandbox or redeploy a payment-disabled build to its own Render Project                               | An HTTP-successful external page is not a Render deployment and does not satisfy payment, moderation, or recovery gates                       |
 
 The production core remains a complex multi-service Blueprint target because it requires web/Payload, separate Payload and Umami databases, Umami, Key Value, and backup jobs. The current staging Blueprint deliberately contains only the two web services and one shared-schema database. A genuinely single-service future prototype may use direct Render service creation, but it still needs a Git remote and the same launch packet. Do not create additional live resources until the chosen repository is pushed, the deployment definition is committed, required secrets are identified, and Blueprint validation passes.
 
 ## Core resources
+
+### `saberistic-site`
+
+- Type: Render Static Site.
+- Application: the `apps/site` Next.js export with `output: 'export'` and real multipage routes.
+- Build source: the strict versioned public snapshot from the Payload HTTPS origin.
+- Publish path: `apps/site/out`.
+- Domain: `saberistic.com`; Render supplies the redirecting `www` counterpart.
+- Failure behavior: a failed build does not replace the last successful CDN deployment.
+- Secrets: none. Database, Payload, OpenRouter, deploy-hook, and Umami administrator secrets never enter this service.
 
 ### `saberistic-web`
 
@@ -165,15 +183,17 @@ Add a Render background worker only when Payload background tasks become real: s
 
 ## Domain plan
 
-| Domain | Destination |
-|---|---|
-| `saberistic.com` | `saberistic-web` |
-| `www.saberistic.com` | Redirect to canonical root |
-| `analytics.saberistic.com` | `saberistic-umami` |
-| `labs.saberistic.com` | Optional redirect to `saberistic.com/prototypes` |
-| `[name].saberistic.com` | Explicit mature prototype service only |
+| Domain                     | Destination                                      |
+| -------------------------- | ------------------------------------------------ |
+| `saberistic.com`           | `saberistic-site`                                |
+| `www.saberistic.com`       | Redirect to canonical root                       |
+| `analytics.saberistic.com` | `saberistic-umami`                               |
+| `labs.saberistic.com`      | Optional redirect to `saberistic.com/prototypes` |
+| `[name].saberistic.com`    | Explicit mature prototype service only           |
 
-Payload admin remains at `https://saberistic.com/admin`; a separate `cms` subdomain adds no isolation because it is the same Next.js service.
+Payload admin remains at `https://saberistic-web-staging.onrender.com/admin` for the free
+architecture. The Static Site redirects `/admin` and `/api/*` to that stable Render origin. A third
+`cms` custom domain is unnecessary and would consume another domain allocation.
 
 Render provisions and renews TLS for verified custom domains and redirects HTTP to HTTPS. After verification and DNS cutover, disable the public `onrender.com` subdomain for production services if no operational integration depends on it.
 
@@ -185,34 +205,34 @@ Render's current included custom-domain allowances depend on workspace plan and 
 
 ### Website/Payload
 
-| Variable | Source |
-|---|---|
-| `DATABASE_URL` | Blueprint `fromDatabase` internal connection |
-| `PAYLOAD_SECRET` | Render-generated secret |
-| `SITE_URL` | non-secret server environment value, rendered where public configuration is needed |
-| `OPENROUTER_API_KEY` | `sync: false`, entered in Render |
-| `AI_ENHANCEMENT_ENABLED` | start at `0`; change to `1` only after OpenRouter and authenticated Key Value launch gates pass |
-| `OPENROUTER_PRIMARY_MODEL` | reviewed non-secret value |
-| `OPENROUTER_FALLBACK_MODEL` | reviewed non-secret value |
-| `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT` | environment-specific configuration |
-| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | `sync: false` secrets |
-| `REDIS_URL` | Blueprint reference to Key Value internal URL |
-| `UMAMI_HOST` | server environment value; render `https://analytics.saberistic.com` into the tracker tag |
-| `UMAMI_WEBSITE_ID` | environment-specific public ID rendered by the server layout |
-| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | approved mail provider; credentials use `sync: false` |
-| `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS` | verified non-secret sender identity |
+| Variable                                           | Source                                                                                          |
+| -------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                     | Blueprint `fromDatabase` internal connection                                                    |
+| `PAYLOAD_SECRET`                                   | Render-generated secret                                                                         |
+| `SITE_URL`                                         | non-secret server environment value, rendered where public configuration is needed              |
+| `OPENROUTER_API_KEY`                               | `sync: false`, entered in Render                                                                |
+| `AI_ENHANCEMENT_ENABLED`                           | start at `0`; change to `1` only after OpenRouter and authenticated Key Value launch gates pass |
+| `OPENROUTER_PRIMARY_MODEL`                         | reviewed non-secret value                                                                       |
+| `OPENROUTER_FALLBACK_MODEL`                        | reviewed non-secret value                                                                       |
+| `S3_BUCKET`, `S3_REGION`, `S3_ENDPOINT`            | environment-specific configuration                                                              |
+| `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`         | `sync: false` secrets                                                                           |
+| `REDIS_URL`                                        | Blueprint reference to Key Value internal URL                                                   |
+| `UMAMI_HOST`                                       | server environment value; render `https://analytics.saberistic.com` into the tracker tag        |
+| `UMAMI_WEBSITE_ID`                                 | environment-specific public ID rendered by the server layout                                    |
+| `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` | approved mail provider; credentials use `sync: false`                                           |
+| `EMAIL_FROM_NAME`, `EMAIL_FROM_ADDRESS`            | verified non-secret sender identity                                                             |
 
 ### Umami
 
-| Variable | Source |
-|---|---|
-| `DATABASE_URL` | Blueprint `fromDatabase` internal connection |
-| `APP_SECRET` | Render-generated stable secret |
+| Variable                    | Source                                                                                                                                                        |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`              | Blueprint `fromDatabase` internal connection                                                                                                                  |
+| `APP_SECRET`                | Render-generated stable secret                                                                                                                                |
 | `TWO_FACTOR_ENCRYPTION_KEY` | derived inside the staging wrapper from a Render-generated seed; use an independently managed stable 64-character hex value for the target production service |
-| `DISABLE_TELEMETRY` | `1` |
-| `PRIVATE_MODE` | `1` after verifying required behavior |
-| `DISABLE_UPDATES` | `1` when upgrades are handled operationally |
-| `SALT_ROTATION` | explicit `month` default unless a documented measurement/privacy decision changes it |
+| `DISABLE_TELEMETRY`         | `1`                                                                                                                                                           |
+| `PRIVATE_MODE`              | `1` after verifying required behavior                                                                                                                         |
+| `DISABLE_UPDATES`           | `1` when upgrades are handled operationally                                                                                                                   |
+| `SALT_ROTATION`             | explicit `month` default unless a documented measurement/privacy decision changes it                                                                          |
 
 Render's `generateValue` creates a strong base64 secret, but Umami's 2FA key requires a 64-character hexadecimal value. The implemented staging wrapper derives that value from a generated seed without exposing the seed to the Umami child; the target production service should retain an equally stable, recoverable key procedure.
 
@@ -262,7 +282,7 @@ projects:
               - key: OPENROUTER_API_KEY
                 sync: false
               - key: AI_ENHANCEMENT_ENABLED
-                value: "0"
+                value: '0'
               - key: SMTP_PASS
                 sync: false
               - key: S3_ACCESS_KEY_ID
@@ -289,15 +309,15 @@ projects:
               - key: TWO_FACTOR_ENCRYPTION_KEY
                 sync: false
               - key: DISABLE_TELEMETRY
-                value: "1"
+                value: '1'
               - key: PRIVATE_MODE
-                value: "1"
+                value: '1'
               - key: DISABLE_UPDATES
-                value: "1"
+                value: '1'
               - key: SALT_ROTATION
                 value: month
               - key: PORT
-                value: "3000"
+                value: '3000'
 
           - type: keyvalue
             name: saberistic-rate-limits
@@ -312,7 +332,7 @@ projects:
             runtime: docker
             region: virginia
             plan: 0.5c-512mb
-            schedule: "15 3 * * *"
+            schedule: '15 3 * * *'
             dockerfilePath: ./ops/postgres-backup/Dockerfile
             dockerContext: .
             envVars:
@@ -329,14 +349,14 @@ projects:
               - key: S3_SECRET_ACCESS_KEY
                 sync: false
               - key: POSTGRES_VERSION
-                value: "17"
+                value: '17'
 
           - type: cron
             name: saberistic-umami-backup
             runtime: docker
             region: virginia
             plan: 0.5c-512mb
-            schedule: "45 3 * * *"
+            schedule: '45 3 * * *'
             dockerfilePath: ./ops/postgres-backup/Dockerfile
             dockerContext: .
             envVars:
@@ -353,13 +373,13 @@ projects:
               - key: S3_SECRET_ACCESS_KEY
                 sync: false
               - key: POSTGRES_VERSION
-                value: "17"
+                value: '17'
 
         databases:
           - name: saberistic-payload-db
             region: virginia
             plan: 0.5c-1g
-            postgresMajorVersion: "17"
+            postgresMajorVersion: '17'
             databaseName: saberistic
             user: saberistic
             ipAllowList: []
@@ -368,7 +388,7 @@ projects:
           - name: saberistic-umami-db
             region: virginia
             plan: 0.5c-1g
-            postgresMajorVersion: "17"
+            postgresMajorVersion: '17'
             databaseName: umami
             user: umami
             ipAllowList: []

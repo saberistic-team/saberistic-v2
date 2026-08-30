@@ -1,0 +1,30 @@
+name: Static Site Rebuild
+
+on:
+  schedule:
+    - cron: '35 11 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: static-site-rebuild
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      STATIC_SITE_DEPLOY_HOOK_URL: ${{ secrets.STATIC_SITE_DEPLOY_HOOK_URL }}
+    steps:
+      - name: Require the Render deploy hook
+        if: env.STATIC_SITE_DEPLOY_HOOK_URL == ''
+        run: |
+          echo '::error::STATIC_SITE_DEPLOY_HOOK_URL is not configured.'
+          exit 1
+
+      - name: Queue the daily static content rebuild
+        if: env.STATIC_SITE_DEPLOY_HOOK_URL != ''
+        run: curl --fail --silent --show-error --request POST "$STATIC_SITE_DEPLOY_HOOK_URL"
