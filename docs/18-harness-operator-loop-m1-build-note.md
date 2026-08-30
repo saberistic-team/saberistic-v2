@@ -1,7 +1,7 @@
 # Harness Platform M1 Operator Loop Build Note
 
 Date: August 30, 2026
-Status: implemented; production acceptance pending
+Status: live and accepted
 
 ## Outcome
 
@@ -364,6 +364,51 @@ Payload process could not authenticate to the configured Postgres instance. Anal
 coverage was skipped by its environment guard. The isolated public frontend suite passed in full;
 production analytics is checked again after deployment.
 
-## Production acceptance
+## Production acceptance — August 30, 2026
 
-Pending implementation verification and checks-gated Render deployment.
+Website commit `fd5c242cb1a09588ec4bc4470cd9ac379a4f9995` passed GitHub CI run
+`33320425578` and CodeQL run `33320425324`. Render released checks-gated Static Site deploy
+`dep-daa501nlk1mc738icg20` only after both checks passed. The deploy became live at
+`2026-08-30T15:46:05.211987Z` and points to the same commit.
+
+| URL                                                            | Result                                                    |
+| -------------------------------------------------------------- | --------------------------------------------------------- |
+| `https://saberistic.com/`                                      | `200` HTML; the M1 note is discoverable from the homepage |
+| `https://saberistic.com/build-notes/`                          | `200` HTML; the M1 note is the first article              |
+| `https://saberistic.com/build-notes/harness-operator-loop-m1/` | `200` article HTML                                        |
+| `https://saberistic.com/build-notes/feed.xml`                  | `200 application/xml`; the M1 route is present            |
+| `https://saberistic.com/sitemap.xml`                           | `200 application/xml`; the M1 route is present            |
+| `https://saberistic.com/build-notes/not-a-real-note/`          | real `404` HTML                                           |
+
+Live browser acceptance confirmed the exact title and canonical URL, Open Graph `article` type,
+two-item breadcrumb data, `BlogPosting` structured data, one `h1`, 16 article sections, 12 labeled
+code blocks, and four accessible SVG diagrams. The public text includes the branch-protection,
+working-tree path-gate, one-writer SQLite, headless-`ask`, and single-scenario eval limitations.
+
+Desktop and 390-pixel phone layouts have no document-level horizontal overflow. On the phone, each
+diagram is a named, keyboard-focusable region with a 348-pixel viewport over a 720-pixel canvas;
+detail remains legible through internal horizontal scrolling. The header remains in normal document
+flow, and the browser console is clean.
+
+The deployed analytics declaration uses `https://umami.saberistic.com/script.js`, website ID
+`8bdad921-34a9-43cb-bc70-9e1c71efa911`, the apex/`www` domain allowlist,
+`saberisticUmamiBeforeSend`, and Do Not Track honoring. The tracker endpoint returned HTTP 200. No
+synthetic production event was injected for this acceptance; the bounded Build Note event slugs and
+privacy guard are covered by the passing local regression suite.
+
+Three independent Lighthouse 13.4.1 mobile runs scored 93, 97, and 86 for performance. The median
+score and median timing values are recorded instead of selecting the fastest trace:
+
+| Profile       | Performance | Accessibility | Best practices | SEO |    FCP |    LCP | Speed Index |   TBT | CLS |
+| ------------- | ----------: | ------------: | -------------: | --: | -----: | -----: | ----------: | ----: | --: |
+| Mobile median |          93 |           100 |            100 | 100 | 2.11 s | 2.88 s |      2.58 s | 10 ms |   0 |
+| Desktop       |         100 |           100 |            100 | 100 | 0.43 s | 0.43 s |      0.43 s |  0 ms |   0 |
+
+The slower mobile trace still retained 100 accessibility, best-practice, and SEO scores and CLS 0.
+The performance spread is recorded as CDN/network variability rather than hidden. No production
+fix was justified by the median or by the invariant quality categories.
+
+This release changes only Git-authored static content and shared article presentation. Rollback is
+a revert of the website commit followed by the normal checks-gated Render deployment; no Payload
+migration, CMS content rollback, Umami schema change, or Harness Platform repository change is
+required.

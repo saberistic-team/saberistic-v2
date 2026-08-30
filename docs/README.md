@@ -92,7 +92,14 @@ PostgreSQL/DynamoDB split, secret-free Temporal rotation history, complete local
 Rust tests, and remaining production migration gates. Website commit `9c5b942` passed CI, CodeQL,
 and checks-gated Render deployment. Its production Lighthouse result is 100/100/100/100 on both
 mobile median and desktop, with CLS 0; full acceptance is recorded in
-[17](./17-turbopass-rust-temporal-build-note.md). The expiring shared database, missing
+[17](./17-turbopass-rust-temporal-build-note.md). Build Note 003 is now live and documents Harness
+Platform Stage 1, Milestone 1 at pinned public commit `a596fc5`: five dogfooded tasks, durable SQLite
+events, the terminal viewer, one deterministic golden eval, the compiled process policy, hosted CI,
+80 passing tests, and the boundaries that remain incomplete. Website commit `fd5c242` passed CI,
+CodeQL, and checks-gated Render deploy `dep-daa501nlk1mc738icg20`. Production Lighthouse measured a
+93 mobile performance median and 100 desktop performance, with 100 accessibility, best practices,
+and SEO plus CLS 0 on every trace. Full acceptance is recorded in
+[18](./18-harness-operator-loop-m1-build-note.md). The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and
