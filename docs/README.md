@@ -84,11 +84,13 @@ Git-authored Build Notes journal, RSS feed, and first source-verified Harness fr
 are live on the Static Site without changing the Payload snapshot contract. The article documents
 the Pi/Qwen bootstrap, M0 contracts, failures, passing 40-test result, and incomplete boundaries
 with code and accessible SVG diagrams. Its production Lighthouse median is 99/100/100/100 on mobile
-and 100/100/100/100 on desktop, with CLS 0 on both. Build Note 002 is implemented locally and
-documents TurboPass at public commit `f18da56`: the exact FFI error-channel constraint, direct use
-of the unchanged Ristretto crate, compatible v1/v2/v3 token lifecycle, PostgreSQL/DynamoDB split,
-secret-free Temporal rotation history, complete local stack, 56 passing Rust tests, and remaining
-production migration gates. Its deployment acceptance is tracked in
+and 100/100/100/100 on desktop, with CLS 0 on both. Build Note 002 is also live on the Static Site
+and documents TurboPass at public commit `f18da56`: the exact FFI error-channel constraint, direct
+use of the unchanged Ristretto crate, compatible v1/v2/v3 token lifecycle,
+PostgreSQL/DynamoDB split, secret-free Temporal rotation history, complete local stack, 56 passing
+Rust tests, and remaining production migration gates. Website commit `9c5b942` passed CI, CodeQL,
+and checks-gated Render deployment. Its production Lighthouse result is 100/100/100/100 on both
+mobile median and desktop, with CLS 0; full acceptance is recorded in
 [17](./17-turbopass-rust-temporal-build-note.md). The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

@@ -1,7 +1,7 @@
 # TurboPass Rust + Temporal Build Note
 
 Date: August 30, 2026
-Status: implemented locally; production acceptance is recorded after checks-gated deployment
+Status: deployed and production-accepted
 
 ## Outcome
 
@@ -381,6 +381,43 @@ server uses HTTP/1.0 and supplies neither Render's CDN compression nor its immut
 headers; Lighthouse attributed large savings to document compression/cache lifetime and unused
 shared application bundles. Production CDN Lighthouse is the release measurement. Accessibility,
 best-practice, SEO, and zero-CLS gates already pass independently of that serving difference.
+
+### Production acceptance — August 30, 2026
+
+Website commit `9c5b9422c104ad64fddbd6a8a591ba6373e1c2d6` passed GitHub CI run
+`33317833760` and CodeQL run `33317833377`. Render then released checks-gated Static Site deploy
+`dep-daa45tmq1p3s738uc500`, which became live at `2026-08-30T14:50:15.700899Z`.
+
+| URL                                                           | Result                                                       |
+| ------------------------------------------------------------- | ------------------------------------------------------------ |
+| `https://saberistic.com/build-notes/`                         | `200` HTML; TurboPass appears before Harness from Scratch    |
+| `https://saberistic.com/build-notes/turbopass-rust-temporal/` | `200` article HTML                                           |
+| `https://saberistic.com/build-notes/feed.xml`                 | `200 application/xml`; both notes appear newest first        |
+| `https://saberistic.com/sitemap.xml`                          | `200 application/xml`; index and both article routes present |
+| `https://saberistic.com/build-notes/not-a-real-note/`         | real `404` HTML                                              |
+
+Live browser acceptance confirmed the exact canonical, Open Graph `article` type, `BlogPosting`
+structured data, one `h1`, 16 article sections, 13 labeled code regions, four accessible diagrams,
+the verified TurboPass commit, and the public/session evidence distinction. Desktop and 390-pixel
+phone widths both had zero document overflow; every wide code region scrolls internally, and the
+phone header remains in normal document flow. No browser warning or error was recorded.
+
+Umami loads from `https://umami.saberistic.com/script.js` with website ID
+`8bdad921-34a9-43cb-bc70-9e1c71efa911`, the apex/`www` domain allowlist, and
+`saberisticUmamiBeforeSend` privacy guard.
+
+Three independent production mobile Lighthouse runs scored 100, 100, and 90 for performance. The
+median score and median individual timing measurements are recorded rather than selecting the
+fastest trace:
+
+| Profile       | Performance | Accessibility | Best practices | SEO |    FCP |    LCP | Speed Index |  TBT | CLS |
+| ------------- | ----------: | ------------: | -------------: | --: | -----: | -----: | ----------: | ---: | --: |
+| Mobile median |         100 |           100 |            100 | 100 | 1.23 s | 1.42 s |      1.23 s | 8 ms |   0 |
+| Desktop       |         100 |           100 |            100 | 100 | 0.34 s | 0.47 s |      0.34 s | 0 ms |   0 |
+
+The slower mobile trace retained 100 accessibility, best-practice, and SEO scores and CLS 0. The
+median therefore reflects run-to-run variability without discarding the outlier or making a change
+based on the fastest result.
 
 ## Deployment and rollback
 
