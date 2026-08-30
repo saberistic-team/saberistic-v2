@@ -73,8 +73,11 @@ Do not delay launch for a full blog, user accounts, repository ingestion, free-f
 The Payload/Next.js slice is implemented, tested, published to GitHub, and deployed to Render
 staging. The public homepage and prototype hub now run on a Render Static Site CDN, so public-page
 availability no longer depends on a warm Payload process. BackThen and Story Sprout Pay are
-published; FrescoPay remains held without a verified canonical app URL, and TadaDing remains held
-because its registered deployment returns HTTP 404. Payload contains 13 evidence records plus four
+published as launchable prototypes. Borrowed Brain is published with a synthetic-sample-only launch
+boundary; The Last Press and Psych Lab are published as non-launchable concept records because the
+source audit found unresolved authorization, settlement, and high-severity security issues.
+FrescoPay remains held without a verified canonical app URL, and TadaDing remains held because its
+registered deployment returns HTTP 404. Payload contains 19 evidence records plus four
 review-gated Experience and four Case Study drafts, all not reviewed. Self-hosted Umami is live on a
 separate Free web service; the owner has enabled 2FA, and temporary public collection through
 `umami.saberistic.com` passed live tracker, ingestion, privacy-payload, and dashboard acceptance. The
@@ -100,7 +103,14 @@ events, the terminal viewer, one deterministic golden eval, the compiled process
 CodeQL, and checks-gated Render deploy `dep-daa501nlk1mc738icg20`. Production Lighthouse measured a
 93 mobile performance median and 100 desktop performance, with 100 accessibility, best practices,
 and SEO plus CLS 0 on every trace. Full acceptance is recorded in
-[18](./18-harness-operator-loop-m1-build-note.md). The expiring shared database, missing
+[18](./18-harness-operator-loop-m1-build-note.md). Build Note 004 is live with one shared
+architecture diagram and three product-flow diagrams for The Last Press, Psych Lab, and Borrowed
+Brain. The final public snapshot contains five prototype records; only Borrowed Brain receives a new
+external launch action. Website commit `b8b6c2d` passed CI and CodeQL, Payload deploy
+`dep-daa5rlflk1mc738j6bm0` completed both publication migrations, and Static Site deploy
+`dep-daa5te2jnfac73fkic3g` built 22 pages from verified five-prototype content revision
+`2e8da5a6f350`. Full acceptance and the migration transaction-boundary fix are recorded in
+[19](./19-three-lovable-prototypes.md). The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
 [11](./11-live-staging-deployment.md) for the live record and

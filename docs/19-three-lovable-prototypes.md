@@ -160,6 +160,44 @@ production build, fixture static build, and static-export verifier. Production a
 checks all three prototype records, the Build Note route, canonical metadata, all source actions,
 and the absence of a launch action for held products.
 
+## Production acceptance — 2026-08-30
+
+The release reached production through three small commits rather than hiding a migration problem:
+
+- `1aa873c5c92b2b19d0cb3153cf1b614fa5939a13` added the records, article, diagrams, tests, and
+  documentation;
+- `b86eb304de5ea6dfdc400606473233785ca05795` removed an incorrect explicit draft-mode flag and
+  registered a safe idempotent retry migration; and
+- `b8b6c2d0e0205a225d79a609508c4d659d5d864d` fixed the actual production-only failure by passing
+  the Payload request into evidence `findByID` calls, keeping verification reads inside the same
+  database transaction as the newly created evidence.
+
+The first production snapshot check correctly found only the two existing prototypes. A subsequent
+deploy exposed the precise failure as `[EVIDENCE_NOT_VERIFIED]`: the publication hook was opening a
+separate database read that could not see uncommitted evidence from the migration transaction. The
+hook now carries the migration request into that read, and its unit test asserts the transaction
+context explicitly. Both migrations remain idempotent and have non-destructive down functions.
+
+Final acceptance evidence:
+
+| Gate                | Result                                                                                                                                         |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Local website suite | 162 passed, 1 skipped; type checks, lint, Payload build, fixture static export, and browser QA passed                                          |
+| GitHub CI           | Run `33323172263` passed on `b8b6c2d`                                                                                                          |
+| GitHub CodeQL       | Run `33323172198` passed on `b8b6c2d`                                                                                                          |
+| Payload deployment  | `dep-daa5rlflk1mc738j6bm0` live; both Lovable publication migrations completed                                                                 |
+| Payload health      | `status: ok`, commit `b8b6c2d0e020`                                                                                                            |
+| Public snapshot     | Revision `2e8da5a6f350548e8ec581a1f9fb667c5cda3c20eb9572ef6689e3bee7e64d58`, five prototypes                                                   |
+| Static deployment   | `dep-daa5te2jnfac73fkic3g` live; 22 pages generated from the five-prototype revision                                                           |
+| Public routes       | Catalog, three detail routes, Build Note 004, RSS, and sitemap returned HTTP 200                                                               |
+| Launch boundary     | No application action for The Last Press or Psych Lab; Borrowed Brain links only with the synthetic-only warning                               |
+| Browser QA          | Correct canonicals, four accessible diagram regions, three repository actions in both article action groups, and no console warnings or errors |
+
+The sitemap contains all three prototype routes and the new Build Note route. The RSS feed contains
+Build Note 004. Production detail pages expose the canonical repository for every project, retain
+the reviewed safety notice, and withhold unsafe Lovable destinations through the public mapper even
+though Payload preserves those URLs for editorial provenance.
+
 ## Next engineering work
 
 1. Restrict The Last Press profile updates to non-sensitive columns or RPC-only writes, then add an
