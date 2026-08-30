@@ -96,6 +96,8 @@ only as new supported-browser samples arrive or the selected date window advance
 - Added escaped JSON-LD for `WebSite`, `Organization`, and founder `Person` on the homepage, plus
   `BreadcrumbList` and conservative `CreativeWork` data on prototype details. No address, rating,
   pricing, legal entity, client, or adoption claim was invented.
+- Added AmirSaber's supplied LinkedIn profile to the persistent site footer and to the founder
+  `Person.sameAs` identity links, alongside the existing personal GitHub profile.
 - Added equivalent permanent Render redirects for `/about`, `/services`, `/case-studies`, `/brief`,
   `/diagnostic`, `/work/architecture-diagnostic`, `/work/brave`, `/work/baxus`, and `/work/eternis`.
   Old insight articles and `/work/spiral-safe` remain intentionally unmapped until equivalent public

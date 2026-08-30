@@ -77,6 +77,9 @@ export function SiteFooter() {
             <a href="https://github.com/saberistic" rel="me">
               GitHub — AmirSaber
             </a>
+            <a href="https://www.linkedin.com/in/saberistic/" rel="me">
+              LinkedIn — AmirSaber
+            </a>
           </div>
         </div>
 

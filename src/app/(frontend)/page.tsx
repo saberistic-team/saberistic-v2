@@ -44,7 +44,7 @@ const homepageStructuredData = {
       '@id': 'https://saberistic.com/#amir-saber-sharifi',
       '@type': 'Person',
       name: 'AmirSaber Sharifi',
-      sameAs: ['https://github.com/saberistic'],
+      sameAs: ['https://github.com/saberistic', 'https://www.linkedin.com/in/saberistic/'],
       url: 'https://saberistic.com/#about',
       worksFor: { '@id': 'https://saberistic.com/#organization' },
     },

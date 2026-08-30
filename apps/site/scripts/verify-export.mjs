@@ -38,6 +38,14 @@ assert.match(homepage, /<link rel="manifest" href="\/manifest\.webmanifest"/)
 assert.match(homepage, /id="homepage-structured-data" type="application\/ld\+json"/)
 assert.match(homepage, /class="wordmark__mark"/)
 assert.match(homepage, /width="32" height="32"/)
+assert.match(
+  homepage,
+  /<a href="https:\/\/www\.linkedin\.com\/in\/saberistic\/" rel="me">LinkedIn — AmirSaber<\/a>/,
+)
+assert.match(
+  homepage,
+  /"sameAs":\["https:\/\/github\.com\/saberistic","https:\/\/www\.linkedin\.com\/in\/saberistic\/"\]/,
+)
 
 for (const [relativePath, canonical] of [
   ['build-notes/index.html', 'https://saberistic.com/build-notes/'],
