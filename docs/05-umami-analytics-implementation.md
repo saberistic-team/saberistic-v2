@@ -24,7 +24,7 @@ The shared database is a staging-only cost decision. It avoids silently starting
 
 The service is live at <https://saberistic-umami-staging.onrender.com>; the resource and acceptance evidence are recorded in [11](./11-live-staging-deployment.md). On 2026-08-30, the owner explicitly authorized temporary public collection on this shared database despite the earlier production launch gate. This exception does not make the database durable or production-grade and does not waive the dedicated-database, retention, backup/restore, abuse-monitoring, or upgrade work.
 
-The `Saberistic Production` Website record has the public ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`. The website configuration uses `https://umami.saberistic.com/script.js` and the exact tracker-domain allowlist `saberistic.com,www.saberistic.com`. Render verified the custom-domain DNS record, issued its certificate, and returned HTTP 200 from the custom-host heartbeat and tracker script on 2026-08-30. Collection acceptance still requires the deployed website to render the exact configuration and deliver sanitized live pageview and custom-event data. The supervised administrator login is complete and 2FA is enabled. Analytics retention, backup/restore, and upgrade acceptance remain incomplete.
+The `Saberistic Production` Website record has the public ID `8bdad921-34a9-43cb-bc70-9e1c71efa911`. The website configuration uses `https://umami.saberistic.com/script.js` and the exact tracker-domain allowlist `saberistic.com,www.saberistic.com`. Render verified the custom-domain DNS record, issued its certificate, and returned HTTP 200 from the custom-host heartbeat and tracker script on 2026-08-30. The final live browser suite then proved the exact rendered tracker configuration, sanitized pageview and custom-event payloads, HTTP 200 ingestion, and stored dashboard results. The supervised administrator login is complete and 2FA is enabled. Analytics retention, backup/restore, and upgrade acceptance remain incomplete.
 
 ## Deployment shape
 
@@ -296,7 +296,7 @@ The official container's startup script checks the database and applies Prisma m
 
 ## Analytics acceptance criteria
 
-The owner-authorized temporary launch is allowed to proceed while the dedicated database, backup/restore, automatic retention, and always-on service requirements remain open. It is not production-grade acceptance. Valid custom-domain TLS, successful script and ingestion requests, exact rendered tracker attributes, and live delivery of one sanitized pageview and custom event are still required before calling the temporary activation live.
+The owner-authorized temporary activation passed custom-domain TLS, tracker-script, ingestion, exact-attribute, sanitized-pageview, custom-event, dashboard, and core-UX acceptance on 2026-08-30. It remains a launch-validation exception rather than production-grade analytics while the dedicated database, backup/restore, automatic retention, abuse monitoring, and always-on service requirements remain open.
 
 - no events are emitted outside approved hostnames, and the tracker component is omitted from non-analytics environments where possible;
 - normal site and SPA navigation produce one pageview each;

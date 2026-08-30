@@ -2,21 +2,21 @@
 
 ## Status
 
-Saberistic V2 was deployed to Render on **2026-08-28** and received its reviewed prototype, career-content, and disposable Umami staging release on **2026-08-29** from the `main` branch of [`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
+Saberistic V2 was deployed to Render on **2026-08-28**, received its reviewed prototype, career-content, and disposable Umami staging release on **2026-08-29**, and activated its owner-authorized privacy-safe analytics release on **2026-08-30** from the `main` branch of [`saberistic-team/saberistic-v2`](https://github.com/saberistic-team/saberistic-v2).
 
 - Primary public URL: <https://saberistic.com>
 - Render fallback URL: <https://saberistic-web-staging.onrender.com>
 - Payload admin: <https://saberistic.com/admin>
 - Umami staging: <https://saberistic-umami-staging.onrender.com>
 - Umami custom domain: <https://umami.saberistic.com> (DNS verified, certificate issued, custom-host heartbeat and tracker script HTTP 200 on 2026-08-30)
-- Current website commit/deploy: `59791ec6dc0a98bcc4cecae879943fcc881e1163` / `dep-da9gs43l550s739vpvf0`
+- Current website commit/deploy: `57e1844f24bc0c39b8e7702514463745226cb0ff` / `dep-da9sm8nlk1mc738c1mb0`
 - Current Umami commit/deploy: `59791ec6dc0a98bcc4cecae879943fcc881e1163` / `dep-da9gs43l550s739vpvj0`
 - Umami Blueprint declaration commit: `5df7d7237c2e9ad843d2b47a861734d77a802b74`
-- Final CI run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33264019046>
-- Final CodeQL run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33264018771>
+- Final CI run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33296529785>
+- Final CodeQL run: <https://github.com/saberistic-team/saberistic-v2/actions/runs/33296529183>
 - Blueprint: `Saberistic V2` (`exs-da915615efls73ab4hjg`)
 
-Both current deploys finished successfully on 2026-08-29: Umami at 16:53:12 UTC and the website at 16:54:54 UTC. The deployment uses only free Render plans. No paid resource was created for Saberistic V2.
+The current Umami deploy finished successfully on 2026-08-29 at 16:53:12 UTC. The current website deploy finished successfully on 2026-08-30 at 06:21:24 UTC. The deployment uses only free Render plans. No paid resource was created for Saberistic V2.
 
 ## Render resources
 
@@ -48,6 +48,7 @@ The final live deployment returned HTTP 200 on `saberistic.com` for:
 - `/`
 - `/prototypes`
 - `/readiness`
+- `/privacy`
 - `/api/health`
 - `/api/ready`
 - `/admin`
@@ -66,7 +67,13 @@ On 2026-08-30, the owner completed the supervised Umami login, enabled 2FA, and 
 
 The integration honors Do Not Track, excludes query strings and URL fragments, enables web-performance measurements, registers a payload privacy guard before the tracker loads, and emits only runtime-validated, low-cardinality pageview and interaction data. Implemented custom events cover primary CTA clicks, service-section visits, fixed readiness-example starts, prototype-card and detail views, approved prototype launches, and public source-link clicks. It does not identify visitors or enable session replay, and it rejects readiness answers, free text, contact data, prompts/results, search/filter terms, full URLs, and internal identifiers.
 
-Render verified the `umami.saberistic.com` DNS record and issued its certificate after the new CNAME propagated. Direct acceptance returned HTTP 200 with `{"ok":true}` from `/api/heartbeat` and HTTP 200 JavaScript from `/script.js` over the custom host. Live collection acceptance remains pending until the new website release renders the exact tracker configuration and sanitized pageview and custom-event data appear in the dashboard.
+Render verified the `umami.saberistic.com` DNS record and issued its certificate after the new CNAME propagated. Direct acceptance returned HTTP 200 with `{"ok":true}` from `/api/heartbeat` and HTTP 200 JavaScript from `/script.js` over the custom host.
+
+Commit `5d966fc04b8706dcf2f9240cf7c2681eb4004342` activated the tracker, event contract, privacy guard, public notice, and demo helper. Commit `57e1844f24bc0c39b8e7702514463745226cb0ff` made `/privacy` runtime-rendered so it receives the same production environment configuration as the other public routes. Render deploy `dep-da9sm8nlk1mc738c1mb0` is the accepted final website release.
+
+Local release verification passed TypeScript, ESLint, 119 unit/integration tests with one opt-in PostgreSQL test skipped, and the production build; 45 focused analytics checks passed within that coverage. The final GitHub CI and both CodeQL analyses also completed successfully.
+
+The complete live Playwright suite passed five tests against that deployment. It proved the exact custom script URL, Website ID, domain allowlist, Do Not Track, query/hash exclusion, and before-send callback; observed HTTP 200 from `/api/send`; verified that the acceptance query and fragment were absent from the pageview payload; and delivered the exact allowlisted `primary_cta_clicked` properties. The Umami dashboard showed the sanitized `/` pageview and two deliberately generated acceptance events from the two live analytics test runs. Both services had zero error-level logs in the release window, and final health/readiness returned commit `57e1844f24bc` with HTTP 200.
 
 ## Post-deploy dependency hardening
 
@@ -137,7 +144,7 @@ This is deliberately not a permanent anti-sleep daemon. The website and Umami co
 - Payload is live with 13 evidence records, two published prototypes, two held prototype drafts, four Experience drafts, and four Case Study/experience-profile drafts. Every career record remains `not-reviewed`; none was automatically approved or published.
 - The static homepage uses conservative résumé- and public-source-derived positioning. It does not expose the unreviewed career drafts as published CMS content.
 - The deterministic readiness preview is live. OpenRouter generation is not connected yet and the UI says so explicitly.
-- Umami is live as a separate Free web service and now has an owner-authorized public Website record, issued custom-domain TLS certificate, and tracker configuration, but it still shares Payload's expiring Free PostgreSQL instance. The website release and sanitized end-to-end event delivery must still be accepted live.
+- Umami is live as a separate Free web service and its owner-authorized temporary activation passed custom-domain, tracker, ingestion, privacy-payload, dashboard, and failure-isolation acceptance. It still shares Payload's expiring Free PostgreSQL instance.
 - Umami login and 2FA setup are complete. Analytics retention automation, backup/restore, abuse monitoring, and upgrade acceptance remain incomplete, so analytics data is disposable and not a durable business record.
 - Production media uploads remain disabled until S3-compatible object storage is connected.
 - A production email adapter is not configured; Payload currently logs email to the service console.
@@ -159,7 +166,7 @@ The Render GitHub App remains limited to selected repositories. Access to `agent
 1. Keep the generated `saberistic_admin` credential and enabled-2FA recovery material securely stored. Do not delete, disable, or demote the fixed bootstrap row.
 2. Review the four Experience and four Case Study drafts claim by claim in Payload. Publish only after administrator approval, evidence, relationship, permission, and surface checks pass.
 3. Keep FrescoPay and TadaDing in draft until each has a working canonical app URL and completes a fresh availability and safety review.
-4. Deploy the tracker, verify exact rendered attributes, ingestion, and sanitized live events; then provision a dedicated production-grade Umami database and complete retention automation, abuse monitoring, backup/restore, and upgrade tests before describing analytics as production-grade.
+4. Provision a dedicated production-grade Umami database and complete retention automation, abuse monitoring, backup/restore, and upgrade tests before describing analytics as production-grade.
 5. Upgrade or replace the shared Free PostgreSQL database before 2026-09-27, with a tested backup and rollback path.
 6. Connect S3-compatible object storage and a transactional email adapter before production media, password-reset, or contact workflows are enabled.
 7. Add OpenRouter only after rate limiting, redaction, model-output validation, and usage caps from [06](./06-openrouter-readiness-check-implementation.md) are implemented.
