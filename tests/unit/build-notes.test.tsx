@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
 import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramDevnet'
+import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControlPlane'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
@@ -43,7 +44,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('growth-program-sensor-scorecards-devnet')
+    expect(buildNotes[0]?.slug).toBe('harness-durable-control-plane-m4')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -71,6 +72,9 @@ describe('Git-authored build notes', () => {
     expect(
       getBuildNote('harness-permissioned-agent-services-m3')?.repositories[0]?.commit.slice(0, 7),
     ).toBe('defbf7b')
+    expect(
+      getBuildNote('harness-durable-control-plane-m4')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('d3b2859')
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
       getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
@@ -120,6 +124,26 @@ describe('Git-authored build notes', () => {
     expect(html.match(/role="region"/g)?.length).toBe(4)
     expect(html).toContain('tabindex="0"')
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('renders M4 with fenced ownership, replay-safe restore, and no production-scale claim', () => {
+    const html = renderToStaticMarkup(createElement(HarnessControlPlaneArticle))
+
+    expect(html).toContain('M4 asks what survives a crash')
+    expect(html).toContain('PRODUCTION-SHAPED, NOT PRODUCTION-PROVEN')
+    expect(html).toContain('expired <em>running</em> run may')
+    expect(html).toContain('indeterminate')
+    expect(html).toContain('at-least-once delivery')
+    expect(html).toContain('Replay restores evidence, not an illusion of exactly-once execution')
+    expect(html).toContain('A SIGNED URL IS STILL A SECRET')
+    expect(html).toContain('suspended Job template inside a ConfigMap')
+    expect(html).toContain('421 / 421')
+    expect(html).toContain('No live scale claim')
+    expect(html).toContain('d3b2859')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(9)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {

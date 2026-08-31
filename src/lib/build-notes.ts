@@ -20,6 +20,43 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 4',
+    footerSummary:
+      'The pinned public merge contains the fenced scheduler, durable session restore, transactional outbox, content-addressed artifact path, audit exporter, and fail-closed Kubernetes contract described here.',
+    footerTitle: 'Inspect the durable control plane—and the operating proof it still needs.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 32,
+    repositories: [
+      {
+        commit: 'd3b2859a48cfb794472d30805ea91b47dc1086d0',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['m3-to-m4', 'Service to control plane'],
+      ['delivery', 'Checks-gated delivery'],
+      ['scheduling', 'Fenced scheduling'],
+      ['durable-sessions', 'Session restore'],
+      ['artifacts', 'Artifacts and audit'],
+      ['kubernetes', 'Kubernetes topology'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M4: durable control plane',
+    slug: 'harness-durable-control-plane-m4',
+    summary:
+      'How M4 adds fenced scheduling, replay-safe sessions, content-addressed S3 artifacts, deterministic audit export with a transactional registry/checkpoint commit, and fail-closed Kubernetes topology.',
+    tags: ['Agent control plane', 'PostgreSQL', 'Kubernetes', 'Replay safety'],
+    title: 'Harness Platform M4: preserving agent-run state through failure',
+  },
+  {
     eyebrow: 'DAY 010 / GROWTH PROGRAM',
     footerSummary:
       'The pinned public commit contains the expanded sensor-custody product map, exact program and IDL identities, immutable deployment manifest, and explicit NO-GO gates described here.',

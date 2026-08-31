@@ -8,6 +8,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',
+    '/build-notes/harness-durable-control-plane-m4',
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
@@ -25,6 +26,29 @@ test.describe('Public site smoke', () => {
       await expect(page.locator('h1').first()).toBeVisible()
     })
   }
+
+  test('Harness M4 keeps durable recovery separate from production scale', async ({ page }) => {
+    const response = await page.goto('/build-notes/harness-durable-control-plane-m4')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M4: preserving agent-run state through failure',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('d3b2859')
+    await expect(page.getByRole('link', { name: 'Fenced scheduling' })).toHaveAttribute(
+      'href',
+      '#scheduling',
+    )
+    await expect(page.getByRole('link', { name: 'Session restore' })).toHaveAttribute(
+      'href',
+      '#durable-sessions',
+    )
+    await expect(page.getByText('PRODUCTION-SHAPED, NOT PRODUCTION-PROVEN')).toBeVisible()
+    await expect(page.getByText('No live scale claim', { exact: true })).toBeVisible()
+  })
 
   test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({
     page,

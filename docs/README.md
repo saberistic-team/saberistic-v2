@@ -59,6 +59,7 @@ The product promise is:
 | [23 — Spiral Safe Build Note](./23-spiral-safe-build-note.md)                                                     | Eight-repository integration, WebAuthn/Vault custody boundary, account usage, fixture demos, and explicit Nitro release gates.     |
 | [24 — Harness Platform M3 Permissioned Agent Services](./24-harness-permissioned-agent-services-m3.md)            | ACP WebSocket sessions, fail-closed approvals, manifest-derived Docker plans, provider adaptation, audit boundaries, and M4 gates. |
 | [25 — Growth Program Sensor Receipts and Devnet](./25-growth-program-devnet-use-cases.md)                         | Sensor-backed custody use cases, experimental Solana devnet identity, artifact/IDL evidence, UI boundaries, and release gates.     |
+| [26 — Harness Platform M4 Durable Control Plane](./26-harness-durable-control-plane-m4-build-note.md)             | Fenced scheduling, replay-safe sessions, deterministic audit export, content-addressed artifacts, Kubernetes topology, and gaps.   |
 
 ## Recommended first release
 
@@ -177,6 +178,13 @@ deploy `dep-daasrtflk1mc73ae6lr0` generated 28 pages with ten Build Notes and fi
 routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
 security-header acceptance. Its implementation and production record are in
 [25](./25-growth-program-devnet-use-cases.md).
+Build Note 011 is prepared against Harness Platform M4 merge `d3b2859`: idempotent task admission,
+storage-clock run leases and fencing, indeterminate-run reconciliation, PostgreSQL/SQLite session
+restore, evidence-before-effect ordering, a transactional outbox, content-addressed S3-compatible
+artifacts, deterministic audit JSONL, and a Kubernetes reference base that cannot become ready
+as-is.
+Its website implementation and production acceptance are tracked in
+[26](./26-harness-durable-control-plane-m4-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
