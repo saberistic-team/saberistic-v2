@@ -119,6 +119,10 @@ results, and explicit custody, metadata, anychain, and interoperability limits. 
 commit `3d5ea1e` passed CI and CodeQL, and Render Static Site deploy
 `dep-daa6t8n10e5c73bjntl0` generated 23 pages with five verified Build Notes. Its implementation,
 clean-build correction, and production acceptance are recorded in [20](./20-cryptopal-build-note.md).
+The recorded-walkthrough release in website commit `6c6963e` passed CI run `33348840529` and CodeQL
+run `33348840477`; checks-gated Static Site deploy `dep-daadtjf10e5c73bpc0vg` generated the same 23
+pages, verified the exact MP4 and WebP assets, and passed production page, immutable-cache,
+same-origin media-policy, and byte-range acceptance.
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

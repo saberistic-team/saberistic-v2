@@ -362,6 +362,31 @@ Public acceptance at
 - the local-demo, session-evidence, privacy, custody, interoperability, and Solana-only boundaries
   remain visible in the public output.
 
+### Recorded-walkthrough release
+
+The owner-supplied recording and remaining implementation-session evidence shipped in website
+feature commit `6c6963e`. GitHub CI run `33348840529` passed the root and static-site typechecks,
+lint, 163 active automated tests, Payload production build, fixture static export, and exact media
+verification. CodeQL run `33348840477` passed both Actions and JavaScript/TypeScript analysis.
+
+Checks-gated Render Static Site deploy `dep-daadtjf10e5c73bpc0vg` then built the exact feature
+commit. It fetched reviewed Payload content revision `2e8da5a6f350` with five prototypes, generated
+23 static pages, copied the shared media, verified the exact CryptoPal media assets plus five Build
+Notes and five prototype routes, and became live at 9:56:49 PM EDT on August 30, 2026.
+
+Production acceptance confirmed:
+
+- the article returns HTTP 200 with the expected title, canonical URL, CryptoPal commit pin
+  `55f7f00`, native controls, `preload="none"`, purpose-built poster, silent-video transcript, and
+  `VideoObject` metadata;
+- the H.264 video returns `video/mp4`, the exact `8,916,669`-byte length, `Accept-Ranges: bytes`, and
+  `Cache-Control: public, max-age=31536000, immutable`;
+- a request for bytes `0-1023` returns HTTP 206, `Content-Range: bytes 0-1023/8916669`, and exactly
+  1,024 bytes, confirming seek-friendly partial delivery;
+- the WebP poster returns `image/webp`, the exact `33,050`-byte length, byte-range support, and the
+  same immutable cache policy; and
+- the page and both media assets receive the same-origin `media-src 'self'` Content Security Policy.
+
 ## Next CryptoPal engineering work
 
 1. Authenticate and independently pin a globally shared issuer-key manifest.
