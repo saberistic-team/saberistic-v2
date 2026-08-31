@@ -190,15 +190,19 @@ Build Notes and five Payload prototype routes, then passed custom-domain article
 feed, sitemap, CDN-cache, and security-header acceptance. Its implementation and production record
 are in
 [26](./26-harness-durable-control-plane-m4-build-note.md).
-Build Note 012 is prepared from Harness Platform M5 merge `4bf5f68`. It documents the decision to
+Build Note 012 is live from Harness Platform M5 merge `4bf5f68`. It documents the decision to
 retain TypeScript/Node because no qualifying M3–M4 runtime profile exists, without presenting that
 absence as proof that Node is optimal. The same development record prompted a separate Step 0
 audit and checks-gated hardening release: exact branch and CI identity, complete pre/post task
 delta, attributed policy events, deterministic TaskAgent/Pi-adapter coverage, and coherent
 `run-report/v2` evidence. Public M5 CI and an independent clean-checkout audit both passed 535
 offline tests in 36 files, strict TypeScript, and one golden scenario. The 16.94-second report field
-is explicitly treated as whole-suite timing rather than a benchmark. Implementation, claim
-controls, and the pending production record are in
+is explicitly treated as whole-suite timing rather than a benchmark. Website commit `e0436fe`
+passed CI run `33448393215` and CodeQL run `33448392859`; checks-gated Static Site deploy
+`dep-dab0dq95efls73fn4d10` generated 31 pages with 12 Build Notes and five Payload prototype
+routes, then passed custom-domain article, structured-data, feed, sitemap, CDN-cache, responsive
+overflow, and security-header acceptance. Implementation, claim controls, and the production
+record are in
 [28](./28-harness-polyglot-review-m5-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved

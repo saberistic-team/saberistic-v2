@@ -342,4 +342,31 @@ The release uses the existing checks-gated Render Static Site path:
 
 ### Production record
 
-Pending the checks-gated website release.
+Website implementation commit `e0436fe35197af3d2f7ef28251845c1d38e2421b` passed an
+independent clean-checkout `pnpm verify`: both TypeScript checks, repository-wide ESLint, 540
+passing tests with three reported skips, the Payload production build, and a 28-page fixture
+static export containing 12 Build Notes and two prototype fixtures. The focused Chromium acceptance
+for the M5 route also passed from that checkout.
+
+The pushed commit passed website CI run
+[`33448393215`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33448393215)
+and CodeQL run
+[`33448392859`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33448392859).
+Render then built the same commit in checks-gated Static Site deploy
+`dep-dab0dq95efls73fn4d10`. The remote-content build used public snapshot revision
+`2e8da5a6f350`, generated 31 static pages, and verified 12 Build Notes plus five Payload prototype
+routes before becoming live at `2026-08-31T22:58:37Z`.
+
+Production acceptance at
+[`/build-notes/harness-polyglot-review-m5/`](https://saberistic.com/build-notes/harness-polyglot-review-m5/)
+confirmed:
+
+- HTTP 200 on the article, RSS feed, and sitemap;
+- the exact title, canonical URL, bounded description, `BlogPosting`, and `BreadcrumbList`;
+- four accessible semantic diagrams and all 15 in-page links resolving to existing targets;
+- the pinned Harness repository, commit, pull-request, source-file, and workflow evidence links;
+- the new route in both `/build-notes/feed.xml` and `/sitemap.xml`;
+- no private shared-chat URL, local filesystem path, or temporary evidence path in the HTML;
+- no page-level horizontal overflow at 1440-pixel desktop or 390-pixel mobile viewports; and
+- a warmed Cloudflare CDN hit with `s-maxage=300`, CSP, permissions policy, strict referrer policy,
+  MIME-sniffing protection, and frame denial intact.
