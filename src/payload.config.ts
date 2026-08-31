@@ -6,8 +6,10 @@ import { fileURLToPath } from 'url'
 import sharp from 'sharp'
 
 import { CaseStudies } from './collections/CaseStudies'
+import { DiagnosticRequests } from './collections/DiagnosticRequests'
 import { EvidenceSources } from './collections/EvidenceSources'
 import { Experience } from './collections/Experience'
+import { GiftPayments } from './collections/GiftPayments'
 import { Media } from './collections/Media'
 import { Prototypes } from './collections/Prototypes'
 import { Users } from './collections/Users'
@@ -35,7 +37,16 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, EvidenceSources, Prototypes, Experience, CaseStudies],
+  collections: [
+    Users,
+    Media,
+    EvidenceSources,
+    Prototypes,
+    Experience,
+    CaseStudies,
+    DiagnosticRequests,
+    GiftPayments,
+  ],
   cors: allowedOrigins,
   csrf: allowedOrigins,
   serverURL,

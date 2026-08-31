@@ -1,5 +1,30 @@
 # OpenRouter Production Readiness Check implementation
 
+## Implementation status — August 31, 2026
+
+The application flow is implemented: 20 controlled questions, exact manifest validation and
+sensitive-text rejection, versioned deterministic scoring, all eight hard-blocker predicates, a
+complete fallback report, strict OpenRouter structured-output validation, signed report-bound
+handoff tokens, static-site-to-backend CORS, and Render Key Value-backed AI limits. The UI keeps the
+report in browser memory and supports print/PDF and JSON download without saving it to Payload or
+Umami. After the complete result, the separately consented Architecture Diagnostic handoff can
+email that authenticated report, save a minimized private lead, open fixed-price Stripe Checkout,
+and route verified payment to scheduling. Its `/api/diagnostics/requests` public write route is kept
+separate from Payload's authenticated `/api/diagnostic-requests` collection REST surface.
+
+The staging Blueprint deliberately leaves `AI_ENHANCEMENT_ENABLED=0`. Enabling the generative layer
+is an account operation, not a code default: supply a dedicated key and two distinct pinned models,
+verify structured-output support, configure the OpenRouter Guardrail/ZDR/logging/budget controls
+below, provision the Key Value service, set `OPENROUTER_ACCOUNT_GATES_CONFIRMED` to the exact current
+readiness policy version, and only then change the flag to `1`. Until that activation, the same
+endpoint returns the full deterministic report and labels it as the fallback source.
+
+For the existing Render service, set the API key, both model IDs, and versioned account-gate
+confirmation manually in the Dashboard: Render only prompts for new `sync: false` values during
+initial Blueprint creation. After the live-account checks pass, enable AI by committing the
+`AI_ENHANCEMENT_ENABLED` value change in `render.yaml`; a Dashboard-only change would be reset by the
+next Blueprint sync.
+
 ## Product contract
 
 The feature answers one bounded question:
@@ -14,7 +39,7 @@ Visitor promise:
 
 Trust line:
 
-> Scored by explicit controls. Explained by AI.
+> Scored by explicit controls. Explained by AI when the privacy-safe route is available.
 
 The complete result appears before any lead form.
 
@@ -25,10 +50,13 @@ The complete result appears before any lead form.
 3. Optionally add one 500-character symptom description.
 4. The client submits a normalized manifest to the server.
 5. The server validates input, applies abuse and sensitive-data checks, and calculates the immutable policy result.
-6. OpenRouter writes a concise explanation constrained by that result.
+6. When every AI gate is available, OpenRouter writes a concise explanation constrained by that result.
 7. The server validates the model JSON and business invariants.
 8. Fixed React components render the scorecard and plan.
-9. The visitor may download the result or explicitly request a human review.
+9. The visitor may download the result, keep the self-serve plan, or explicitly open the paid
+   Architecture Diagnostic handoff. Contact fields are not rendered until this point.
+10. A consented handoff authenticates the exact report, saves only the minimized private lead,
+    emails the report, creates hosted Checkout, and routes verified payment to scheduling.
 
 Progress labels may say `validating answers`, `checking production gates`, `tailoring the plan`, and `validating the report`. Do not display chain-of-thought or pretend that ordinary network delay is hidden reasoning.
 
@@ -103,12 +131,12 @@ Calculate with integer half-points so binary floating-point behavior cannot move
 
 Use these as the starting policy, then validate with golden cases:
 
-| Level | Score range | Additional gate |
-|---|---:|---|
-| `demo_only` | 0–44 | Any critical blocker also caps here |
-| `internal_beta` | 45–64 | No uncontained critical-risk behavior |
-| `limited_production` | 65–84 | No critical blockers; major blockers explicitly bounded |
-| `production_candidate` | 85–100 | No critical or major blockers, at least 90% weighted completeness, and no unknown weight-3 control |
+| Level                  | Score range | Additional gate                                                                                    |
+| ---------------------- | ----------: | -------------------------------------------------------------------------------------------------- |
+| `demo_only`            |        0–44 | Any critical blocker also caps here                                                                |
+| `internal_beta`        |       45–64 | No uncontained critical-risk behavior                                                              |
+| `limited_production`   |       65–84 | No critical blockers; major blockers explicitly bounded                                            |
+| `production_candidate` |      85–100 | No critical or major blockers, at least 90% weighted completeness, and no unknown weight-3 control |
 
 The label is a directional candidate state, never a certification.
 
@@ -154,14 +182,15 @@ OpenRouter receives only:
 The model may:
 
 - explain why a blocker matters;
-- tailor ordering and wording to the declared stage;
-- turn fixed actions into concise 48-hour and two-week plans;
-- choose from approved “do not optimize yet” guidance;
+- rewrite bounded explanation/detail text for every deterministic item supplied to it;
+- reorder the supplied strengths and selected unknowns plus the complete deterministic 48-hour,
+  two-week, and “do not optimize yet” action sets to tailor priority to the declared stage;
 - write a short executive summary.
 
 The model may not:
 
 - change scores, severities, blocker IDs, readiness level, or CTA ID;
+- add, omit, or select among the deterministic action IDs;
 - introduce facts about the visitor's system;
 - claim inspection of code, infrastructure, or compliance evidence;
 - recommend destructive commands or collect additional sensitive data;
@@ -169,22 +198,36 @@ The model may not:
 
 ## Request configuration
 
-Use a dedicated server-side OpenRouter key and a pinned primary model plus a pinned fallback model that both support strict structured output.
+Use a dedicated server-side OpenRouter key and a pinned primary model plus a pinned fallback model that both support strict structured output. Submit them once through OpenRouter's ordered `models` array so provider/model failover remains one bounded generation rather than an application retry that could duplicate billable work.
 
 Request requirements:
 
 - `response_format.type = "json_schema"`;
 - strict JSON Schema, all required fields, bounded array sizes, bounded strings, and `additionalProperties: false`;
+- ordered `models = [primary, fallback]` with neither entry using the `openrouter/*` router
+  namespace, a latest/auto alias, or a colon-suffix variant such as `:online`;
+- every currently documented plugin is explicitly disabled in the request (`web`, `file-parser`,
+  `response-healing`, `context-compression`, `pareto-router`, and `fusion`);
 - `provider.require_parameters = true`;
 - `provider.data_collection = "deny"`;
 - `provider.zdr = true`;
-- conservative output-token cap;
-- application timeout and at most one model retry/fallback;
-- no external tools or web search;
+- `X-OpenRouter-Cache: false`, because request-level ZDR does not disable response caching that a preset might otherwise enable;
+- `X-OpenRouter-Metadata: enabled`, with a response audit that accepts only direct/fallback routing
+  and guardrail stages; any plugin, server-tool, or unknown stage discards the model explanation;
+- conservative `max_completion_tokens` cap;
+- one application timeout and no blind retry after an ambiguous timeout;
+- no external tools or web search; before launch, verify that every account/workspace plugin default
+  is off and no plugin has “Prevent overrides”, because unspecified or enforced account defaults can
+  defeat request-level disables;
 - prompt logging/data-use opt-ins disabled;
 - an API-key or workspace guardrail with model/provider allowlists, ZDR, sensitive-info handling, prompt-injection handling, and a daily/monthly budget.
 
-Do not use `openrouter/auto` for a scored assessment. An intentional model change requires evaluation and a policy/prompt release note.
+Do not use `openrouter/auto`, a `latest` alias, an unpinned router, or any colon-suffix model variant for a scored assessment. An intentional model change requires evaluation and a policy/prompt release note.
+
+Router metadata is a post-response audit. Discarding an explanation cannot undo prompt processing or
+plugin cost, so it is detection and output containment—not the privacy gate. The versioned
+`OPENROUTER_ACCOUNT_GATES_CONFIRMED` setting records the required manual account/workspace review;
+the generative path stays off when that attestation is absent or stale.
 
 ZDR limits routing to endpoints OpenRouter marks as zero-retention. The request still transits OpenRouter and a model provider; describe that honestly in the privacy and methodology pages.
 
@@ -198,8 +241,7 @@ Illustrative shape:
   "blockerExplanations": [
     {
       "ruleId": "OPS-RESTORE-001",
-      "explanation": "string",
-      "verification": "string"
+      "explanation": "string"
     }
   ],
   "unknownExplanations": [],
@@ -228,36 +270,103 @@ Response:
 
 - generated report or deterministic fallback;
 - `fallbackUsed` boolean;
-- opaque report ID plus a short-lived signed handoff token containing only the report ID, policy version, level, and allowed blocker IDs;
+- opaque report ID plus a nullable short-lived signed handoff token, used by the consented paid
+  handoff and present only when its independent signing secret is configured. Its content
+  claims are limited to the report ID, policy version, level, allowed blocker IDs, and a SHA-256
+  digest of canonical report JSON, plus token version and issuance/expiry metadata. The digest lets
+  the later consented email handoff authenticate the exact report without putting its prose in the
+  token or database;
 - no raw provider response, prompt, routing internals, or stack trace.
 
-### `POST /api/diagnostic-requests`
+### `POST /api/diagnostics/requests`
 
-Separate explicit action containing contact fields, consent, the signed handoff token, and only the minimized readiness summary the visitor chooses to share. The server verifies token integrity before storing the report ID/level/policy metadata. Any selected blocker IDs must be a subset of the signed token. Approved labels are never trusted from the browser: after verification, the server resolves each selected ID against the signed policy version's Git-owned blocker catalog and stores that canonical label snapshot. It never re-calls the model.
+Implemented as the explicit paid handoff after the complete readiness result. The strict request
+contains contact consent, bounded contact and timing fields, the signed handoff token, the exact
+report to email, and only the minimized readiness blocker summary the visitor chooses to share. The
+server verifies token integrity and the canonical report digest before storing report ID, level, and
+policy metadata. Any selected blocker IDs must be a subset of the signed token. Approved labels are
+never trusted from the browser: after verification, the server resolves each selected ID against the
+signed policy version's Git-owned blocker catalog and stores that canonical label snapshot. It never
+re-calls the model and never stores the full report.
+
+After the private Payload write succeeds, Resend delivers the authenticated report to the customer
+and an ID/type-only notice to `inbox@saberistic.com`. The server then creates a fixed $200 USD hosted
+Stripe Checkout Session. The browser cannot supply a price, payment method list, success URL, or
+metadata; Stripe metadata contains only the opaque request ID.
+
+### `POST /api/stripe/diagnostic-webhook`
+
+Stripe calls this server-to-server endpoint directly on the Payload service. The handler reads the
+bounded raw body, verifies the Stripe signature, validates the paid amount and currency against the
+fixed offer, and idempotently updates the matching private record. Only a verified paid event can
+trigger the customer booking confirmation and minimized internal paid notice. The confirmation links
+to the configured HTTPS scheduling provider, which owns live availability and calendar invitations.
+
+The launch implementation records the paid state before attempting fulfillment email and uses the
+stored delivery IDs as retry markers. Email delivery is still synchronous in the webhook request;
+a missing fulfillment setting or provider failure returns a retryable error so Stripe can redeliver
+the event. Monitor and reconcile failed deliveries before enabling live payments, and move this step
+to a durable outbox/worker before traffic makes provider retry alone an inadequate delivery policy.
 
 After validation, store only the consented fields defined for the private Payload `diagnostic-requests` collection. This route never writes to `contact-requests`, Umami, OpenRouter, or rate-limit state beyond expiring anonymous counters.
 
 ### `POST /api/contact-requests`
 
+Planned follow-up; not implemented in this slice.
+
 Separate direct-service action containing contact fields, consent, one allowlisted `serviceInterest`, and bounded optional context. It accepts no readiness token, report ID, blocker, score, level, manifest, or model output. After validation, store only the documented fields in the private Payload `contact-requests` collection; this route never writes to `diagnostic-requests`, Umami, or OpenRouter.
 
 ### Shared security contract for both public PII forms
 
-Both `POST /api/diagnostic-requests` and `POST /api/contact-requests` must use the shared public-form security contract in [04](./04-payload-cms-implementation.md#shared-public-form-security-contract): enforce same-origin/CSRF controls, strict content type/schema and total-body-size validation, bounded and allowlisted fields, Key Value-backed limits for both an IP-derived one-way key and a separate session/challenge token, generic non-enumerating errors, and safe retry handling. Never log request bodies, contact fields, free text, handoff tokens, or notification content. Persist PII only in the matching private collection with public access denied, the provisional retention review date, and the minimized ID/type-only internal notification.
+Both `POST /api/diagnostics/requests` and `POST /api/contact-requests` must use the shared public-form security contract in [04](./04-payload-cms-implementation.md#shared-public-form-security-contract): enforce same-origin/CSRF controls, strict content type/schema and total-body-size validation, bounded and allowlisted fields, Key Value-backed limits for both an IP-derived one-way key and a separate session/challenge token, generic non-enumerating errors, and safe retry handling. Never log request bodies, contact fields, free text, handoff tokens, or notification content. Persist PII only in the matching private collection with public access denied, the provisional retention review date, and the minimized ID/type-only internal notification.
 
 ## Rate limiting and cost controls
 
 Back rate limits with Render Key Value so they work across instances:
 
-- low anonymous burst limit per IP-derived one-way key;
-- longer rolling limit per browser challenge token;
+- a fixed one-hour limit per IP-derived one-way key;
+- a lower fixed six-hour limit per anonymous browser token as defense in depth, not as identity or a
+  security challenge;
+- a global fixed 24-hour call ceiling;
 - global concurrency ceiling;
 - stricter limit for repeated invalid/sensitive submissions;
-- challenge only after suspicious behavior, not for every visitor.
 
-Do not cache manifests or generated/deterministic reports in Key Value for the public MVP. Key Value stores only expiring abuse/concurrency counters and challenge state.
+The readiness assessment records each bounded-body, malformed-JSON, or schema/sensitive-text
+rejection in one atomic Key Value operation. It increments one HMAC-derived trusted-client-IP
+counter; client-generated browser tokens never create reject-counter keys. The default allows four
+rejections per IP per hour, and bounded `READINESS_REJECT_IP_*` environment settings can tune the
+limit and window. Later attempts receive only a generic `429` response. Missing Key Value, a
+missing trusted client IP or derivation secret, or a counter error falls back to the original
+rejection and can never enable the OpenRouter path; valid assessments still receive the
+deterministic report.
+
+On the production Render path, client-key derivation accepts one syntactically valid
+`CF-Connecting-IP` value and ignores `X-Forwarded-For`. Render documents that Cloudflare overwrites
+this single-address header before a request reaches a public web service, while Cloudflare
+recommends the same header instead of the caller-influenced forwarded chain
+([Render](https://render.com/articles/host-pocketbase-on-render),
+[Cloudflare](https://developers.cloudflare.com/fundamentals/reference/http-headers/#cf-connecting-ip)).
+A missing or malformed production value disables AI enhancement and reject-counter writes without
+blocking the deterministic result or changing the original invalid response. Non-production
+accepts one valid `X-Real-IP` when explicitly supplied and otherwise uses a local-only loopback
+bucket so direct `next dev` requests remain usable.
+
+AI quota checks and concurrency admission run in one Lua transaction: expired per-request leases
+are removed from a sorted set, the live lease count is checked, a random 45-second lease is added,
+and only then are IP, browser-token, and daily quotas incremented. Definite provider responses
+release their own lease by ID. A timeout, network failure, or thrown adapter call leaves only that
+request's lease to expire, without allowing later requests to extend it or consume quota when
+concurrency admission is denied.
+
+Do not cache manifests or generated/deterministic reports in Key Value for the public MVP. Key Value stores only expiring abuse and concurrency counters.
 
 The key derivation must not be reversible or stored as analytics. Set expirations and do not use rate-limit data for marketing.
+
+The Blueprint's Free Key Value instance is volatile and can lose counters on restart, so its
+fixed-window quotas are soft staging controls. The dedicated OpenRouter key/workspace spend limit is
+the hard cost ceiling. The Free staging workspace cannot isolate cross-environment private traffic;
+enable that Pro-workspace control and use a persistent paid Key Value plan before treating
+distributed limits as a production security boundary.
 
 At OpenRouter:
 
@@ -269,18 +378,27 @@ At OpenRouter:
 
 ## Storage and privacy
 
-Default behavior is stateless beyond operational logs:
+Default behavior is stateless beyond operational logs and expiring Key Value counters:
 
 - do not persist the raw manifest or AI report server-side;
 - keep the report in browser/session memory and generate a client-side print/PDF view;
-- sign only a minimal, short-lived handoff token so contact submission can verify level/policy/report metadata without storing or trusting a client-edited report;
-- logs include policy version, outcome class, timing buckets, provider/model identifiers, token counts, fallback reason, and random request ID—never the manifest or text;
-- diagnostic handoff stores contact data only after explicit submission and according to the retention policy;
+- sign only a minimal, short-lived token that binds the exact report to the consented contact
+  submission without embedding report prose;
+- application logs include outcome class, timing bucket, fallback/rejection reason, and random
+  request ID; completed assessments also include policy version and explanation source, while
+  accepted enhancements additionally include validated provider/model/routing metadata, token
+  counts, and numeric request cost when returned—never the manifest or text;
+- OpenRouter Activity and usage accounting are authoritative for application-rejected or ambiguous
+  network/timeout calls, which can consume tokens or cost without returning trusted usage fields to
+  the application;
+- the diagnostic handoff stores contact data only after explicit submission, gives it a provisional
+  90-day review date, emails the signed report through Resend without storing its body, and keeps all
+  contact data out of OpenRouter and analytics;
 - Umami receives allowed event metadata only.
 
 If future product needs require saved reports, add an explicit opt-in, authenticated access, encryption, deletion controls, and a separate data-protection review first.
 
-## Lead handoff
+## Paid lead handoff
 
 After the complete report:
 
@@ -289,14 +407,22 @@ After the complete report:
 The consent screen contains:
 
 - required name, email, and contact consent;
-- optional company and website;
-- request type fixed to `architecture_diagnostic` or `engineering_rescue_inquiry` from the deterministic CTA;
+- optional company;
+- request type fixed to `architecture_diagnostic` for the current paid funnel;
+- an urgency timeframe, preferred time band, and browser-reported IANA time zone, used as
+  qualification preferences rather than a claimed reservation;
 - an unchecked **Share assessment summary** control;
 - when checked, a visible list of the readiness level and blocker labels, each individually removable;
 - optional new `additionalContext` limited to 1,000 characters;
 - the privacy-notice version and provisional 90-day review/retention statement.
 
-Store only the fields specified in the Payload `diagnostic-requests` collection: contact details, request type, report ID, policy version, readiness level, explicitly selected blocker IDs and server-derived canonical label snapshots, the new handoff context, consent/version/timestamp, and workflow status. Never accept label text from the client or store raw answers, the assessment symptom, model prose, scores-by-answer, or the full report. Send an internal email with request ID and type only; the reviewer signs into Payload to inspect the consented record.
+Store only the fields specified in the Payload `diagnostic-requests` collection: contact details,
+request type, report ID, policy version, readiness level, explicitly selected blocker IDs and
+server-derived canonical label snapshots, new handoff context, timing preferences,
+consent/version/timestamp, workflow/payment/booking status, and provider delivery identifiers.
+Never accept label text from the client or store raw answers, the assessment symptom, model prose,
+scores-by-answer, or the full report. Send an internal email with request ID and type only; the
+reviewer signs into Payload to inspect the consented record.
 
 Map policy outcomes to one approved next step:
 
@@ -332,6 +458,9 @@ For each case, assert deterministic scores, level cap, blocker IDs, completeness
 - no public input accepts files, URLs, code, or long free text;
 - secrets and sensitive patterns are blocked/redacted before OpenRouter;
 - ZDR, data-collection denial, model allowlist, structured-output support, and spend limits are verified in the live account;
+- every OpenRouter plugin default is off, no plugin uses “Prevent overrides”, and the versioned
+  account-gate confirmation matches the current readiness policy;
+- router metadata confirms that no web, plugin, server-tool, or unknown pipeline stage ran;
 - one load test proves rate limits and concurrency control;
 - one privacy test proves no answers or report content enter logs, Payload, or Umami;
 - methodology and privacy pages match actual behavior;
@@ -340,8 +469,12 @@ For each case, assert deterministic scores, level cap, blocker IDs, completeness
 ## Official references
 
 - [Structured outputs](https://openrouter.ai/docs/guides/features/structured-outputs)
+- [Model fallbacks](https://openrouter.ai/docs/guides/routing/model-fallbacks)
 - [Provider routing](https://openrouter.ai/docs/guides/routing/provider-selection)
 - [Zero Data Retention](https://openrouter.ai/docs/guides/features/zdr)
+- [Response caching](https://openrouter.ai/docs/guides/features/response-caching)
+- [Router metadata](https://openrouter.ai/docs/guides/features/router-metadata)
+- [Plugins overview](https://openrouter.ai/docs/guides/features/plugins/overview)
 - [Guardrails overview](https://openrouter.ai/docs/guides/features/guardrails/overview)
 - [Prompt-injection detection](https://openrouter.ai/docs/guides/features/guardrails/prompt-injection)
 - [Sensitive-information guardrail](https://openrouter.ai/docs/guides/features/guardrails/sensitive-info)

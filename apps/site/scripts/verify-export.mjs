@@ -95,12 +95,26 @@ assert.match(
 
 for (const [relativePath, canonical] of [
   ['build-notes/index.html', 'https://saberistic.com/build-notes/'],
+  ['gifts/index.html', 'https://saberistic.com/gifts/'],
   ['privacy/index.html', 'https://saberistic.com/privacy/'],
   ['prototypes/index.html', 'https://saberistic.com/prototypes/'],
   ['readiness/index.html', 'https://saberistic.com/readiness/'],
 ]) {
   assertPageMetadata(await readOutput(relativePath), canonical)
 }
+
+const giftsPage = await readOutput('gifts/index.html')
+assert.match(giftsPage, /Pick one\. Pass two\. Make my day\./)
+assert.match(giftsPage, /gift for AmirSaber/)
+assert.match(giftsPage, /AmirSaber—not Stripe—makes the retailer purchase manually afterward/)
+assert.match(giftsPage, /Deal the first round/)
+assert.doesNotMatch(giftsPage, /OPENROUTER_API_KEY|STRIPE_SECRET_KEY|GIFT_QUOTE_SECRET/)
+
+const readinessPage = await readOutput('readiness/index.html')
+assert.match(readinessPage, /Find the gate before it becomes the incident\./)
+assert.match(readinessPage, /Who can reach the system today\?/)
+assert.match(readinessPage, /The model never owns the result\./)
+assert.doesNotMatch(readinessPage, /OPENROUTER_API_KEY|READINESS_HANDOFF_SECRET/)
 
 const buildNotesIndex = await readOutput('build-notes/index.html')
 assert.match(
@@ -275,6 +289,7 @@ const sitemap = await readOutput('sitemap.xml')
 for (const canonical of [
   'https://saberistic.com/',
   'https://saberistic.com/build-notes/',
+  'https://saberistic.com/gifts/',
   'https://saberistic.com/privacy/',
   'https://saberistic.com/prototypes/',
   'https://saberistic.com/readiness/',

@@ -60,6 +60,7 @@ The product promise is:
 | [24 — Harness Platform M3 Permissioned Agent Services](./24-harness-permissioned-agent-services-m3.md)            | ACP WebSocket sessions, fail-closed approvals, manifest-derived Docker plans, provider adaptation, audit boundaries, and M4 gates. |
 | [25 — Growth Program Sensor Receipts and Devnet](./25-growth-program-devnet-use-cases.md)                         | Sensor-backed custody use cases, experimental Solana devnet identity, artifact/IDL evidence, UI boundaries, and release gates.     |
 | [26 — Harness Platform M4 Durable Control Plane](./26-harness-durable-control-plane-m4-build-note.md)             | Fenced scheduling, replay-safe sessions, deterministic audit export, content-addressed artifacts, Kubernetes topology, and gaps.   |
+| [27 — Three converging AI product workstreams](./27-converging-ai-product-workstreams-build-note.md)              | Readiness, paid diagnostic, and Gift Draft boundaries, activation runbooks, evidence placeholders, and release gates.              |
 
 ## Recommended first release
 

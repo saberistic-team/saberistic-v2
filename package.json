@@ -26,23 +26,27 @@
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "test": "pnpm run test:int && pnpm run test:e2e",
     "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:gifts:openrouter:live": "cross-env NODE_OPTIONS=--no-deprecation RUN_GIFT_OPENROUTER_LIVE=1 vitest run --config ./vitest.config.mts tests/unit/gifts-openrouter.live.test.ts",
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "test:openrouter:live": "cross-env NODE_OPTIONS=--no-deprecation RUN_OPENROUTER_LIVE=1 vitest run --config ./vitest.config.mts tests/unit/readiness-openrouter.live.test.ts",
     "typecheck": "tsc --noEmit",
     "typecheck:site": "pnpm --filter @saberistic/site typecheck"
   },
   "dependencies": {
+    "@payloadcms/db-postgres": "3.88.0",
     "@payloadcms/next": "3.88.0",
     "@payloadcms/richtext-lexical": "3.88.0",
     "@payloadcms/ui": "3.88.0",
     "cross-env": "^7.0.3",
     "dotenv": "16.4.7",
     "graphql": "^16.8.1",
+    "ioredis": "^6.0.0",
     "next": "16.3.3",
     "payload": "3.88.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "sharp": "0.35.4",
-    "@payloadcms/db-postgres": "3.88.0"
+    "stripe": "22.4.0"
   },
   "devDependencies": {
     "@playwright/test": "1.58.2",

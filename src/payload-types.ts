@@ -73,6 +73,8 @@ export interface Config {
     prototypes: Prototype;
     experience: Experience;
     'case-studies': CaseStudy;
+    'diagnostic-requests': DiagnosticRequest;
+    'gift-payments': GiftPayment;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -86,6 +88,8 @@ export interface Config {
     prototypes: PrototypesSelect<false> | PrototypesSelect<true>;
     experience: ExperienceSelect<false> | ExperienceSelect<true>;
     'case-studies': CaseStudiesSelect<false> | CaseStudiesSelect<true>;
+    'diagnostic-requests': DiagnosticRequestsSelect<false> | DiagnosticRequestsSelect<true>;
+    'gift-payments': GiftPaymentsSelect<false> | GiftPaymentsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -504,6 +508,120 @@ export interface CaseStudy {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "diagnostic-requests".
+ */
+export interface DiagnosticRequest {
+  id: number;
+  requestId: string;
+  submissionKey: string;
+  requestType: 'architecture_diagnostic';
+  name: string;
+  email: string;
+  company?: string | null;
+  additionalContext?: string | null;
+  reportId: string;
+  policyVersion: string;
+  readinessLevel: 'demo_only' | 'internal_beta' | 'limited_production' | 'production_candidate';
+  shareAssessmentSummary: boolean;
+  /**
+   * Canonical blocker IDs and labels selected by the visitor. The full readiness report is never stored.
+   */
+  selectedBlockers?:
+    | {
+        ruleId: string;
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  contactConsent: boolean;
+  consentedAt: string;
+  privacyNoticeVersion: string;
+  timeframe: 'this_week' | 'next_two_weeks' | 'this_month';
+  timeBand: 'morning' | 'afternoon' | 'flexible';
+  timeZone: string;
+  workflowStatus: 'new' | 'reviewed' | 'replied' | 'archived';
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  bookingStatus: 'awaiting_payment' | 'awaiting_selection' | 'scheduled' | 'completed' | 'canceled';
+  stripeCheckoutSessionId?: string | null;
+  stripePaymentIntentId?: string | null;
+  stripeEventId?: string | null;
+  customerReportEmailId?: string | null;
+  internalNotificationEmailId?: string | null;
+  customerConfirmationEmailId?: string | null;
+  paidNotificationEmailId?: string | null;
+  customerReportSentAt?: string | null;
+  internalNotificationSentAt?: string | null;
+  paymentConfirmedAt?: string | null;
+  customerConfirmationSentAt?: string | null;
+  paidNotificationSentAt?: string | null;
+  retentionReviewAt: string;
+  internalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Private Gift Draft contributions. Provider-controlled payment fields are read-only; fulfillment fields are maintained by staff.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gift-payments".
+ */
+export interface GiftPayment {
+  id: number;
+  giftOfferId: string;
+  giftRunId: string;
+  itemName: string;
+  category: string;
+  referenceRetailer: string;
+  referenceSource: string;
+  amountCents: number;
+  currency: 'usd';
+  /**
+   * Collected by Stripe Checkout. Retained only for payment support and review.
+   */
+  payerEmail?: string | null;
+  giftNote?: string | null;
+  stripeCheckoutSessionId: string;
+  stripePaymentIntentId?: string | null;
+  stripeChargeId?: string | null;
+  stripeEventId: string;
+  stripeEventType:
+    | 'checkout.session.completed'
+    | 'checkout.session.async_payment_succeeded'
+    | 'checkout.session.async_payment_failed'
+    | 'checkout.session.expired'
+    | 'charge.refunded';
+  /**
+   * Bounded event IDs used to make Stripe webhook retries idempotent.
+   */
+  processedStripeEventIds:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  checkoutStatus: 'open' | 'complete' | 'expired';
+  paymentStatus: 'pending' | 'paid' | 'partially_refunded' | 'refunded' | 'failed' | 'expired';
+  refundedAmountCents: number;
+  checkoutCreatedAt: string;
+  stripeEventCreatedAt: string;
+  paymentConfirmedAt?: string | null;
+  paymentFailedAt?: string | null;
+  checkoutExpiredAt?: string | null;
+  refundedAt?: string | null;
+  /**
+   * Review payer contact data for deletion after the support window.
+   */
+  retentionReviewAt: string;
+  fulfillmentStatus: 'awaiting_review' | 'planned' | 'ordered' | 'fulfilled' | 'substituted' | 'declined' | 'refunded';
+  internalNotes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -549,6 +667,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'case-studies';
         value: number | CaseStudy;
+      } | null)
+    | ({
+        relationTo: 'diagnostic-requests';
+        value: number | DiagnosticRequest;
+      } | null)
+    | ({
+        relationTo: 'gift-payments';
+        value: number | GiftPayment;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -882,6 +1008,91 @@ export interface CaseStudiesSelect<T extends boolean = true> {
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "diagnostic-requests_select".
+ */
+export interface DiagnosticRequestsSelect<T extends boolean = true> {
+  requestId?: T;
+  submissionKey?: T;
+  requestType?: T;
+  name?: T;
+  email?: T;
+  company?: T;
+  additionalContext?: T;
+  reportId?: T;
+  policyVersion?: T;
+  readinessLevel?: T;
+  shareAssessmentSummary?: T;
+  selectedBlockers?:
+    | T
+    | {
+        ruleId?: T;
+        label?: T;
+        id?: T;
+      };
+  contactConsent?: T;
+  consentedAt?: T;
+  privacyNoticeVersion?: T;
+  timeframe?: T;
+  timeBand?: T;
+  timeZone?: T;
+  workflowStatus?: T;
+  paymentStatus?: T;
+  bookingStatus?: T;
+  stripeCheckoutSessionId?: T;
+  stripePaymentIntentId?: T;
+  stripeEventId?: T;
+  customerReportEmailId?: T;
+  internalNotificationEmailId?: T;
+  customerConfirmationEmailId?: T;
+  paidNotificationEmailId?: T;
+  customerReportSentAt?: T;
+  internalNotificationSentAt?: T;
+  paymentConfirmedAt?: T;
+  customerConfirmationSentAt?: T;
+  paidNotificationSentAt?: T;
+  retentionReviewAt?: T;
+  internalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "gift-payments_select".
+ */
+export interface GiftPaymentsSelect<T extends boolean = true> {
+  giftOfferId?: T;
+  giftRunId?: T;
+  itemName?: T;
+  category?: T;
+  referenceRetailer?: T;
+  referenceSource?: T;
+  amountCents?: T;
+  currency?: T;
+  payerEmail?: T;
+  giftNote?: T;
+  stripeCheckoutSessionId?: T;
+  stripePaymentIntentId?: T;
+  stripeChargeId?: T;
+  stripeEventId?: T;
+  stripeEventType?: T;
+  processedStripeEventIds?: T;
+  checkoutStatus?: T;
+  paymentStatus?: T;
+  refundedAmountCents?: T;
+  checkoutCreatedAt?: T;
+  stripeEventCreatedAt?: T;
+  paymentConfirmedAt?: T;
+  paymentFailedAt?: T;
+  checkoutExpiredAt?: T;
+  refundedAt?: T;
+  retentionReviewAt?: T;
+  fulfillmentStatus?: T;
+  internalNotes?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

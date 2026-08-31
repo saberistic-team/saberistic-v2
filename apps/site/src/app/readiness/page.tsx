@@ -1,21 +1,39 @@
 import type { Metadata } from 'next'
 import { Suspense } from 'react'
 
+import { ReadinessAssessment } from '@/components/readiness/ReadinessAssessment'
 import { createPageMetadata } from '@/lib/seo'
 
-import { ReadinessContent, ReadinessInteractive } from './ReadinessStaticPage'
+import {
+  readinessAssessmentEndpoint,
+  readinessDiagnosticEndpoint,
+} from '../../lib/readiness-endpoint'
+import { ReadinessInteractive } from './ReadinessStaticPage'
 
 export const metadata: Metadata = createPageMetadata({
   description:
-    'A deterministic preview of the Saberistic Production Readiness Check and its AI boundary.',
+    'Answer controlled architecture questions and get a deterministic production-readiness level, hard blockers, unknowns, and a prioritized plan.',
   path: '/readiness/',
-  title: 'Production Readiness Preview',
+  title: 'Production Readiness Check',
 })
 
 export default function ReadinessPage() {
+  const assessmentEndpoint = readinessAssessmentEndpoint()
+  const diagnosticEndpoint = readinessDiagnosticEndpoint()
+
   return (
-    <Suspense fallback={<ReadinessContent diagnosticIntent={false} selectedKey="ai-saas" />}>
-      <ReadinessInteractive />
+    <Suspense
+      fallback={
+        <ReadinessAssessment
+          assessmentEndpoint={assessmentEndpoint}
+          diagnosticEndpoint={diagnosticEndpoint}
+        />
+      }
+    >
+      <ReadinessInteractive
+        assessmentEndpoint={assessmentEndpoint}
+        diagnosticEndpoint={diagnosticEndpoint}
+      />
     </Suspense>
   )
 }

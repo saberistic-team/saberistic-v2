@@ -6,11 +6,12 @@ import { TrackedLink } from '@/components/analytics/TrackedLink'
 
 const footerLinks = [
   { href: '/prototypes', label: 'Prototypes' },
+  { href: '/gifts', label: 'Gift game' },
   { href: '/build-notes', label: 'Build notes' },
   { href: '/#work', label: 'Work' },
   { href: '/#services', label: 'Services' },
   { href: '/#about', label: 'About' },
-  { href: '/readiness', label: 'Readiness preview' },
+  { href: '/readiness', label: 'Readiness check' },
   { href: '/privacy', label: 'Privacy' },
 ]
 
@@ -25,8 +26,8 @@ export function SiteFooter() {
               Have a working prototype and an unclear path to production?
             </h2>
             <p>
-              Start with the $200 Architecture Diagnostic: a focused principal-engineer review of
-              the system, tradeoffs, and next steps.
+              Start with the $200 Architecture Diagnostic: a guided readiness brief, a focused
+              principal-engineer review, and a concrete path to the next production gate.
             </p>
           </div>
           <TrackedLink

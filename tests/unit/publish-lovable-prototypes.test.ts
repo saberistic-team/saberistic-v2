@@ -427,7 +427,11 @@ describe('publishLovablePrototypes', () => {
   })
 
   it('registers the publication and repair migrations', () => {
-    expect(migrations.at(-2)?.name).toBe('20260830_160500_publish_lovable_prototypes')
-    expect(migrations.at(-1)?.name).toBe('20260830_163500_retry_lovable_prototype_publication')
+    const names = migrations.map((migration) => migration.name)
+    const publicationIndex = names.indexOf('20260830_160500_publish_lovable_prototypes')
+    const repairIndex = names.indexOf('20260830_163500_retry_lovable_prototype_publication')
+
+    expect(publicationIndex).toBeGreaterThanOrEqual(0)
+    expect(repairIndex).toBeGreaterThan(publicationIndex)
   })
 })

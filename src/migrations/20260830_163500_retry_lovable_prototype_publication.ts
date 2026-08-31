@@ -1,15 +1,10 @@
 import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-postgres'
 
-import {
-  publishLovablePrototypes,
-  type LovablePrototypePayload,
-} from '../lib/publishLovablePrototypes'
-
-export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
-  await publishLovablePrototypes({
-    payload: payload as unknown as LovablePrototypePayload,
-    req,
-  })
+export async function up(_args: MigrateUpArgs): Promise<void> {
+  // Historical repair marker. The preceding publication migration now runs the repaired,
+  // idempotent implementation directly. Replaying that implementation here on a fresh database
+  // makes Payload's current schema query relation columns that are intentionally added by later
+  // migrations, so this second pass must remain a no-op.
 }
 
 export async function down(_args: MigrateDownArgs): Promise<void> {

@@ -3,7 +3,9 @@ import { expect, test } from '@playwright/test'
 test.describe('Public site smoke', () => {
   for (const route of [
     '/',
+    '/gifts',
     '/prototypes',
+    '/readiness',
     '/build-notes',
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-sensor-scorecards-devnet',
@@ -26,6 +28,38 @@ test.describe('Public site smoke', () => {
       await expect(page.locator('h1').first()).toBeVisible()
     })
   }
+
+  test('readiness completes the five-section deterministic fallback flow', async ({ page }) => {
+    const response = await page.goto('/readiness')
+    expect(response?.ok()).toBe(true)
+
+    for (let section = 0; section < 5; section += 1) {
+      const fieldsets = page.locator('.readiness-question-list fieldset')
+      const questionCount = await fieldsets.count()
+      expect(questionCount).toBeGreaterThan(0)
+
+      for (let question = 0; question < questionCount; question += 1) {
+        await fieldsets.nth(question).locator('input[type="radio"]').first().check()
+      }
+
+      if (section < 4) {
+        await page.getByRole('button', { name: 'Continue' }).click()
+        await expect(page.getByLabel(/Assessment progress/)).toHaveAttribute(
+          'aria-label',
+          `Assessment progress: section ${section + 2} of 5`,
+        )
+      } else {
+        await page.getByRole('button', { name: 'Generate readiness report' }).click()
+      }
+    }
+
+    await expect(
+      page.getByRole('heading', { level: 1, name: 'Production candidate' }),
+    ).toBeVisible()
+    await expect(page.getByLabel('Overall score 96 out of 100')).toBeVisible()
+    await expect(page.getByText(/Deterministic report/)).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Download report' })).toBeVisible()
+  })
 
   test('Harness M4 keeps durable recovery separate from production scale', async ({ page }) => {
     const response = await page.goto('/build-notes/harness-durable-control-plane-m4')

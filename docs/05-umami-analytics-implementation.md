@@ -173,7 +173,7 @@ type AnalyticsEvent =
 
 The runtime validator requires exact keys, constrains CTA, placement, service, readiness-entry, and status values to small enums, constrains prototype values to short public-slug syntax, and no-ops when Umami is unavailable. It rejects undeclared properties, and product behavior never depends on analytics success. TypeScript alone is not a privacy boundary because arbitrary browser values can still reach Umami. The `data-before-send` callback provides an independent second line of defense.
 
-The present readiness experience is a deterministic preview, so it emits only `readiness_started` with `mode=example` and an allowlisted entry point. Completion, report, handoff, contact, diagnostic-submission, and AI-result events remain unimplemented until those truthful product states exist.
+The readiness assessment and report are now implemented, but the analytics contract remains deliberately narrower: homepage example entry links emit only `readiness_started` with `mode=example` and an allowlisted entry point. The questionnaire, result, score, level, policy version, fallback state, downloads, and handoff token emit no Umami events. Completion, handoff, contact, diagnostic-submission, and AI-result events require a separate privacy-contract change before implementation.
 
 ## Event taxonomy
 

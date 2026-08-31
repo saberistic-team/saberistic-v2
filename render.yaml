@@ -42,12 +42,106 @@ projects:
                 value: 8bdad921-34a9-43cb-bc70-9e1c71efa911
               - key: UMAMI_TRACK_DOMAINS
                 value: saberistic.com,www.saberistic.com
+              - key: REDIS_URL
+                fromService:
+                  name: saberistic-readiness-limits-staging
+                  type: keyvalue
+                  property: connectionString
+              - key: READINESS_RATE_LIMIT_SECRET
+                generateValue: true
+              - key: GIFTING_RATE_LIMIT_SECRET
+                generateValue: true
+              - key: GIFT_QUOTE_SECRET
+                generateValue: true
+              - key: GIFT_QUOTE_TTL_SECONDS
+                value: '7200'
+              - key: DIAGNOSTIC_RATE_LIMIT_SECRET
+                generateValue: true
+              - key: READINESS_HANDOFF_SECRET
+                generateValue: true
+              - key: READINESS_HANDOFF_TOKEN_TTL_SECONDS
+                value: '1800'
+              - key: OPENROUTER_API_KEY
+                sync: false
+              - key: OPENROUTER_ACCOUNT_GATES_CONFIRMED
+                sync: false
+              - key: OPENROUTER_PRIMARY_MODEL
+                sync: false
+              - key: OPENROUTER_FALLBACK_MODEL
+                sync: false
+              - key: OPENROUTER_GIFT_PRIMARY_MODEL
+                sync: false
+              - key: OPENROUTER_GIFT_FALLBACK_MODEL
+                sync: false
+              - key: STRIPE_RESTRICTED_KEY
+                sync: false
+              - key: STRIPE_GIFT_WEBHOOK_SECRET
+                sync: false
+              - key: STRIPE_DIAGNOSTIC_RESTRICTED_KEY
+                sync: false
+              - key: STRIPE_DIAGNOSTIC_WEBHOOK_SECRET
+                sync: false
+              - key: RESEND_API_KEY
+                sync: false
+              - key: RESEND_FROM_ADDRESS
+                sync: false
+              - key: DIAGNOSTIC_BOOKING_URL
+                sync: false
+              - key: AI_ENHANCEMENT_ENABLED
+                value: '0'
+              - key: GIFTING_AI_ENABLED
+                value: '0'
+              - key: GIFTING_CHECKOUT_ENABLED
+                value: '0'
+              - key: DIAGNOSTIC_ENABLED
+                value: '0'
+              - key: OPENROUTER_TIMEOUT_MS
+                value: '12000'
+              - key: OPENROUTER_MAX_COMPLETION_TOKENS
+                value: '1800'
+              - key: READINESS_AI_IP_LIMIT
+                value: '8'
+              - key: READINESS_AI_TOKEN_LIMIT
+                value: '4'
+              - key: READINESS_AI_DAILY_LIMIT
+                value: '200'
+              - key: READINESS_AI_CONCURRENCY_LIMIT
+                value: '3'
+              - key: READINESS_REJECT_IP_LIMIT
+                value: '4'
+              - key: READINESS_REJECT_IP_WINDOW_SECONDS
+                value: '3600'
+              - key: OPENROUTER_GIFT_TIMEOUT_MS
+                value: '25000'
+              - key: OPENROUTER_GIFT_MAX_COMPLETION_TOKENS
+                value: '3000'
+              - key: GIFTING_IP_LIMIT
+                value: '8'
+              - key: GIFTING_TOKEN_LIMIT
+                value: '4'
+              - key: GIFTING_DAILY_LIMIT
+                value: '100'
+              - key: GIFTING_CONCURRENCY_LIMIT
+                value: '2'
+              - key: GIFTING_CHECKOUT_IP_LIMIT
+                value: '20'
+              - key: GIFTING_CHECKOUT_QUOTE_LIMIT
+                value: '5'
+              - key: GIFTING_STATUS_IP_LIMIT
+                value: '30'
+              - key: DIAGNOSTIC_IP_LIMIT
+                value: '5'
+              - key: DIAGNOSTIC_TOKEN_LIMIT
+                value: '3'
+              - key: DIAGNOSTIC_DAILY_LIMIT
+                value: '100'
 
           - type: web
             name: saberistic-site-staging
             runtime: static
             domains:
               - saberistic.com
+            renderSubdomainPolicy: disabled
             autoDeployTrigger: checksPass
             buildCommand: pnpm build:site
             staticPublishPath: ./apps/site/out
@@ -67,7 +161,7 @@ projects:
             headers:
               - path: /*
                 name: Content-Security-Policy
-                value: "default-src 'self'; base-uri 'self'; connect-src 'self' https://umami.saberistic.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://umami.saberistic.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
+                value: "default-src 'self'; base-uri 'self'; connect-src 'self' https://saberistic-web-staging.onrender.com https://umami.saberistic.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://umami.saberistic.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
               - path: /*
                 name: Permissions-Policy
                 value: camera=(), geolocation=(), microphone=(), payment=(), usb=()
@@ -168,6 +262,13 @@ projects:
                 value: '1'
               - key: SALT_ROTATION
                 value: month
+
+          - type: keyvalue
+            name: saberistic-readiness-limits-staging
+            plan: free
+            region: ohio
+            maxmemoryPolicy: noeviction
+            ipAllowList: []
 
         databases:
           - name: saberistic-payload-db-staging

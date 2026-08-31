@@ -21,12 +21,17 @@ const payloadService = blueprint.slice(
 )
 
 describe('Render Static Site Blueprint', () => {
+  it('keeps paid private-network isolation as a production upgrade', () => {
+    expect(blueprint).toContain('networking:\n          isolation: disabled')
+  })
+
   it('builds the separate remote-content export and publishes only its out directory', () => {
     expect(staticService).toContain('runtime: static')
     expect(staticService).toContain('buildCommand: pnpm build:site')
     expect(staticService).not.toContain('corepack enable')
     expect(staticService).toContain('staticPublishPath: ./apps/site/out')
     expect(staticService).toContain('domains:\n              - saberistic.com')
+    expect(staticService).toContain('renderSubdomainPolicy: disabled')
     expect(staticService).toContain('value: https://saberistic-web-staging.onrender.com')
     expect(staticService).toContain('value: remote')
   })
@@ -36,6 +41,25 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).not.toContain('PAYLOAD_SECRET')
     expect(staticService).not.toContain('STATIC_SITE_DEPLOY_HOOK_URL')
     expect(staticService).not.toContain('UMAMI_ADMIN_PASSWORD')
+    expect(staticService).not.toContain('OPENROUTER_API_KEY')
+    expect(staticService).not.toContain('READINESS_HANDOFF_SECRET')
+    expect(staticService).not.toContain('READINESS_RATE_LIMIT_SECRET')
+    expect(staticService).not.toContain('REDIS_URL')
+  })
+
+  it('keeps readiness AI server-side, rate-limited, and disabled until account review', () => {
+    expect(payloadService).toMatch(/- key: OPENROUTER_API_KEY\n\s+sync: false/)
+    expect(payloadService).toMatch(
+      /- key: OPENROUTER_ACCOUNT_GATES_CONFIRMED\n\s+sync: false/,
+    )
+    expect(payloadService).toMatch(/- key: OPENROUTER_PRIMARY_MODEL\n\s+sync: false/)
+    expect(payloadService).toMatch(/- key: OPENROUTER_FALLBACK_MODEL\n\s+sync: false/)
+    expect(payloadService).toMatch(/- key: AI_ENHANCEMENT_ENABLED\n\s+value: '0'/)
+    expect(payloadService).toMatch(/- key: READINESS_RATE_LIMIT_SECRET\n\s+generateValue: true/)
+    expect(payloadService).toContain('name: saberistic-readiness-limits-staging')
+    expect(blueprint).toMatch(
+      /- type: keyvalue\n\s+name: saberistic-readiness-limits-staging[\s\S]*?maxmemoryPolicy: noeviction/,
+    )
   })
 
   it('declares the externally managed deploy hook only on Payload', () => {
@@ -48,6 +72,9 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).toContain('source: /admin/*')
     expect(staticService).toContain('source: /api/*')
     expect(staticService).toContain('name: Content-Security-Policy')
+    expect(staticService).toContain(
+      "connect-src 'self' https://saberistic-web-staging.onrender.com https://umami.saberistic.com",
+    )
   })
 
   it('preserves equivalent legacy URLs and caches committed media safely', () => {

@@ -5,7 +5,7 @@ type UmamiPayload = Record<string, unknown>
 
 const approvedHostnames = new Set(['saberistic.com', 'www.saberistic.com'])
 const publicPathPattern =
-  /^(?:\/|\/privacy|\/prototypes(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?|\/readiness)$/
+  /^(?:\/|\/gifts|\/privacy|\/prototypes(?:\/[a-z0-9]+(?:-[a-z0-9]+)*)?|\/readiness)$/
 const buildNotePathPattern = /^\/build-notes\/([a-z0-9]+(?:-[a-z0-9]+)*)$/
 const emailPattern = /\b[^\s@]+@[^\s@]+\.[^\s@]+\b/
 const secretPattern = /\b(?:authorization|bearer|password|secret|token)\b/i

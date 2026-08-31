@@ -248,20 +248,33 @@ Purpose: controlled taxonomy for prototypes and proof. Fields are `name`, `slug`
 
 ### `diagnostic-requests`
 
-Purpose: explicit post-report human handoff.
+Purpose: private post-report lead, payment, and scheduling handoff for the $200 Architecture
+Diagnostic.
 
 Fields:
 
-- name and email; optional company and website;
-- `requestType`: `architecture_diagnostic` or `engineering_rescue_inquiry`;
+- name and email; optional company;
+- `requestType`: fixed to `architecture_diagnostic` in the current paid funnel; a future
+  `engineering_rescue_inquiry` handoff requires its own reviewed routing and fulfillment policy;
 - optional `additionalContext`, maximum 1,000 characters, entered on the handoff form rather than copied from the AI symptom field;
 - report ID, readiness level, policy version, and only the blocker IDs the visitor explicitly selected to share; after token verification, the server derives and stores canonical label snapshots from the signed policy version's Git-owned catalog rather than accepting browser label text;
 - `shareAssessmentSummary`, `contactConsent`, consent timestamp, and privacy-notice version;
-- status: new, reviewed, replied, archived;
+- urgency timeframe, preferred time band, and IANA time zone. These are qualification preferences,
+  not a calendar reservation;
+- workflow status: new, reviewed, replied, archived;
+- payment and booking status, opaque Stripe Checkout/PaymentIntent/event identifiers, and Resend
+  delivery identifiers/timestamps. Stripe metadata contains only the opaque request ID;
 - retention review date, initially 90 days after creation/closure under the provisional policy;
 - internal notes.
 
-This collection is private. OpenRouter never receives these fields. Never store the raw answer manifest, symptom text from the assessment, AI summary/prose, dimension narrative, or downloaded report. The internal notification contains only the request ID and request type; the authorized reviewer opens this private record to see the consented fields.
+This collection is private: only Payload admins—not content editors—can read, update, or delete its
+records. OpenRouter never receives these fields. The handoff verifies a signed canonical report
+digest, emails that exact report through Resend, and discards the report body. Never
+store the raw answer manifest, symptom text from the assessment, AI summary/prose, dimension
+narrative, or downloaded report. The internal notification contains only the request ID and request
+type; the authorized reviewer opens this private record to see the consented fields. A verified
+Stripe webhook sends the paid confirmation with the configured scheduling URL; the scheduling
+provider owns live availability and calendar invitations.
 
 ### `contact-requests`
 
@@ -281,7 +294,9 @@ This collection is private and receives no assessment token, blocker, readiness,
 
 ### Shared public-form security contract
 
-Apply this contract to both `POST /api/diagnostic-requests` and `POST /api/contact-requests`:
+Apply this contract to both `POST /api/diagnostics/requests` and `POST /api/contact-requests`.
+The former intentionally does not share a path with Payload&apos;s authenticated
+`/api/diagnostic-requests` collection REST surface:
 
 - accept only the intended JSON content type with a conservative total-body limit, strict schema, bounded strings, normalized email, allowlisted enums, and rejection of unknown fields;
 - require same-origin/CSRF validation and use secure cookie settings; never rely on a hidden field alone;
@@ -354,15 +369,15 @@ Use a restrained block library: prose, image/media, quote, evidence list, archit
 
 ## Access-control matrix
 
-| Resource | Public | Editor | Admin |
-|---|---|---|---|
-| Published editorial content | Read | CRUD drafts/publish approved types | Full |
-| Drafts and previews | No | Read/write | Full |
-| Evidence sources | Public projection only where linked | Create/update; no delete | Full |
-| Users | No | Self only | Full |
-| Diagnostic and contact requests | No | Read/update if explicitly allowed | Full |
-| Operational fields | No | No | Full |
-| Readiness policy/prompt | No CMS access | No CMS access | Code review only |
+| Resource                        | Public                              | Editor                             | Admin            |
+| ------------------------------- | ----------------------------------- | ---------------------------------- | ---------------- |
+| Published editorial content     | Read                                | CRUD drafts/publish approved types | Full             |
+| Drafts and previews             | No                                  | Read/write                         | Full             |
+| Evidence sources                | Public projection only where linked | Create/update; no delete           | Full             |
+| Users                           | No                                  | Self only                          | Full             |
+| Diagnostic and contact requests | No                                  | No                                 | Full             |
+| Operational fields              | No                                  | No                                 | Full             |
+| Readiness policy/prompt         | No CMS access                       | No CMS access                      | Code review only |
 
 Implement access at collection and field level. Hiding an admin field in the UI is not access control.
 

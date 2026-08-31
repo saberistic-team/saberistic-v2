@@ -3,6 +3,9 @@ import * as migration_20260829_144500_seed_prepared_content from './20260829_144
 import * as migration_20260829_151905 from './20260829_151905'
 import * as migration_20260830_160500_publish_lovable_prototypes from './20260830_160500_publish_lovable_prototypes'
 import * as migration_20260830_163500_retry_lovable_prototype_publication from './20260830_163500_retry_lovable_prototype_publication'
+import * as migration_20260831_204405_architecture_diagnostic_funnel from './20260831_204405_architecture_diagnostic_funnel'
+import * as migration_20260831_205708_gift_payments from './20260831_205708_gift_payments'
+import * as migration_20260831_210012_diagnostic_report_one_time_key from './20260831_210012_diagnostic_report_one_time_key'
 
 export const migrations = [
   {
@@ -29,5 +32,20 @@ export const migrations = [
     up: migration_20260830_163500_retry_lovable_prototype_publication.up,
     down: migration_20260830_163500_retry_lovable_prototype_publication.down,
     name: '20260830_163500_retry_lovable_prototype_publication',
+  },
+  {
+    up: migration_20260831_204405_architecture_diagnostic_funnel.up,
+    down: migration_20260831_204405_architecture_diagnostic_funnel.down,
+    name: '20260831_204405_architecture_diagnostic_funnel',
+  },
+  {
+    up: migration_20260831_205708_gift_payments.up,
+    down: migration_20260831_205708_gift_payments.down,
+    name: '20260831_205708_gift_payments',
+  },
+  {
+    up: migration_20260831_210012_diagnostic_report_one_time_key.up,
+    down: migration_20260831_210012_diagnostic_report_one_time_key.down,
+    name: '20260831_210012_diagnostic_report_one_time_key',
   },
 ]

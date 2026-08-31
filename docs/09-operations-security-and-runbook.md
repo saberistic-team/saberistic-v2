@@ -262,6 +262,9 @@ Private `diagnostic-requests` and `contact-requests` both receive a 90-day revie
 ### Weekly
 
 - review failed deploys, 5xx, readiness fallbacks, AI spend, form failures, and prototype health;
+- review diagnostic Checkout creation, signed-webhook failures, Resend delivery failures, and paid
+  requests still waiting for a calendar selection without copying contact or report content into
+  operational notes;
 - verify backup/export completion;
 - inspect dependency/security alerts;
 - review Umami event delivery for unexpected properties/volume.
@@ -294,6 +297,11 @@ Private `diagnostic-requests` and `contact-requests` both receive a 90-day revie
 - [ ] Payload admin roles, secure cookies, lockout, and preview tested;
 - [ ] Umami password/2FA/privacy flags/domain filter/query exclusion tested;
 - [ ] OpenRouter limited key, Guardrail, ZDR, data denial, rate limits, and fallback tested;
+- [ ] independent restricted Stripe diagnostic key, exact $200 test Checkout, raw-body webhook
+      signature, replay behavior, paid-state-first failure recovery, Resend sender/idempotency,
+      retry/reconciliation alerting, and HTTPS scheduling destination tested;
+- [ ] scheduling provider requires attendee identity, prevents duplicate slots, supports
+      cancellation, and each booked diagnostic is reconciled to a paid private request;
 - [ ] no PII in Umami or logs;
 - [ ] diagnostic/contact request privacy, 90-day review dates, private access, minimized notifications, and deletion path tested;
 - [ ] at least one prototype outage simulated without main-site impact;

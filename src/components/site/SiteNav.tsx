@@ -7,6 +7,7 @@ import { TrackedLink } from '@/components/analytics/TrackedLink'
 
 const links = [
   { href: '/prototypes', label: 'Prototypes' },
+  { href: '/gifts', label: 'Gift game' },
   { href: '/build-notes', label: 'Build notes' },
   { href: '/#work', label: 'Work' },
   { href: '/#services', label: 'Services' },
