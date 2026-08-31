@@ -178,12 +178,15 @@ deploy `dep-daasrtflk1mc73ae6lr0` generated 28 pages with ten Build Notes and fi
 routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
 security-header acceptance. Its implementation and production record are in
 [25](./25-growth-program-devnet-use-cases.md).
-Build Note 011 is prepared against Harness Platform M4 merge `d3b2859`: idempotent task admission,
+Build Note 011 documents Harness Platform M4 merge `d3b2859`: idempotent task admission,
 storage-clock run leases and fencing, indeterminate-run reconciliation, PostgreSQL/SQLite session
 restore, evidence-before-effect ordering, a transactional outbox, content-addressed S3-compatible
 artifacts, deterministic audit JSONL, and a Kubernetes reference base that cannot become ready
-as-is.
-Its website implementation and production acceptance are tracked in
+as-is. Its website implementation commit `0759f89` passed CI run `33437448179` and CodeQL run
+`33437447900`; checks-gated Static Site deploy `dep-daaufb68bjmc739d107g` generated 29 pages with 11
+Build Notes and five Payload prototype routes, then passed custom-domain article, structured-data,
+feed, sitemap, CDN-cache, and security-header acceptance. Its implementation and production record
+are in
 [26](./26-harness-durable-control-plane-m4-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved

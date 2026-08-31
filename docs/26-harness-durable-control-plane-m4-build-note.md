@@ -312,9 +312,37 @@ Before publication:
 
 ## Production acceptance
 
-The article, diagrams, metadata, route registration, and focused tests are implemented. Full
-verification, website commits, hosted checks, checks-gated Render deployment, and production
-acceptance remain pending.
+Website implementation commit `0759f8960aea45b1fd81690174f24b7187a7bf62` contains only the M4
+article, four semantic diagrams, manifest and route registration, focused unit/browser checks, and
+this documentation. Unrelated concurrent work remained outside the commit.
+
+An isolated checkout of that exact website commit passed:
+
+- both application TypeScript checks and repository lint;
+- 169 passing integration tests across 20 passing files, with one test and one file intentionally
+  skipped;
+- the Payload production build;
+- a fixture-backed Static Site build with 26 generated pages, all 11 Build Notes, and two fixture
+  prototype routes; and
+- two focused Chromium checks for the M4 route and its production-truth boundary.
+
+GitHub then passed [CI run `33437448179`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33437448179)
+and [CodeQL run `33437447900`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33437447900)
+for the same commit. The checks-gated Render Static Site deployed it as
+`dep-daaufb68bjmc739d107g`, live at `2026-08-31T20:47:00Z`. The remote-content build generated 29
+pages and verified 11 Build Notes plus five published Payload prototype routes.
+
+Custom-domain acceptance passed for
+`https://saberistic.com/build-notes/harness-durable-control-plane-m4/`:
+
+- the article, Build Notes index, RSS feed, and sitemap each returned HTTP 200;
+- the article exposed the expected title, H1, canonical, pinned Harness commit, and `BlogPosting`
+  structured data;
+- the index, RSS feed, and sitemap each linked the canonical article route;
+- `Cache-Control: public, max-age=0, s-maxage=300` was present and two repeat requests were
+  Cloudflare `HIT`s with the same ETag; and
+- CSP, `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`,
+  Permissions Policy, and `X-Frame-Options: DENY` remained present.
 
 ## Remaining Harness release gates
 
