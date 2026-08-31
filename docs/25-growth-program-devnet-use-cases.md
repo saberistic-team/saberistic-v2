@@ -243,7 +243,27 @@ Before publishing the Saberistic article:
 
 ## Production acceptance
 
-Pending implementation commit, hosted checks, and checks-gated Render deployment.
+Website implementation commit `4c71d72ecb654d1993fc5a3505243f4e2e1cab5c` passed:
+
+- GitHub CI run `33427394998`, including typechecks, lint, 168 passing tests, the Payload build,
+  and the fixture-backed Static Site export;
+- CodeQL run `33427394330`, including the Actions and JavaScript/TypeScript analyses; and
+- the focused public-site Playwright lane, with all 20 browser checks passing.
+
+Render's `checksPass` gate then deployed that exact commit as Static Site deploy
+`dep-daasrtflk1mc73ae6lr0`. The remote build prepared Payload content revision `2e8da5a6f350`,
+generated 28 pages with ten Build Notes and five published prototype routes, and reported the site
+live at `2026-08-31T18:57:14Z`.
+
+Production acceptance on `https://saberistic.com` confirmed:
+
+- HTTP 200 for the article, Build Notes index, RSS feed, and sitemap;
+- the article title, summary, canonical URL, Open Graph and Twitter metadata;
+- `BlogPosting` and `BreadcrumbList` structured data;
+- the pinned Growth commit, executable hash, proposed-adapter boundary, and explicit NO-GO wording;
+- Build Note 010 first in the Build Notes index and RSS feed, and present in the sitemap;
+- `Cache-Control: public, max-age=0, s-maxage=300` and a repeat-request CDN cache hit; and
+- CSP, Permissions Policy, Referrer Policy, `X-Content-Type-Options`, and frame-denial headers.
 
 ## Remaining Growth release gates
 

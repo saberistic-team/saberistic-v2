@@ -172,7 +172,11 @@ project, and contributor scorecards into sensor-backed physical-asset custody; t
 observe/validate/grade boundary; the synthetic 96.1 cold-room receipt; the experimental Solana
 devnet program and published IDL; byte and semantic-equality evidence; and the custody, audit,
 reproducibility, indexer, performance, and public-client gates that remain NO-GO. Its implementation
-and pending release record are in [25](./25-growth-program-devnet-use-cases.md).
+commit `4c71d72` passed CI run `33427394998` and CodeQL run `33427394330`; checks-gated Static Site
+deploy `dep-daasrtflk1mc73ae6lr0` generated 28 pages with ten Build Notes and five Payload prototype
+routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
+security-header acceptance. Its implementation and production record are in
+[25](./25-growth-program-devnet-use-cases.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
