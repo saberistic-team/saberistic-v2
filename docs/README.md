@@ -134,16 +134,17 @@ custody gates that keep v2 off devnet and mainnet. Website commit `65ae864` pass
 `dep-daaf7ls9v7es73eb9fc0` generated 24 pages with six Build Notes and five Payload prototype
 routes, then passed page, structured-data, feed, sitemap, CDN-cache, and security-header acceptance.
 Its implementation and production record are in [21](./21-growth-program-v2-build-note.md).
-Build Note 007 is prepared for Harness Platform Stage 1, Milestone 2 at pinned public commit
+Build Note 007 documents Harness Platform Stage 1, Milestone 2 at pinned public commit
 `8f18f6d`: the zero-dependency `hello-service` calibration repository, SDK-owned scenario DSL,
 read-only task board, opt-in OpenTelemetry bridge, hardened initialize-era MCP stdio client, 123
 passing workspace tests, seven passing golden-service checks, and a separate live lane that
 discovered 13 tools from one pinned official reference server in an independent local audit. The
-separate GitHub compatibility workflow is configured but has no public run yet. Website
-implementation and source verification are recorded in
-[22](./22-harness-eval-credibility-m2-build-note.md); production acceptance remains pending until
-the final website commit, CI/CodeQL runs, Render deployment, and custom-domain discovery checks are
-recorded.
+separate GitHub compatibility workflow is configured but has no public run yet. Website commit
+`b4d10ba` passed CI run `33412210406` and CodeQL run `33412210129`; checks-gated Static Site deploy
+`dep-daaqe4ou01pc73fh0f7g` generated 25 pages with seven Build Notes and five Payload prototype
+routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
+security-header acceptance. Its implementation and production record are in
+[22](./22-harness-eval-credibility-m2-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

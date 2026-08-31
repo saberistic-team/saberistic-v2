@@ -1,7 +1,7 @@
 # Harness Platform M2 Eval Credibility Build Note
 
 Date: August 31, 2026
-Status: implementation prepared; production acceptance pending
+Status: accepted in production
 
 ## Outcome
 
@@ -185,18 +185,30 @@ adding article-specific raster media.
 
 ## Production acceptance
 
-Pending. Do not treat the page as accepted until all of the following are recorded here:
+Accepted on August 31, 2026 against website feature commit
+`b4d10ba0d1b65bf069c19393ed81906dd79ad1d5`:
 
-1. the final Saberistic website commit;
-2. passing CI and CodeQL runs for that exact commit;
-3. the checks-gated Render Static Site deployment identifier and live status;
-4. HTTP 200 from the custom-domain article route;
-5. the exact title, canonical, pinned source commit, contents anchors, and truth-boundary text in
-   the production HTML;
-6. the article in the homepage/index, RSS feed, and sitemap; and
-7. the expected CDN cache and security headers.
+- [CI run `33412210406`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33412210406)
+  passed typechecks, lint, 165 tests with one intentional integration skip, the production build,
+  and the fixture-backed static export.
+- [CodeQL run `33412210129`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33412210129)
+  passed its Actions and JavaScript/TypeScript analyses.
+- Checks-gated Render Static Site deploy `dep-daaqe4ou01pc73fh0f7g` checked out the exact commit,
+  generated 25 / 25 pages from CMS revision `2e8da5a6f350`, verified seven Build Notes and five
+  prototype routes, and reached `live` at `2026-08-31T16:11:26Z`.
+- The custom-domain article returned HTTP 200 with the exact title, canonical URL, `BlogPosting`
+  structured data, Harness pin `8f18f6d`, contents links for the golden repository, OpenTelemetry,
+  and MCP sections, plus the explicit unrooted-CLI telemetry caveat.
+- The homepage and Build Notes index link to the article. Its canonical URL appears in both the RSS
+  feed and sitemap.
+- The first post-deploy request was a CDN miss; a repeat request was a hit with `age: 10` and
+  `cache-control: public, max-age=0, s-maxage=300`. The response also carried the expected CSP,
+  permissions policy, referrer policy, `nosniff`, and frame-deny headers.
 
-No deploy IDs or production verification claims are recorded before those checks complete.
+The Build Note is live at
+<https://saberistic.com/build-notes/harness-eval-credibility-m2/>. The configured MCP compatibility
+workflow still has no public run; the 13-tool evidence remains an independent local compatibility
+check rather than hosted workflow proof.
 
 ## Next milestone gates
 
