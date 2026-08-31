@@ -1920,6 +1920,205 @@ button.button {
   stroke-width: 2;
 }
 
+.growth-diagram {
+  align-items: stretch;
+  display: grid;
+  gap: 0.8rem;
+  min-width: 52rem;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.growth-diagram__node {
+  background: color-mix(in srgb, var(--surface) 92%, var(--rule));
+  border: 1px solid #7b827c;
+  display: grid;
+  gap: 0.45rem;
+  min-width: 9rem;
+  padding: 1rem;
+}
+
+.growth-diagram__node > span,
+.growth-diagram__boundary-label,
+.growth-diagram__blocked-band,
+.growth-diagram--boundaries > section > p {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.growth-diagram__node strong {
+  font-size: 0.9rem;
+}
+
+.growth-diagram__node small {
+  color: var(--muted);
+  font-size: 0.68rem;
+  line-height: 1.45;
+}
+
+.growth-diagram__node--accent {
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  border-color: var(--blue-dark);
+}
+
+.growth-diagram__node--safe {
+  background: color-mix(in srgb, var(--safe) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--safe) 65%, var(--ink));
+}
+
+.growth-diagram__node--warning {
+  background: color-mix(in srgb, var(--warning) 11%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--ink));
+}
+
+.growth-diagram__node--blocked {
+  background: #f2dcd7;
+  border-color: #9e4e40;
+}
+
+.growth-diagram__arrow {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 2.5rem;
+}
+
+.growth-diagram__arrow small {
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  text-transform: uppercase;
+}
+
+.growth-diagram__arrow b {
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+
+.growth-diagram--flow {
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+}
+
+.growth-diagram--account-model {
+  align-items: center;
+  grid-template-columns: 1fr;
+}
+
+.growth-diagram__account-root {
+  display: grid;
+  gap: 0.55rem;
+  justify-self: center;
+  text-align: center;
+  width: 16rem;
+}
+
+.growth-diagram__account-root > span,
+.growth-diagram__account-children p {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.growth-diagram__account-children {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: minmax(15rem, 0.8fr) minmax(30rem, 1.6fr);
+}
+
+.growth-diagram__account-children > section {
+  align-items: center;
+  border-top: 1px solid var(--rule-strong);
+  display: grid;
+  gap: 0.65rem;
+  padding-top: 0.8rem;
+}
+
+.growth-diagram__account-children > section:first-child {
+  grid-template-columns: 1fr;
+}
+
+.growth-diagram__account-children > section:last-child {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.growth-diagram__account-children p {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.growth-diagram__receipt {
+  justify-self: center;
+  width: 18rem;
+}
+
+.growth-diagram--lifecycle {
+  align-items: center;
+  grid-template-columns: 14rem auto 10rem auto 10rem;
+}
+
+.growth-diagram__signers {
+  align-items: center;
+  display: grid;
+  gap: 0.45rem;
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.growth-diagram__fork {
+  display: grid;
+  gap: 0.65rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.growth-diagram--boundaries {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.growth-diagram--boundaries > section {
+  background: color-mix(in srgb, var(--surface) 88%, var(--rule));
+  border: 1px solid var(--rule);
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  padding: 1rem;
+}
+
+.growth-diagram--boundaries > section:first-child {
+  grid-template-columns: 1fr auto 1fr;
+}
+
+.growth-diagram--boundaries > section > p,
+.growth-diagram__boundary-label {
+  color: var(--muted);
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.growth-diagram__boundary-label {
+  border-top: 1px solid var(--rule);
+  padding-top: 0.7rem;
+}
+
+.growth-diagram__blocked-band {
+  align-items: center;
+  background: #f2dcd7;
+  border: 1px solid #9e4e40;
+  display: flex;
+  gap: 1rem;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+}
+
+.growth-diagram__blocked-band span {
+  color: #6f332a;
+}
+
 .reference-grid,
 .file-guide {
   display: grid;

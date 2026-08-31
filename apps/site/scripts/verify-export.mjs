@@ -103,6 +103,23 @@ assert.match(
 )
 assert.doesNotMatch(cryptopal, /<video[^>]*(?:autoplay|loop)/)
 
+const growthProgram = await readOutput('build-notes/growth-program-v2-scorecards/index.html')
+assert.match(
+  growthProgram,
+  /Growth Program v2: replacing a live score contract without mutating it/,
+)
+assert.match(growthProgram, /d944ee7/)
+assert.match(growthProgram, /href="#browser-demo"/)
+assert.match(growthProgram, /href="#local-validator"/)
+assert.match(
+  growthProgram,
+  /implemented and locally validated\. It is not deployed or release-ready\./,
+)
+assert.match(growthProgram, /issuer-attested, multi-pillar scorecard and credential primitive/)
+assert.match(growthProgram, /none becomes a V2 score/)
+assert.match(growthProgram, /no RPC, wallet, signing, transaction sending/)
+assert.match(growthProgram, /genesis-loads the exact binary/)
+
 for (const prototype of snapshot.prototypes.items) {
   const canonical = `https://saberistic.com/prototypes/${prototype.slug}/`
   const html = await readOutput(`prototypes/${prototype.slug}/index.html`)

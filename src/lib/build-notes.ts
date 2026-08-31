@@ -20,6 +20,48 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'DAY 006 / GROWTH PROGRAM',
+    footerSummary:
+      'The pinned repository separates sanitized live-state evidence, an undeployed v2 program, a no-network browser playground, and a real loopback-only validator lab.',
+    footerTitle: 'Inspect the replacement—and the gates that keep it off public networks.',
+    modifiedAt: '2026-08-30',
+    publishedAt: '2026-08-30',
+    readingMinutes: 30,
+    repositories: [
+      {
+        commit: 'd944ee75cbb06d6eabdbd7075a88a15bb15e5936',
+        label: 'Growth Program',
+        url: 'https://github.com/saberistic-team/growth-program',
+      },
+    ],
+    sections: [
+      ['brief', 'The product primitive'],
+      ['legacy-audit', 'What was inherited'],
+      ['containment', 'Containment first'],
+      ['v2-contract', 'The v2 contract'],
+      ['score-model', 'Scores and rubrics'],
+      ['lifecycle', 'Consent and corrections'],
+      ['authority', 'Authority model'],
+      ['migration', 'Legacy migration'],
+      ['website', 'The evidence website'],
+      ['browser-demo', 'Browser-local playground'],
+      ['local-validator', 'Local-validator lab'],
+      ['security-boundaries', 'Demo boundaries'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Growth Program v2: hardening a Solana scorecard',
+    slug: 'growth-program-v2-scorecards',
+    summary:
+      'How I turned a live-but-unsafe Solana growth contract into a hardened v2, an evidence-led website, and safety-gated browser-local and local-validator demos without mutating legacy accounts.',
+    tags: ['Solana', 'Anchor', 'Score credentials', 'Security hardening'],
+    title: 'Growth Program v2: replacing a live score contract without mutating it',
+  },
+  {
     eyebrow: 'DAY 005 / CRYPTOPAL',
     footerSummary:
       'Three pinned repositories separate the original idea, runnable Solana demonstrator, and blinded-token service; the embedded recording makes the complete local journey inspectable.',

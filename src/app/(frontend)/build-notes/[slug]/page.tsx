@@ -7,6 +7,7 @@ import { TrackEventOnMount } from '@/components/analytics/TrackEventOnMount'
 import { TrackedAnchor } from '@/components/analytics/TrackedLink'
 import { JsonLd } from '@/components/seo/JsonLd'
 import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
+import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
@@ -22,6 +23,7 @@ type BuildNotePageProps = {
 
 const articleBySlug = {
   'cryptopal-wallet-email-wallet': CryptoPalArticle,
+  'growth-program-v2-scorecards': GrowthProgramArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
   'three-lovable-prototypes': LovablePrototypeTrioArticle,

@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
 import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
+import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
@@ -52,6 +53,30 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('cryptopal-wallet-email-wallet')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '55f7f00',
     )
+    expect(getBuildNote('growth-program-v2-scorecards')?.repositories).toHaveLength(1)
+    expect(getBuildNote('growth-program-v2-scorecards')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      'd944ee7',
+    )
+  })
+
+  it('renders Growth Program v2 with containment, two demo boundaries, and release gates', () => {
+    const html = renderToStaticMarkup(createElement(GrowthProgramArticle))
+
+    expect(html).toContain('issuer-attested, multi-pillar scorecard and credential primitive')
+    expect(html).toContain(
+      'implemented and locally validated. It is not deployed or release-ready.',
+    )
+    expect(html).toContain('none becomes a V2 score')
+    expect(html).toContain('no RPC, wallet, signing, transaction sending')
+    expect(html).toContain('genesis-loads the exact binary')
+    expect(html).toContain('10 / 10')
+    expect(html).toContain('12 / 12')
+    expect(html).toContain('4 / 4')
+    expect(html).toContain('15 / 15')
+    expect(html).toContain('1 / 1')
+    expect(html).toContain('d944ee7')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(8)
   })
 
   it('renders CryptoPal with the two-hop protocol, measured evidence, and explicit privacy limits', () => {

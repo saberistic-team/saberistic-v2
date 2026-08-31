@@ -6,6 +6,7 @@ test.describe('Public site smoke', () => {
     '/prototypes',
     '/build-notes',
     '/build-notes/cryptopal-wallet-email-wallet',
+    '/build-notes/growth-program-v2-scorecards',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/three-lovable-prototypes',
@@ -20,6 +21,30 @@ test.describe('Public site smoke', () => {
       await expect(page.locator('h1').first()).toBeVisible()
     })
   }
+
+  test('Growth Program keeps the hosted and local-validator demos separate', async ({ page }) => {
+    const response = await page.goto('/build-notes/growth-program-v2-scorecards')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Growth Program v2: replacing a live score contract without mutating it',
+      }),
+    ).toBeVisible()
+    await expect(page.getByText('d944ee7', { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'Browser-local playground' })).toHaveAttribute(
+      'href',
+      '#browser-demo',
+    )
+    await expect(page.getByRole('link', { name: 'Local-validator lab' })).toHaveAttribute(
+      'href',
+      '#local-validator',
+    )
+    await expect(
+      page.getByText('implemented and locally validated. It is not deployed or release-ready.'),
+    ).toBeVisible()
+  })
 
   test('CryptoPal exposes a lazy native player and visual transcript', async ({ page }) => {
     const response = await page.goto('/build-notes/cryptopal-wallet-email-wallet')

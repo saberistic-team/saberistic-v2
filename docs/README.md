@@ -54,6 +54,7 @@ The product promise is:
 | [18 — Harness Platform M1 Operator Loop](./18-harness-operator-loop-m1-build-note.md)                             | SQLite evidence, terminal viewer, golden eval, compiled policy, CI composition, truth boundaries, and release plan.              |
 | [19 — Three Lovable prototypes](./19-three-lovable-prototypes.md)                                                 | Source audits, Payload publication gates, shared product architecture, Build Note 004, and production acceptance.                |
 | [20 — CryptoPal Build Note](./20-cryptopal-build-note.md)                                                         | Original PlantUML, two blinded-token hops, local Solana protocol, recorded walkthrough, privacy limits, and load evidence.       |
+| [21 — Growth Program v2 Build Note](./21-growth-program-v2-build-note.md)                                         | Legacy containment, fixed-point v2 score credentials, website boundaries, local-validator demo, and release gates.               |
 
 ## Recommended first release
 
@@ -123,6 +124,12 @@ The recorded-walkthrough release in website commit `6c6963e` passed CI run `3334
 run `33348840477`; checks-gated Static Site deploy `dep-daadtjf10e5c73bpc0vg` generated the same 23
 pages, verified the exact MP4 and WebP assets, and passed production page, immutable-cache,
 same-origin media-policy, and byte-range acceptance.
+Build Note 006 now documents Growth Program at pinned public commit `d944ee7`: the legacy
+mainnet/devnet containment boundary, fixed-point and versioned v2 score model, consent and
+correction lifecycle, provenance-only migration, owner-only evidence website, no-network browser
+simulator, loopback-only real-validator lab, verification-session checks, and the deployment and
+custody gates that keep v2 off devnet and mainnet. Its implementation and pending release
+acceptance are recorded in [21](./21-growth-program-v2-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
