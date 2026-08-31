@@ -146,12 +146,16 @@ separate GitHub compatibility workflow is configured but has no public run yet. 
 routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
 security-header acceptance. Its implementation and production record are in
 [22](./22-harness-eval-credibility-m2-build-note.md).
-Build Note 008 is prepared from eight exact Spiral Safe repository pins. It documents the original
+Build Note 008 is live from eight exact Spiral Safe repository pins. It documents the original
 browser/backend custody contradiction, the WebAuthn-authorized Vault signing bridge, chain-specific
 Solana and EIP-191 seams, scoped account API keys, usage reservation and outbox accounting, three
 separate deployment evidence lanes, four synthetic fixture walkthroughs, 103 fresh passing tests,
-and the 260-request control-plane smoke result without presenting it as a capacity benchmark. The
-implementation and pending production record are in [23](./23-spiral-safe-build-note.md).
+and the 260-request control-plane smoke result without presenting it as a capacity benchmark.
+Website commit `c8072d9` passed CI run `33417900218` and CodeQL run `33417899330`; checks-gated
+Static Site deploy `dep-daarb0gae00c739mtvgg` generated 26 pages with eight Build Notes and five
+Payload prototype routes, then passed custom-domain page, structured-data, feed, sitemap,
+content-addressed media, byte-range, CDN-cache, and security-header acceptance. Its implementation
+and production record are in [23](./23-spiral-safe-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

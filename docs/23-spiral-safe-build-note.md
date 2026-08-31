@@ -1,7 +1,7 @@
 # Spiral Safe Build Note
 
 Date: August 31, 2026
-Status: implementation complete; production acceptance pending
+Status: accepted in production
 
 ## Outcome
 
@@ -247,7 +247,37 @@ Before the note is accepted in production:
 
 ## Production acceptance
 
-Pending the checks-gated release and custom-domain verification.
+Accepted on August 31, 2026 against website feature commit
+`c8072d9d4430f4f432b084d44f5f3b263957105b`:
+
+- Local `pnpm verify` passed both typechecks, lint, 166 tests with one intentional integration skip,
+  the production application build, and the fixture-backed static export. The focused Spiral Safe
+  browser suite passed 2 / 2 checks. A wider browser run passed all 16 public-site checks and
+  skipped the live-only analytics test; its unrelated Payload admin smoke could not initialize
+  because the saved local PostgreSQL password was rejected.
+- [CI run `33417900218`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33417900218)
+  passed typechecks, lint, unit tests, the production build, and the fixture-backed static export.
+- [CodeQL run `33417899330`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33417899330)
+  passed its Actions and JavaScript/TypeScript analyses.
+- Checks-gated Render Static Site deploy `dep-daarb0gae00c739mtvgg` checked out the exact feature
+  commit, fetched verified Payload content revision `2e8da5a6f350`, generated 26 / 26 pages with
+  eight Build Notes and five prototype routes, verified the CryptoPal and Spiral Safe media, and
+  reached `live` at `2026-08-31T17:12:54Z`. No error-level log appeared during the deployment.
+- The custom-domain article returned HTTP 200 with the exact title and canonical URL, one
+  `BlogPosting`, four `VideoObject` records with measured durations, four native video players, four
+  diagrams, the eight source-pin action, and the explicit test, bearer-authentication, load, and
+  Nitro caveats.
+- The homepage and Build Notes index link to the article. Its canonical route appears in both the
+  RSS feed and sitemap.
+- All four WebMs and four posters returned the expected media type, byte count, and SHA-256 digest
+  with `public, max-age=31536000, immutable`. Every WebM returned HTTP 206 and the exact requested
+  `Content-Range` for a 32-byte range probe.
+- The first article request was a CDN miss and the immediate repeat was a hit with `age: 0`; both
+  carried `public, max-age=0, s-maxage=300`. The response also carried the expected CSP,
+  permissions policy, strict-origin referrer policy, `nosniff`, and frame-deny headers.
+
+The Build Note is live at
+<https://saberistic.com/build-notes/spiral-safe-passkey-signing-platform/>.
 
 ## Remaining product gates
 
