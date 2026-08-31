@@ -157,6 +157,15 @@ Static Site deploy `dep-daarb0gae00c739mtvgg` generated 26 pages with eight Buil
 Payload prototype routes, then passed custom-domain page, structured-data, feed, sitemap,
 content-addressed media, byte-range, CDN-cache, and security-header acceptance. Its implementation
 and production record are in [23](./23-spiral-safe-build-note.md).
+Build Note 009 documents Harness Platform Stage 1, Milestone 3 at pinned public merge `defbf7b`:
+the project-owned ACP WebSocket service, one-run sessions, fail-closed permission handshake,
+interactive TUI, manifest-derived Docker plan, OpenAI-compatible adapter, redacted SQLite/event
+boundary, and the live Docker, provider, replay, deployment, and capacity evidence still left open.
+Website commit `6f6c012` passed CI run `33422982684` and CodeQL run `33422973211`; final
+checks-gated Static Site deploy `dep-daas5d5490qs738kq120` generated 27 pages with nine Build Notes
+and five Payload prototype routes, then passed custom-domain page, structured-data, feed, sitemap,
+CDN-cache, and security-header acceptance. Its implementation and production record are in
+[24](./24-harness-permissioned-agent-services-m3.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

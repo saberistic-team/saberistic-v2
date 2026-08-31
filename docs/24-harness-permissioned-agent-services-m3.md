@@ -1,7 +1,7 @@
 # Harness Platform M3 Permissioned Agent Services Build Note
 
 Date: August 31, 2026  
-Status: release verification in progress
+Status: accepted in production
 
 ## Outcome
 
@@ -87,9 +87,9 @@ tool.result
 ```
 
 Only one correlated allow can resume the call. Denial, timeout, session cancellation, WebSocket
-disconnect, terminal EOF, confirmation-reader failure, or a missing resolver all resolve to denial. A run-scoped
-approval is cached only for the exact action and subject so the sandbox can repeat the policy check
-without creating a second prompt or a global grant.
+disconnect, terminal EOF, confirmation-reader failure, or a missing resolver all resolve to denial.
+A run-scoped approval is cached only for the exact action and subject so the sandbox can repeat the
+policy check without creating a second prompt or a global grant.
 
 ## Sandbox contract
 
@@ -225,7 +225,30 @@ The note must continue to state:
 - [x] Article, diagrams, metadata, tests, and static-export checks implemented.
 - [x] Root verification passes.
 - [x] Focused browser acceptance passes.
-- [ ] Feature commit pushed and hosted checks pass.
-- [ ] Render Static Site deploy succeeds.
-- [ ] Production page, feeds, sitemap, caching, and headers pass.
-- [ ] Production acceptance is recorded here and in `docs/README.md`.
+- [x] Feature commit pushed and hosted checks pass.
+- [x] Render Static Site deploy succeeds.
+- [x] Production page, feeds, sitemap, caching, and headers pass.
+- [x] Production acceptance is recorded here and in `docs/README.md`.
+
+## Production acceptance
+
+The feature shipped in website commit
+`6f6c012b062891f8a39892dec5cf647f72860d16`. Hosted CI run `33422982684` passed both type checks,
+lint, 167 tests with one intentional skip, the production build, and the reviewed-fixture static
+export. CodeQL run `33422973211` passed in parallel.
+
+The final checks-gated Render deployment was `dep-daas5d5490qs738kq120`. It built the same website
+commit against Payload content revision `2e8da5a6f350`, generated 27 static pages, and verified nine
+Build Notes plus five prototype routes. Scheduled Static Site Rebuild run `33423075621` happened to
+start a duplicate same-commit deploy, `dep-daas4p6gekts738pkv4g`, while the hosted gates were still
+running; the checks-gated deployment superseded it without changing the source revision.
+
+Production checks against the custom domain confirmed:
+
+- HTTP 200 for the Build Note, RSS feed, and sitemap;
+- the exact SEO title and canonical URL;
+- the pinned Harness merge `defbf7b` and all four accessible diagrams;
+- one `BlogPosting` and one `BreadcrumbList` structured-data object;
+- discovery through both `/build-notes/feed.xml` and `/sitemap.xml`;
+- CDN caching with `s-maxage=300`; and
+- the existing CSP, Permissions Policy, Referrer Policy, MIME-sniffing, and frame-denial headers.
