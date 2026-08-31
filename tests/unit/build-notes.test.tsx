@@ -8,6 +8,7 @@ import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEval
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
+import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, getBuildNote } from '@/lib/build-notes'
 import { createBuildNotesRSS } from '@/lib/build-notes-feed'
@@ -30,7 +31,7 @@ describe('Git-authored build notes', () => {
         expect(repository.commit).toMatch(/^[a-f0-9]{40}$/)
         expect(repository.label.length).toBeGreaterThan(0)
         expect(repository.url).toMatch(
-          /^https:\/\/github\.com\/(?:saberistic-team|saberistic)\/[a-z0-9-]+$/,
+          /^https:\/\/github\.com\/(?:saberistic-team|saberistic|Spiral-Safe)\/[a-z0-9.-]+$/,
         )
       }
       expect(`${note.seoTitle} — Saberistic`.length).toBeLessThanOrEqual(60)
@@ -61,6 +62,36 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('harness-eval-credibility-m2')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '8f18f6d',
     )
+    expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
+    expect(
+      getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('34ff343')
+  })
+
+  it('renders Spiral Safe with a backend custody boundary, fixture demos, and explicit production gates', () => {
+    const html = renderToStaticMarkup(createElement(SpiralSafeArticle))
+
+    expect(html).toContain('WebAuthn-authorized signing and account platform')
+    expect(html).toContain('The browser and backend disagreed about who owned the key.')
+    expect(html).toContain('EIP-191 personal-message signing only')
+    expect(html).toContain('260 requests across 26 method/path scenarios')
+    expect(html).toContain('not a benchmark')
+    expect(html).toContain('103 tests passed')
+    expect(html).toContain('FIXTURE MODE · SYNTHETIC LOCAL DATA')
+    expect(html).toContain('WHY THERE IS NO WEBAUTHN POPUP')
+    expect(html).toContain('The fixture sees a bearer header')
+    expect(html).toContain('No EIF was created')
+    expect(html).toContain('34ff343')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(4)
+    expect(html.match(/<video/g)?.length).toBe(4)
+    expect(html.match(/preload="none"/g)?.length).toBe(4)
+    expect(html.match(/type="video\/webm"/g)?.length).toBe(4)
+    expect(html.match(/aria-describedby="[^"]+-caption [^"]+-transcript-summary"/g)?.length).toBe(4)
+    expect(html.match(/ download=""/g)?.length).toBe(8)
+    expect(html).not.toContain('<time>')
+    expect(html.match(/Visual transcript for this silent fixture recording/g)?.length).toBe(4)
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(9)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {

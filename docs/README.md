@@ -56,6 +56,7 @@ The product promise is:
 | [20 — CryptoPal Build Note](./20-cryptopal-build-note.md)                                                         | Original PlantUML, two blinded-token hops, local Solana protocol, recorded walkthrough, privacy limits, and load evidence.       |
 | [21 — Growth Program v2 Build Note](./21-growth-program-v2-build-note.md)                                         | Legacy containment, fixed-point v2 score credentials, website boundaries, local-validator demo, and release gates.               |
 | [22 — Harness Platform M2 Eval Credibility](./22-harness-eval-credibility-m2-build-note.md)                       | Golden-repository calibration, SDK scenarios, read-only task board, opt-in telemetry, and a network-gated MCP stdio client.      |
+| [23 — Spiral Safe Build Note](./23-spiral-safe-build-note.md)                                                     | Eight-repository integration, WebAuthn/Vault custody boundary, account usage, fixture demos, and explicit Nitro release gates.   |
 
 ## Recommended first release
 
@@ -145,6 +146,12 @@ separate GitHub compatibility workflow is configured but has no public run yet. 
 routes, then passed custom-domain page, structured-data, feed, sitemap, CDN-cache, and
 security-header acceptance. Its implementation and production record are in
 [22](./22-harness-eval-credibility-m2-build-note.md).
+Build Note 008 is prepared from eight exact Spiral Safe repository pins. It documents the original
+browser/backend custody contradiction, the WebAuthn-authorized Vault signing bridge, chain-specific
+Solana and EIP-191 seams, scoped account API keys, usage reservation and outbox accounting, three
+separate deployment evidence lanes, four synthetic fixture walkthroughs, 103 fresh passing tests,
+and the 260-request control-plane smoke result without presenting it as a capacity benchmark. The
+implementation and pending production record are in [23](./23-spiral-safe-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

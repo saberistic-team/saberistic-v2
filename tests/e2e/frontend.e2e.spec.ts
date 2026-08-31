@@ -10,6 +10,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
+    '/build-notes/spiral-safe-passkey-signing-platform',
     '/build-notes/three-lovable-prototypes',
     '/build-notes/turbopass-rust-temporal',
   ]) {
@@ -75,6 +76,45 @@ test.describe('Public site smoke', () => {
     await expect(
       page.getByText('implemented and locally validated. It is not deployed or release-ready.'),
     ).toBeVisible()
+  })
+
+  test('Spiral Safe separates fixture walkthroughs from production custody claims', async ({
+    page,
+  }) => {
+    const response = await page.goto('/build-notes/spiral-safe-passkey-signing-platform')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Spiral Safe: rebuilding a passkey-gated signing platform across eight repositories',
+      }),
+    ).toBeVisible()
+    await expect(page.getByText('8 pinned commits', { exact: true })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'WebAuthn bridge' })).toHaveAttribute(
+      'href',
+      '#webauthn',
+    )
+    await expect(page.getByRole('link', { name: 'Veil and Nitro' })).toHaveAttribute(
+      'href',
+      '#veil-nitro',
+    )
+    await expect(page.locator('video')).toHaveCount(4)
+    const extensionWalkthrough = page.getByLabel(
+      'Actual unpacked extension demo fixture walkthrough',
+    )
+    await expect(extensionWalkthrough).toHaveAttribute('preload', 'none')
+    await expect(extensionWalkthrough).toHaveAttribute(
+      'aria-describedby',
+      'extension-demo-caption extension-demo-transcript-summary',
+    )
+    await expect(page.getByRole('link', { name: 'Download the WebM', exact: true })).toHaveCount(4)
+    await expect(
+      page.getByText(
+        'The fixture sees a bearer header; it does not prove production API-key authentication.',
+      ),
+    ).toBeVisible()
+    await expect(page.getByText('No EIF was created', { exact: false })).toBeVisible()
   })
 
   test('CryptoPal exposes a lazy native player and visual transcript', async ({ page }) => {

@@ -20,6 +20,84 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'DAY 008 / SPIRAL SAFE',
+    footerSummary:
+      'Eight pinned repositories show the browser-to-Vault signing path, account layer, four fixture recordings, Kubernetes baseline, and fail-closed Veil admission scaffold described here.',
+    footerTitle: 'Inspect the integration—and the production gates it deliberately leaves open.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 36,
+    repositories: [
+      {
+        commit: '34ff343bcb5a5f81ecceff7f8ed3102ead53645b',
+        label: 'Services',
+        url: 'https://github.com/Spiral-Safe/services',
+      },
+      {
+        commit: 'ef797388f9f38a9b5f2879ee62c74bf2714a886e',
+        label: 'Extension',
+        url: 'https://github.com/Spiral-Safe/extension',
+      },
+      {
+        commit: 'def536cdbef94b3456b89c1e824d131ef17d2bda',
+        label: 'SDK',
+        url: 'https://github.com/Spiral-Safe/sdk',
+      },
+      {
+        commit: '2922ba6ea1c0cbfabb5462253ffb982270862490',
+        label: 'Wallet adapter',
+        url: 'https://github.com/Spiral-Safe/wallet-adapter',
+      },
+      {
+        commit: '38e34313a3c8046ac567177a49fa79e95f5f8425',
+        label: 'Specs',
+        url: 'https://github.com/Spiral-Safe/specs',
+      },
+      {
+        commit: '7bf90dcdb0baa9f75f9ecb89043738e4e022c14f',
+        label: 'Token list',
+        url: 'https://github.com/Spiral-Safe/token-list',
+      },
+      {
+        commit: 'e6ce502aa29f5d0492809560351968c5e474dc22',
+        label: 'Legacy website',
+        url: 'https://github.com/Spiral-Safe/website',
+      },
+      {
+        commit: '88cf033e00758fdb02c519aec0db7a3ca2e76545',
+        label: 'Organization profile',
+        url: 'https://github.com/Spiral-Safe/.github',
+      },
+    ],
+    sections: [
+      ['brief', 'The product'],
+      ['archaeology', 'The archaeology run'],
+      ['fault-line', 'The fault line'],
+      ['repository-map', 'Eight repositories'],
+      ['custody-boundary', 'Custody boundary'],
+      ['webauthn', 'WebAuthn bridge'],
+      ['service-hardening', 'Service hardening'],
+      ['chain-seam', 'Chain-specific signing'],
+      ['account-billing', 'Account and billing'],
+      ['infrastructure', 'Deployment stories'],
+      ['veil-nitro', 'Veil and Nitro'],
+      ['recordings', 'Four walkthroughs'],
+      ['load-testing', 'Load and endpoints'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Spiral Safe: integrating passkey custody',
+    slug: 'spiral-safe-passkey-signing-platform',
+    summary:
+      'How I reconciled eight repositories into a WebAuthn-authorized signing platform with a Vault boundary, scoped API keys, usage accounting, four demos, Raft deployment intent, and explicit Nitro gates.',
+    tags: ['WebAuthn', 'Vault', 'Wallet Standard', 'AWS Nitro Enclaves'],
+    title: 'Spiral Safe: rebuilding a passkey-gated signing platform across eight repositories',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 2',
     footerSummary:
       'The pinned public commit contains the five M2 task manifests, golden repository, shared scenario contract, read-only board, opt-in telemetry bridge, and hardened MCP stdio client described here.',

@@ -12,6 +12,7 @@ import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEval
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
+import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
@@ -28,6 +29,7 @@ const articleBySlug = {
   'harness-eval-credibility-m2': HarnessEvalCredibilityArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
+  'spiral-safe-passkey-signing-platform': SpiralSafeArticle,
   'three-lovable-prototypes': LovablePrototypeTrioArticle,
   'turbopass-rust-temporal': TurboPassArticle,
 } as const satisfies Record<(typeof buildNotes)[number]['slug'], ComponentType>
@@ -141,6 +143,89 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
       uploadDate: note.modifiedAt,
       width: 1440,
     })
+  }
+
+  if (note.slug === 'spiral-safe-passkey-signing-platform') {
+    const videos = [
+      {
+        caption:
+          'The actual unpacked Spiral Safe extension and Wallet Standard demo run through five annotated fixture steps.',
+        contentSize: '1123877 bytes',
+        description:
+          'A short silent fixture walkthrough of extension configuration, Wallet Standard discovery, virtual WebAuthn registration, message signing, and legacy Solana transaction signing.',
+        duration: 'PT11.56S',
+        file: 'extension-demo.13df0952.webm',
+        name: 'Spiral Safe actual unpacked extension demo',
+        poster: 'extension-demo-poster.b5f6960e.png',
+        sha256: '13df09520cb915c26c32c58ceddf9341b5aa4c273155bd4e834bab90b20bc926',
+      },
+      {
+        caption:
+          'The standalone Spiral Safe page demonstrates the implemented Ethereum EIP-191 message path with synthetic local data.',
+        contentSize: '1186466 bytes',
+        description:
+          'A short silent fixture walkthrough of the custody boundary, Ethereum selection, virtual WebAuthn registration, message preparation, and deterministic EIP-191 signing.',
+        duration: 'PT10.84S',
+        file: 'standalone-wallet.9a794fe6.webm',
+        name: 'Spiral Safe standalone wallet demo',
+        poster: 'standalone-wallet-poster.77908939.png',
+        sha256: '9a794fe65fc107c009cfecda69d31ea53b0723cd4b4fdd65360da71a399a6551',
+      },
+      {
+        caption:
+          'The actual developer console routes show account onboarding, masked credential lifecycle, and seeded usage without revealing an API secret.',
+        contentSize: '1009015 bytes',
+        description:
+          'A short silent fixture walkthrough of developer login, account status, scoped API-key controls, a deliberately unsubmitted key form, and usage analytics.',
+        duration: 'PT11.08S',
+        file: 'developer-dashboard.7a063c1a.webm',
+        name: 'Spiral Safe developer dashboard demo',
+        poster: 'developer-dashboard-poster.751ad2ef.png',
+        sha256: '7a063c1a54c4400e70dbc6ead74face94160843348ac3217244a6177b31d9673',
+      },
+      {
+        caption:
+          'The actual administrator console routes show synthetic tenant, policy, usage, and delivery-audit state.',
+        contentSize: '954158 bytes',
+        description:
+          'A short silent fixture walkthrough of administrator login, system posture, tenant selection, account inspection, and usage-outbox delivery state.',
+        duration: 'PT11.52S',
+        file: 'admin-dashboard.846c8e38.webm',
+        name: 'Spiral Safe administrator dashboard demo',
+        poster: 'admin-dashboard-poster.a94557dc.png',
+        sha256: '846c8e38dcaa8bb42ef52c7ead8af9f4224be3de7b3ae7f3012ffbc94c752d35',
+      },
+    ] as const
+
+    structuredData.push(
+      ...videos.map((video) => ({
+        '@context': 'https://schema.org',
+        '@type': 'VideoObject',
+        accessibilityFeature: 'transcript',
+        accessibilitySummary:
+          'This silent fixture recording has an adjacent five-step visual transcript.',
+        accessMode: 'visual',
+        author: {
+          '@type': 'Person',
+          name: 'AmirSaber Sharifi',
+          url: 'https://saberistic.com/#about',
+        },
+        caption: video.caption,
+        contentSize: video.contentSize,
+        contentUrl: `https://saberistic.com/media/build-notes/spiral-safe/${video.file}`,
+        description: video.description,
+        duration: video.duration,
+        encodingFormat: 'video/webm',
+        height: 900,
+        inLanguage: 'en',
+        isAccessibleForFree: true,
+        name: video.name,
+        sha256: video.sha256,
+        thumbnailUrl: `https://saberistic.com/media/build-notes/spiral-safe/${video.poster}`,
+        uploadDate: note.modifiedAt,
+        width: 1440,
+      })),
+    )
   }
 
   return (
