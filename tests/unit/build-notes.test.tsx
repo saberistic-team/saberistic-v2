@@ -10,6 +10,7 @@ import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEval
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
+import { HarnessPolyglotReviewArticle } from '@/content/build-notes/HarnessPolyglotReview'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -44,7 +45,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-durable-control-plane-m4')
+    expect(buildNotes[0]?.slug).toBe('harness-polyglot-review-m5')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -75,6 +76,9 @@ describe('Git-authored build notes', () => {
     expect(
       getBuildNote('harness-durable-control-plane-m4')?.repositories[0]?.commit.slice(0, 7),
     ).toBe('d3b2859')
+    expect(getBuildNote('harness-polyglot-review-m5')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      '4bf5f68',
+    )
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
       getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
@@ -140,6 +144,24 @@ describe('Git-authored build notes', () => {
     expect(html).toContain('421 / 421')
     expect(html).toContain('No live scale claim')
     expect(html).toContain('d3b2859')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(9)
+  })
+
+  it('renders M5 as an evidence-gated no-go decision with a separately hardened exit gate', () => {
+    const html = renderToStaticMarkup(createElement(HarnessPolyglotReviewArticle))
+
+    expect(html).toContain('most important output is a boundary it did not add')
+    expect(html).toContain('INSUFFICIENT EVIDENCE IS NOT A NODE VICTORY')
+    expect(html).toContain('Correctness proof is not runtime-bottleneck proof')
+    expect(html).toContain('no qualifying profile was found')
+    expect(html).toContain('run-report/v2')
+    expect(html).toContain('535 / 535')
+    expect(html).toContain('THE 16.94-SECOND RUN IS NOT A BENCHMARK')
+    expect(html).toContain('NO PEER-REVIEW CLAIM')
+    expect(html).toContain('4bf5f68')
     expect(html.match(/role="img"/g)?.length).toBe(4)
     expect(html.match(/role="region"/g)?.length).toBe(5)
     expect(html).toContain('tabindex="0"')

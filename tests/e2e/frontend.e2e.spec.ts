@@ -15,6 +15,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/harness-permissioned-agent-services-m3',
+    '/build-notes/harness-polyglot-review-m5',
     '/build-notes/spiral-safe-passkey-signing-platform',
     '/build-notes/three-lovable-prototypes',
     '/build-notes/turbopass-rust-temporal',
@@ -82,6 +83,31 @@ test.describe('Public site smoke', () => {
     )
     await expect(page.getByText('PRODUCTION-SHAPED, NOT PRODUCTION-PROVEN')).toBeVisible()
     await expect(page.getByText('No live scale claim', { exact: true })).toBeVisible()
+  })
+
+  test('Harness M5 keeps the runtime decision conditional and performance claims bounded', async ({
+    page,
+  }) => {
+    const response = await page.goto('/build-notes/harness-polyglot-review-m5')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M5: choosing not to add another runtime',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('4bf5f68')
+    await expect(page.getByRole('link', { name: 'What counts as evidence' })).toHaveAttribute(
+      'href',
+      '#profile-gate',
+    )
+    await expect(page.getByRole('link', { name: 'Trusted exit gate' })).toHaveAttribute(
+      'href',
+      '#exit-gate',
+    )
+    await expect(page.getByText('INSUFFICIENT EVIDENCE IS NOT A NODE VICTORY')).toBeVisible()
+    await expect(page.getByText('THE 16.94-SECOND RUN IS NOT A BENCHMARK')).toBeVisible()
   })
 
   test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({

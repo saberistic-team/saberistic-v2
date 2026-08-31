@@ -20,6 +20,44 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 5',
+    footerSummary:
+      'The pinned public merge records the conditional runtime decision, the hardened manifest-to-report gate beneath it, the checks-gated two-PR release, and every trust boundary described here.',
+    footerTitle: 'Inspect the evidence gate—and what it would take to reopen the runtime decision.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 31,
+    repositories: [
+      {
+        commit: '4bf5f68701dee38eecdc0830c4f1be0d937d3942',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone decision'],
+      ['profile-gate', 'What counts as evidence'],
+      ['decision', 'Conditional language gate'],
+      ['m5-contract', 'Machine-readable decision'],
+      ['step-zero-audit', 'Step 0 audit'],
+      ['exit-gate', 'Trusted exit gate'],
+      ['report-v2', 'Attestable run evidence'],
+      ['adversarial', 'Adversarial hardening'],
+      ['delivery', 'Two-PR delivery'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What reopens the gate'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M5: choosing not to add a runtime',
+    slug: 'harness-polyglot-review-m5',
+    summary:
+      'How M5 audited the evidence for a second runtime, retained TypeScript/Node without claiming it was optimal, and used the same record to harden the manifest-to-report exit gate.',
+    tags: ['Agent architecture', 'Performance evidence', 'Exit gates', 'TypeScript'],
+    title: 'Harness Platform M5: choosing not to add another runtime',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 4',
     footerSummary:
       'The pinned public merge contains the fenced scheduler, durable session restore, transactional outbox, content-addressed artifact path, audit exporter, and fail-closed Kubernetes contract described here.',

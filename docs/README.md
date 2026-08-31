@@ -61,6 +61,7 @@ The product promise is:
 | [25 — Growth Program Sensor Receipts and Devnet](./25-growth-program-devnet-use-cases.md)                         | Sensor-backed custody use cases, experimental Solana devnet identity, artifact/IDL evidence, UI boundaries, and release gates.     |
 | [26 — Harness Platform M4 Durable Control Plane](./26-harness-durable-control-plane-m4-build-note.md)             | Fenced scheduling, replay-safe sessions, deterministic audit export, content-addressed artifacts, Kubernetes topology, and gaps.   |
 | [27 — Three converging AI product workstreams](./27-converging-ai-product-workstreams-build-note.md)              | Readiness, paid diagnostic, and Gift Draft boundaries, activation runbooks, evidence placeholders, and release gates.              |
+| [28 — Harness Platform M5 Conditional Polyglot Review](./28-harness-polyglot-review-m5-build-note.md)             | Evidence-gated runtime decision, Step 0 exit-gate hardening, run-report/v2, two-PR delivery, and residual host trust boundaries.   |
 
 ## Recommended first release
 
@@ -189,6 +190,16 @@ Build Notes and five Payload prototype routes, then passed custom-domain article
 feed, sitemap, CDN-cache, and security-header acceptance. Its implementation and production record
 are in
 [26](./26-harness-durable-control-plane-m4-build-note.md).
+Build Note 012 is prepared from Harness Platform M5 merge `4bf5f68`. It documents the decision to
+retain TypeScript/Node because no qualifying M3–M4 runtime profile exists, without presenting that
+absence as proof that Node is optimal. The same development record prompted a separate Step 0
+audit and checks-gated hardening release: exact branch and CI identity, complete pre/post task
+delta, attributed policy events, deterministic TaskAgent/Pi-adapter coverage, and coherent
+`run-report/v2` evidence. Public M5 CI and an independent clean-checkout audit both passed 535
+offline tests in 36 files, strict TypeScript, and one golden scenario. The 16.94-second report field
+is explicitly treated as whole-suite timing rather than a benchmark. Implementation, claim
+controls, and the pending production record are in
+[28](./28-harness-polyglot-review-m5-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
