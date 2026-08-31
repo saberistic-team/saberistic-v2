@@ -20,6 +20,45 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 3',
+    footerSummary:
+      'The pinned public merge contains the project-owned ACP service, kernel permission handshake, manifest-derived Docker plan, OpenAI-compatible adapter, interactive TUI, and offline evidence described here.',
+    footerTitle: 'Inspect the service boundary—and the live operating lanes it leaves open.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 29,
+    repositories: [
+      {
+        commit: 'defbf7bcf72fc72452b4adc81b099f3fc6c523cf',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['m2-to-m3', 'From evidence to services'],
+      ['delivery', 'Checks-gated delivery'],
+      ['acp-service', 'ACP WebSocket service'],
+      ['permission-loop', 'Permission handshake'],
+      ['interactive-tui', 'Interactive TUI'],
+      ['sandbox', 'Docker-per-run boundary'],
+      ['model-adapter', 'Provider model adapter'],
+      ['audit-boundary', 'Redaction and audit'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M3: permissioned agent services',
+    slug: 'harness-permissioned-agent-services-m3',
+    summary:
+      'How M3 wraps the Harness kernel in a typed WebSocket service with correlated approvals, a manifest-derived Docker plan, an OpenAI-compatible adapter, and explicit live-operation gates.',
+    tags: ['Agent services', 'ACP', 'Docker sandboxes', 'OpenAI-compatible APIs'],
+    title: 'Harness Platform M3: putting permission around the agent loop',
+  },
+  {
     eyebrow: 'DAY 008 / SPIRAL SAFE',
     footerSummary:
       'Eight pinned repositories show the browser-to-Vault signing path, account layer, four fixture recordings, Kubernetes baseline, and fail-closed Veil admission scaffold described here.',

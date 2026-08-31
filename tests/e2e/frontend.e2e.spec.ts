@@ -10,6 +10,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
+    '/build-notes/harness-permissioned-agent-services-m3',
     '/build-notes/spiral-safe-passkey-signing-platform',
     '/build-notes/three-lovable-prototypes',
     '/build-notes/turbopass-rust-temporal',
@@ -23,6 +24,31 @@ test.describe('Public site smoke', () => {
       await expect(page.locator('h1').first()).toBeVisible()
     })
   }
+
+  test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({
+    page,
+  }) => {
+    const response = await page.goto('/build-notes/harness-permissioned-agent-services-m3')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M3: putting permission around the agent loop',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('defbf7b')
+    await expect(page.getByRole('link', { name: 'Permission handshake' })).toHaveAttribute(
+      'href',
+      '#permission-loop',
+    )
+    await expect(page.getByRole('link', { name: 'Docker-per-run boundary' })).toHaveAttribute(
+      'href',
+      '#sandbox',
+    )
+    await expect(page.getByText('Streaming means events, not model tokens')).toBeVisible()
+    await expect(page.getByText('No live stack', { exact: true })).toBeVisible()
+  })
 
   test('Harness M2 keeps telemetry opt-in and live MCP outside the default lane', async ({
     page,

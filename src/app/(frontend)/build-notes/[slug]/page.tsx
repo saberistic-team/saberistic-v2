@@ -11,6 +11,7 @@ import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
+import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -29,6 +30,7 @@ const articleBySlug = {
   'harness-eval-credibility-m2': HarnessEvalCredibilityArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
+  'harness-permissioned-agent-services-m3': HarnessPermissionedServicesArticle,
   'spiral-safe-passkey-signing-platform': SpiralSafeArticle,
   'three-lovable-prototypes': LovablePrototypeTrioArticle,
   'turbopass-rust-temporal': TurboPassArticle,

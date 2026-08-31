@@ -7,6 +7,7 @@ import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
+import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -62,6 +63,9 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('harness-eval-credibility-m2')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '8f18f6d',
     )
+    expect(
+      getBuildNote('harness-permissioned-agent-services-m3')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('defbf7b')
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
       getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
@@ -92,6 +96,25 @@ describe('Git-authored build notes', () => {
     expect(html).not.toContain('<time>')
     expect(html.match(/Visual transcript for this silent fixture recording/g)?.length).toBe(4)
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(9)
+  })
+
+  it('renders M3 with a fail-closed permission path and explicit live-operation gates', () => {
+    const html = renderToStaticMarkup(createElement(HarnessPermissionedServicesArticle))
+
+    expect(html).toContain('permissioned service boundary around the agent loop')
+    expect(html).toContain('harness/acp/1')
+    expect(html).toContain('Streaming means events, not model tokens')
+    expect(html).toContain('Only an explicit <code>y</code> or <code>yes</code> is approval')
+    expect(html).toContain('The sandbox refuses rules Docker cannot express without widening them')
+    expect(html).toContain('Fifty focused adapter tests, zero live provider calls')
+    expect(html).toContain('333 / 333')
+    expect(html).toContain('The task-specific report is session evidence')
+    expect(html).toContain('No live stack')
+    expect(html).toContain('defbf7b')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(4)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {

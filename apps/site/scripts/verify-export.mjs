@@ -178,6 +178,17 @@ assert.match(harnessM2, /2025-11-25/)
 assert.match(harnessM2, /2026-07-28/)
 assert.match(harnessM2, /future compatibility adapter/)
 
+const harnessM3 = await readOutput('build-notes/harness-permissioned-agent-services-m3/index.html')
+assert.match(harnessM3, /Harness Platform M3: putting permission around the agent loop/)
+assert.match(harnessM3, /defbf7b/)
+assert.match(harnessM3, /href="#permission-loop"/)
+assert.match(harnessM3, /href="#sandbox"/)
+assert.match(harnessM3, /harness\/acp\/1/)
+assert.match(harnessM3, /Streaming means events, not model tokens/)
+assert.match(harnessM3, /333 \/ 333/)
+assert.match(harnessM3, /The task-specific report is session evidence/)
+assert.match(harnessM3, /No live stack/)
+
 const spiralSafe = await readOutput('build-notes/spiral-safe-passkey-signing-platform/index.html')
 assert.match(
   spiralSafe,
