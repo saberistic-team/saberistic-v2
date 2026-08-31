@@ -58,6 +58,7 @@ The product promise is:
 | [22 — Harness Platform M2 Eval Credibility](./22-harness-eval-credibility-m2-build-note.md)                       | Golden-repository calibration, SDK scenarios, read-only task board, opt-in telemetry, and a network-gated MCP stdio client.        |
 | [23 — Spiral Safe Build Note](./23-spiral-safe-build-note.md)                                                     | Eight-repository integration, WebAuthn/Vault custody boundary, account usage, fixture demos, and explicit Nitro release gates.     |
 | [24 — Harness Platform M3 Permissioned Agent Services](./24-harness-permissioned-agent-services-m3.md)            | ACP WebSocket sessions, fail-closed approvals, manifest-derived Docker plans, provider adaptation, audit boundaries, and M4 gates. |
+| [25 — Growth Program Sensor Receipts and Devnet](./25-growth-program-devnet-use-cases.md)                         | Sensor-backed custody use cases, experimental Solana devnet identity, artifact/IDL evidence, UI boundaries, and release gates.     |
 
 ## Recommended first release
 
@@ -166,6 +167,12 @@ checks-gated Static Site deploy `dep-daas5d5490qs738kq120` generated 27 pages wi
 and five Payload prototype routes, then passed custom-domain page, structured-data, feed, sitemap,
 CDN-cache, and security-header acceptance. Its implementation and production record are in
 [24](./24-harness-permissioned-agent-services-m3.md).
+Build Note 010 documents Growth Program at pinned public commit `3497678`: the expansion from team,
+project, and contributor scorecards into sensor-backed physical-asset custody; the off-chain
+observe/validate/grade boundary; the synthetic 96.1 cold-room receipt; the experimental Solana
+devnet program and published IDL; byte and semantic-equality evidence; and the custody, audit,
+reproducibility, indexer, performance, and public-client gates that remain NO-GO. Its implementation
+and pending release record are in [25](./25-growth-program-devnet-use-cases.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

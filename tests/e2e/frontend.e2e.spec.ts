@@ -6,6 +6,7 @@ test.describe('Public site smoke', () => {
     '/prototypes',
     '/build-notes',
     '/build-notes/cryptopal-wallet-email-wallet',
+    '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
@@ -101,6 +102,33 @@ test.describe('Public site smoke', () => {
     )
     await expect(
       page.getByText('implemented and locally validated. It is not deployed or release-ready.'),
+    ).toBeVisible()
+  })
+
+  test('Growth Program devnet keeps sensor evidence and deployment approval separate', async ({
+    page,
+  }) => {
+    const response = await page.goto('/build-notes/growth-program-sensor-scorecards-devnet')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Growth Program: taking sensor-backed scorecards to Solana devnet',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('3497678')
+    await expect(page.getByRole('link', { name: 'Sensor evidence' })).toHaveAttribute(
+      'href',
+      '#telemetry-pipeline',
+    )
+    await expect(page.getByRole('link', { name: 'Executable proof' })).toHaveAttribute(
+      'href',
+      '#artifact-proof',
+    )
+    await expect(page.getByText('NO-GO beyond experimental devnet', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('The program is on devnet. The hosted playground still cannot touch it.'),
     ).toBeVisible()
   })
 

@@ -2119,6 +2119,133 @@ button.button {
   color: #6f332a;
 }
 
+.growth-smart-diagram {
+  align-items: center;
+  display: grid;
+  gap: 0.85rem;
+  min-width: 56rem;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.growth-smart-diagram--subject-map {
+  grid-template-columns: 1fr;
+}
+
+.growth-smart-diagram__guardrails {
+  justify-self: center;
+  max-width: 34rem;
+  text-align: center;
+  width: 100%;
+}
+
+.growth-smart-diagram__down-arrow {
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  justify-self: center;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.growth-smart-diagram__subjects {
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.growth-smart-diagram__receipt-band,
+.growth-smart-diagram__gap-band {
+  align-items: center;
+  border: 1px solid var(--rule-strong);
+  display: grid;
+  gap: 0.35rem 1rem;
+  grid-template-columns: auto 1fr;
+  padding: 0.9rem 1rem;
+}
+
+.growth-smart-diagram__receipt-band {
+  background: color-mix(in srgb, var(--safe) 9%, var(--surface));
+}
+
+.growth-smart-diagram__receipt-band strong,
+.growth-smart-diagram__gap-band strong,
+.growth-smart-diagram__trust-band strong,
+.growth-smart-diagram__lane-status {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.growth-smart-diagram__receipt-band span,
+.growth-smart-diagram__gap-band span,
+.growth-smart-diagram__trust-band span,
+.growth-smart-diagram--lanes section > span {
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.growth-smart-diagram__receipt-band small,
+.growth-smart-diagram__trust-band > small {
+  color: var(--muted);
+  font-size: 0.65rem;
+  grid-column: 1 / -1;
+}
+
+.growth-smart-diagram--pipeline {
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr;
+}
+
+.growth-smart-diagram__trust-band {
+  border-top: 1px solid var(--rule-strong);
+  display: grid;
+  gap: 0.75rem;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  padding-top: 0.9rem;
+}
+
+.growth-smart-diagram__trust-band > div {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.growth-smart-diagram--proof-chain {
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
+  min-width: 76rem;
+}
+
+.growth-smart-diagram__gap-band {
+  background: #f2dcd7;
+  border-color: #9e4e40;
+  grid-column: 1 / -1;
+}
+
+.growth-smart-diagram__gap-band strong,
+.growth-smart-diagram__gap-band span {
+  color: #6f332a;
+}
+
+.growth-smart-diagram--lanes {
+  align-items: stretch;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.growth-smart-diagram--lanes > section {
+  background: color-mix(in srgb, var(--surface) 88%, var(--rule));
+  border: 1px solid var(--rule);
+  display: grid;
+  gap: 0.65rem;
+  grid-template-rows: 1fr auto auto;
+  padding: 0.75rem;
+}
+
+.growth-smart-diagram__lane-status {
+  border-top: 1px solid var(--rule);
+  padding-top: 0.65rem;
+}
+
 .harness-m2-diagram {
   display: grid;
   gap: 0.9rem;

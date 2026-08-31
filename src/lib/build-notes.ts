@@ -20,6 +20,47 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'DAY 010 / GROWTH PROGRAM',
+    footerSummary:
+      'The pinned public commit contains the expanded sensor-custody product map, exact program and IDL identities, immutable deployment manifest, and explicit NO-GO gates described here.',
+    footerTitle: 'Inspect the devnet candidate—and every production claim it still withholds.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 31,
+    repositories: [
+      {
+        commit: '3497678cee2271c84172c41c62788806373bea4c',
+        label: 'Growth Program',
+        url: 'https://github.com/saberistic-team/growth-program',
+      },
+    ],
+    sections: [
+      ['brief', 'The new boundary'],
+      ['release-boundary', 'Local proof to devnet'],
+      ['portable-primitive', 'Why the primitive travels'],
+      ['telemetry-pipeline', 'Sensor evidence'],
+      ['cold-room', 'Worked cold-room example'],
+      ['asset-use-cases', 'Physical-asset map'],
+      ['contract-interface', 'Contract interface'],
+      ['devnet-identity', 'Devnet identity'],
+      ['artifact-proof', 'Executable proof'],
+      ['published-idl', 'Published IDL'],
+      ['website-boundary', 'Website boundary'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Growth Program: from sensors to Solana devnet',
+    slug: 'growth-program-sensor-scorecards-devnet',
+    summary:
+      'How Growth v2 expanded into sensor-backed custody receipts and moved from a local-validator proof to an evidence-pinned experimental Solana devnet program and published IDL.',
+    tags: ['Solana', 'Anchor', 'Sensor evidence', 'Verifiable builds'],
+    title: 'Growth Program: taking sensor-backed scorecards to Solana devnet',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 3',
     footerSummary:
       'The pinned public merge contains the project-owned ACP service, kernel permission handshake, manifest-derived Docker plan, OpenAI-compatible adapter, interactive TUI, and offline evidence described here.',

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
 import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
+import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramDevnet'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
@@ -42,6 +43,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
+    expect(buildNotes[0]?.slug).toBe('growth-program-sensor-scorecards-devnet')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -60,6 +62,9 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('growth-program-v2-scorecards')?.repositories[0]?.commit.slice(0, 7)).toBe(
       'd944ee7',
     )
+    expect(
+      getBuildNote('growth-program-sensor-scorecards-devnet')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('3497678')
     expect(getBuildNote('harness-eval-credibility-m2')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '8f18f6d',
     )
@@ -154,6 +159,28 @@ describe('Git-authored build notes', () => {
     expect(html).toContain('d944ee7')
     expect(html.match(/role="img"/g)?.length).toBe(4)
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(8)
+  })
+
+  it('renders the Growth devnet sequel with sensor evidence, artifact proof, and NO-GO gates', () => {
+    const html = renderToStaticMarkup(createElement(GrowthProgramDevnetArticle))
+
+    expect(html).toContain('experimental Solana devnet identity')
+    expect(html).toContain('The contract receives a grade, not a firehose of readings.')
+    expect(html).toContain('The program is on devnet. The hosted playground still cannot touch it.')
+    expect(html).toContain('NO-GO beyond experimental devnet')
+    expect(html).toContain('17 instructions')
+    expect(html).toContain('13 emitted event types')
+    expect(html).toContain('511,312')
+    expect(html).toContain('c2fbee57bbfe9481e9c4348e0b88bc24c5dee51f3dd206c844b9bd8485029ff6')
+    expect(html).toContain('semanticMatch')
+    expect(html).toContain('3497678')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(8)
+    expect(html).toContain('aria-label="Build Note release comparison"')
+    expect(html).toContain('aria-label="Physical-asset scorecard scenarios"')
+    expect(html).toContain('aria-label="Growth Program verification results"')
+    expect(html).toContain('aria-label="Growth Program production release gates"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
   })
 
   it('renders CryptoPal with the two-hop protocol, measured evidence, and explicit privacy limits', () => {

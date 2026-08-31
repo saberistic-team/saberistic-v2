@@ -162,6 +162,29 @@ assert.match(growthProgram, /none becomes a V2 score/)
 assert.match(growthProgram, /no RPC, wallet, signing, transaction sending/)
 assert.match(growthProgram, /genesis-loads the exact binary/)
 
+const growthProgramDevnet = await readOutput(
+  'build-notes/growth-program-sensor-scorecards-devnet/index.html',
+)
+assert.match(
+  growthProgramDevnet,
+  /Growth Program: taking sensor-backed scorecards to Solana devnet/,
+)
+assert.match(growthProgramDevnet, /3497678/)
+assert.match(growthProgramDevnet, /href="#telemetry-pipeline"/)
+assert.match(growthProgramDevnet, /href="#artifact-proof"/)
+assert.match(growthProgramDevnet, /experimental Solana devnet identity/)
+assert.match(growthProgramDevnet, /The contract receives a grade, not a firehose of readings\./)
+assert.match(
+  growthProgramDevnet,
+  /The program is on devnet\. The hosted playground still cannot touch it\./,
+)
+assert.match(growthProgramDevnet, /NO-GO beyond experimental devnet/)
+assert.match(growthProgramDevnet, /511,312/)
+assert.match(
+  growthProgramDevnet,
+  /c2fbee57bbfe9481e9c4348e0b88bc24c5dee51f3dd206c844b9bd8485029ff6/,
+)
+
 const harnessM2 = await readOutput('build-notes/harness-eval-credibility-m2/index.html')
 assert.match(harnessM2, /Harness Platform M2: making evaluation evidence credible/)
 assert.match(harnessM2, /8f18f6d/)
