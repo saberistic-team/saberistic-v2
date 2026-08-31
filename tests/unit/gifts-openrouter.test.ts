@@ -264,7 +264,7 @@ describe('OpenRouter gift search', () => {
     )
   })
 
-  it.each([404, 503])(
+  it.each([408, 429, 503])(
     'tries the fallback model after retryable HTTP status %i using the same deadline',
     async (status) => {
       let attempt = 0
@@ -309,7 +309,7 @@ describe('OpenRouter gift search', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
-  it.each([400, 401, 402, 403])(
+  it.each([400, 401, 402, 403, 404])(
     'does not try the fallback model after hard HTTP status %i',
     async (status) => {
       const fetchImpl = vi.fn<OpenRouterGiftFetch>(async () =>

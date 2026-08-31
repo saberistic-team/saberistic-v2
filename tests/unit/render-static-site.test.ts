@@ -47,14 +47,12 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).not.toContain('REDIS_URL')
   })
 
-  it('keeps readiness AI server-side, rate-limited, and disabled until account review', () => {
+  it('keeps the reviewed readiness AI path server-side and rate-limited', () => {
     expect(payloadService).toMatch(/- key: OPENROUTER_API_KEY\n\s+sync: false/)
-    expect(payloadService).toMatch(
-      /- key: OPENROUTER_ACCOUNT_GATES_CONFIRMED\n\s+sync: false/,
-    )
+    expect(payloadService).toMatch(/- key: OPENROUTER_ACCOUNT_GATES_CONFIRMED\n\s+sync: false/)
     expect(payloadService).toMatch(/- key: OPENROUTER_PRIMARY_MODEL\n\s+sync: false/)
     expect(payloadService).toMatch(/- key: OPENROUTER_FALLBACK_MODEL\n\s+sync: false/)
-    expect(payloadService).toMatch(/- key: AI_ENHANCEMENT_ENABLED\n\s+value: '0'/)
+    expect(payloadService).toMatch(/- key: AI_ENHANCEMENT_ENABLED\n\s+value: '1'/)
     expect(payloadService).toMatch(/- key: READINESS_RATE_LIMIT_SECRET\n\s+generateValue: true/)
     expect(payloadService).toContain('name: saberistic-readiness-limits-staging')
     expect(blueprint).toMatch(

@@ -435,7 +435,6 @@ function shouldTryFallback(error: GiftSearchError): boolean {
   if (error.reason === 'http') {
     const status = error.upstream.status
     return (
-      status === 404 ||
       status === 408 ||
       status === 409 ||
       status === 425 ||
