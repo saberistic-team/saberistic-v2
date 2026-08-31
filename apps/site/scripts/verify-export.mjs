@@ -120,6 +120,22 @@ assert.match(growthProgram, /none becomes a V2 score/)
 assert.match(growthProgram, /no RPC, wallet, signing, transaction sending/)
 assert.match(growthProgram, /genesis-loads the exact binary/)
 
+const harnessM2 = await readOutput('build-notes/harness-eval-credibility-m2/index.html')
+assert.match(harnessM2, /Harness Platform M2: making evaluation evidence credible/)
+assert.match(harnessM2, /8f18f6d/)
+assert.match(harnessM2, /href="#golden-repository"/)
+assert.match(harnessM2, /href="#telemetry"/)
+assert.match(harnessM2, /href="#mcp-stdio"/)
+assert.match(harnessM2, /123 \/ 123/)
+assert.match(harnessM2, /7 \/ 7/)
+assert.match(harnessM2, /13 tools/)
+assert.match(harnessM2, /Telemetry is fully off unless the operator opts in/)
+assert.match(harnessM2, /that CLI sequence currently creates no spans or counters/)
+assert.match(harnessM2, /never runs in the default pull-request or push lane/)
+assert.match(harnessM2, /2025-11-25/)
+assert.match(harnessM2, /2026-07-28/)
+assert.match(harnessM2, /future compatibility adapter/)
+
 for (const prototype of snapshot.prototypes.items) {
   const canonical = `https://saberistic.com/prototypes/${prototype.slug}/`
   const html = await readOutput(`prototypes/${prototype.slug}/index.html`)

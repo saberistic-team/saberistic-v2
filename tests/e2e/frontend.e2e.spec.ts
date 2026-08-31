@@ -7,6 +7,7 @@ test.describe('Public site smoke', () => {
     '/build-notes',
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-v2-scorecards',
+    '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/three-lovable-prototypes',
@@ -21,6 +22,36 @@ test.describe('Public site smoke', () => {
       await expect(page.locator('h1').first()).toBeVisible()
     })
   }
+
+  test('Harness M2 keeps telemetry opt-in and live MCP outside the default lane', async ({
+    page,
+  }) => {
+    const response = await page.goto('/build-notes/harness-eval-credibility-m2')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M2: making evaluation evidence credible',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('8f18f6d')
+    await expect(page.getByRole('link', { name: 'Golden repository' })).toHaveAttribute(
+      'href',
+      '#golden-repository',
+    )
+    await expect(page.getByRole('link', { name: 'OpenTelemetry bridge' })).toHaveAttribute(
+      'href',
+      '#telemetry',
+    )
+    await expect(page.getByRole('link', { name: 'Live MCP client' })).toHaveAttribute(
+      'href',
+      '#mcp-stdio',
+    )
+    await expect(
+      page.getByText('never runs in the default pull-request or push lane', { exact: false }),
+    ).toBeVisible()
+  })
 
   test('Growth Program keeps the hosted and local-validator demos separate', async ({ page }) => {
     const response = await page.goto('/build-notes/growth-program-v2-scorecards')

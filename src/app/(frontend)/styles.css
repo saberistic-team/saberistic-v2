@@ -2119,6 +2119,154 @@ button.button {
   color: #6f332a;
 }
 
+.harness-m2-diagram {
+  display: grid;
+  gap: 0.9rem;
+  min-width: 56rem;
+  padding: clamp(1rem, 3vw, 2rem);
+}
+
+.harness-m2-diagram__node {
+  background: color-mix(in srgb, var(--surface) 92%, var(--rule));
+  border: 1px solid #7b827c;
+  display: grid;
+  gap: 0.45rem;
+  min-width: 9.5rem;
+  padding: 1rem;
+}
+
+.harness-m2-diagram__node > span,
+.harness-m2-diagram section > p,
+.harness-m2-diagram__gap,
+.harness-m2-diagram__lanes strong {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.harness-m2-diagram__node strong {
+  font-size: 0.9rem;
+}
+
+.harness-m2-diagram__node small {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.harness-m2-diagram__node--accent {
+  background: color-mix(in srgb, var(--blue) 10%, var(--surface));
+  border-color: var(--blue-dark);
+}
+
+.harness-m2-diagram__node--safe {
+  background: color-mix(in srgb, var(--safe) 12%, var(--surface));
+  border-color: color-mix(in srgb, var(--safe) 65%, var(--ink));
+}
+
+.harness-m2-diagram__node--warning {
+  background: color-mix(in srgb, var(--warning) 11%, var(--surface));
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--ink));
+}
+
+.harness-m2-diagram__arrow {
+  align-items: center;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 2.6rem;
+}
+
+.harness-m2-diagram__arrow small {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+}
+
+.harness-m2-diagram__arrow b {
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 400;
+}
+
+.harness-m2-diagram--chain,
+.harness-m2-diagram__sequence {
+  align-items: stretch;
+  grid-template-columns: 1fr auto 1fr auto 1fr auto 1fr auto 1fr;
+}
+
+.harness-m2-diagram--golden > section {
+  align-items: center;
+  background: color-mix(in srgb, var(--surface) 88%, var(--rule));
+  border: 1px solid var(--rule);
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: 1fr auto 1fr auto 1fr;
+  padding: 1rem;
+}
+
+.harness-m2-diagram--golden > section > p {
+  color: var(--muted);
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+.harness-m2-diagram__gap {
+  align-items: center;
+  background: #f2dcd7;
+  border: 1px solid #9e4e40;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  padding: 0.8rem 1rem;
+}
+
+.harness-m2-diagram__gap span {
+  color: #6f332a;
+}
+
+.harness-m2-diagram__surface-lane,
+.harness-m2-diagram__lanes {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.harness-m2-diagram__surface-lane {
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.5fr);
+}
+
+.harness-m2-diagram__surface-lane > section,
+.harness-m2-diagram__lanes > section {
+  background: color-mix(in srgb, var(--surface) 88%, var(--rule));
+  border: 1px solid var(--rule);
+  display: grid;
+  gap: 0.7rem;
+  padding: 1rem;
+}
+
+.harness-m2-diagram__surface-lane > section > p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.harness-m2-diagram__surface-lane > section > span,
+.harness-m2-diagram__lanes span {
+  color: var(--muted);
+  font-size: 0.75rem;
+  line-height: 1.45;
+}
+
+.harness-m2-diagram__sequence {
+  display: grid;
+}
+
+.harness-m2-diagram__lanes {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .reference-grid,
 .file-guide {
   display: grid;

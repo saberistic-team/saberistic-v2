@@ -20,6 +20,45 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 2',
+    footerSummary:
+      'The pinned public commit contains the five M2 task manifests, golden repository, shared scenario contract, read-only board, opt-in telemetry bridge, and hardened MCP stdio client described here.',
+    footerTitle: 'Inspect the evaluator—and the boundaries that keep its evidence honest.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 26,
+    repositories: [
+      {
+        commit: '8f18f6dce437a9b580d5aa5f52c42f5ab66f05bd',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['m1-to-m2', 'From loop to credibility'],
+      ['dogfood-chain', 'Five dogfooded tasks'],
+      ['golden-repository', 'Golden repository'],
+      ['scenario-dsl', 'SDK-owned scenario DSL'],
+      ['task-board', 'Read-only task board'],
+      ['telemetry', 'OpenTelemetry bridge'],
+      ['mcp-stdio', 'Live MCP client'],
+      ['credibility-loop', 'Two verification lanes'],
+      ['debugging', 'What broke'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M2: making evaluation evidence credible',
+    slug: 'harness-eval-credibility-m2',
+    summary:
+      'How Stage 1, Milestone 2 adds a golden HTTP repository, SDK-owned scenarios, a read-only task board, opt-in OpenTelemetry, and a hardened live MCP stdio client.',
+    tags: ['Agent harnesses', 'Evaluations', 'OpenTelemetry', 'MCP'],
+    title: 'Harness Platform M2: making evaluation evidence credible',
+  },
+  {
     eyebrow: 'DAY 006 / GROWTH PROGRAM',
     footerSummary:
       'The pinned repository separates sanitized live-state evidence, an undeployed v2 program, a no-network browser playground, and a real loopback-only validator lab.',
