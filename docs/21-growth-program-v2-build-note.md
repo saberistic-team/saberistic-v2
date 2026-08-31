@@ -200,19 +200,26 @@ The generic Build Note route supplies article Open Graph metadata, canonical URL
 `BlogPosting` JSON-LD, publication dates, tags, source actions, contents navigation, Umami events,
 RSS, and sitemap inclusion. No Growth-specific metadata branch or Payload migration is required.
 
-## Publication and acceptance plan
+## Production acceptance
 
-Before release:
+Website commit `65ae864` passed CI run `33353599054` and CodeQL run `33353598490`, including root
+and static-site types, lint, 164 passing tests with one intentional skip, the Payload production
+build, and the reviewed fixture export. A focused Chromium run also passed the new route smoke and
+hosted-versus-local-validator boundary checks.
 
-1. Run root and static-site typechecks, lint, unit/integration tests, the Payload production build,
-   and the fixture static export.
-2. Confirm the export contains six Build Notes and the Growth article route.
-3. Verify its canonical, article metadata, breadcrumb and `BlogPosting` JSON-LD, RSS item, sitemap
-   entry, pinned commit, contents anchors, and critical “not deployed” boundary.
-4. Run the focused public browser smoke without depending on the owner-only external Growth site.
-5. Push only after the website repository is clean and GitHub CI and CodeQL can gate Render.
-6. After Render completes, verify the public route, title, source link, boundary copy, RSS, sitemap,
-   and expected static-page count before recording the deployment ID here.
+The checks-gated Render release completed on 30 August 2026 EDT / 31 August UTC:
+
+| Surface                | Deploy / evidence                   | Accepted result                                                                  |
+| ---------------------- | ----------------------------------- | -------------------------------------------------------------------------------- |
+| Payload service        | `dep-daaf7ls9v7es73eb9f5g`          | live at the website commit; public snapshot revision `2e8da5a6f350`              |
+| Static Site            | `dep-daaf7ls9v7es73eb9fc0`          | live; generated 24 pages, six Build Notes, and five Payload prototype routes     |
+| Growth article         | public custom-domain response       | HTTP/2 200; correct title, canonical, source pin, contents, and release boundary |
+| Structured discovery   | page, homepage, index, RSS, sitemap | `BlogPosting`, breadcrumb, homepage/index card, feed item, and sitemap URL found |
+| CDN and browser policy | response headers                    | cache HIT, five-minute shared cache, CSP restricted to same origin plus Umami    |
+
+The accepted page includes the current `d944ee75…` source pin, the 88.50% / 91.50% session values,
+the hosted `connect-src 'none'` excerpt, and the explicit statement that V2 is not deployed or
+release-ready. Publication does not depend on the owner-only Growth companion website.
 
 ## Release gates that remain closed
 

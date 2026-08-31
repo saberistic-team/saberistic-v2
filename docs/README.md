@@ -128,8 +128,11 @@ Build Note 006 now documents Growth Program at pinned public commit `d944ee7`: t
 mainnet/devnet containment boundary, fixed-point and versioned v2 score model, consent and
 correction lifecycle, provenance-only migration, owner-only evidence website, no-network browser
 simulator, loopback-only real-validator lab, verification-session checks, and the deployment and
-custody gates that keep v2 off devnet and mainnet. Its implementation and pending release
-acceptance are recorded in [21](./21-growth-program-v2-build-note.md).
+custody gates that keep v2 off devnet and mainnet. Website commit `65ae864` passed CI run
+`33353599054` and CodeQL run `33353598490`; checks-gated Static Site deploy
+`dep-daaf7ls9v7es73eb9fc0` generated 24 pages with six Build Notes and five Payload prototype
+routes, then passed page, structured-data, feed, sitemap, CDN-cache, and security-header acceptance.
+Its implementation and production record are in [21](./21-growth-program-v2-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
