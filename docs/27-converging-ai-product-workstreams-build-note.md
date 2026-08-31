@@ -39,9 +39,9 @@ account was configured, a payment completed, or a customer message was delivered
 
 | Workstream                 | Built in the release candidate                                                                                                                                                               | Deployed                                                                                               | Activated                                                                                                                                                                                                      |
 | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Production Readiness Check | Yes: controlled assessment, deterministic report, bounded optional OpenRouter adapter, handoff token, static UI, backend route, and Key Value-backed limiter are present.                    | Pending exact commit, CI, Render deploy, migration, and live endpoint evidence below.                  | No by default. The model path requires Redis, the local key to be installed as a Render secret, two pinned models, the versioned account attestation, spend/ZDR/plugin checks, and `AI_ENHANCEMENT_ENABLED=1`. |
-| Architecture Diagnostic    | Yes: report-bound questionnaire, minimized private record, customer and owner email paths, fixed-price Checkout, verified webhook, and scheduling redirect are present.                      | Pending exact commit, CI, Render deploy, migration, webhook registration, and live test-mode evidence. | No by default. `DIAGNOSTIC_ENABLED=0` remains the safe setting until every fulfillment dependency passes.                                                                                                      |
-| Gift Draft                 | Yes: three-round game, citation-checked OpenRouter search, signed quote, fixed contribution Checkout, payment status, webhook/refund processing, and private fulfillment record are present. | Pending exact commit, CI, Render deploy, migration, webhook registration, and live test-mode evidence. | No by default. AI search and Checkout have separate flags and remain off until their separate OpenRouter and Stripe gates pass.                                                                                |
+| Production Readiness Check | Yes: controlled assessment, deterministic report, bounded optional OpenRouter adapter, handoff token, static UI, backend route, and Key Value-backed limiter are present.                    | Yes: release `edc97f1` passed CI and CodeQL, deployed to both Render services, applied its migrations, and passed the real-domain deterministic flow. | Deterministic path only. The key and pinned models are installed, but the model path remains off pending the versioned account attestation, hard spend cap, account privacy/guardrail review, and `AI_ENHANCEMENT_ENABLED=1`. |
+| Architecture Diagnostic    | Yes: report-bound questionnaire, minimized private record, customer and owner email paths, fixed-price Checkout, verified webhook, and scheduling redirect are present.                      | Yes: the routes and private schema are deployed, the three new migrations completed, and anonymous collection reads return `403`.                | No. `DIAGNOSTIC_ENABLED=0` remains the safe setting until Stripe, Resend, booking, webhook, retention, and live test-mode fulfillment gates pass.                                                               |
+| Gift Draft                 | Yes: three-round game, citation-checked OpenRouter search, signed quote, fixed contribution Checkout, payment status, webhook/refund processing, and private fulfillment record are present. | Yes: the game and APIs are deployed, its private schema migrated, the page passes hosted smoke, and the disabled ideas route returns `503`.       | No. The OpenRouter adapter passed a local-key live search, but public AI and Checkout remain off pending the account gates and Stripe fulfillment gates.                                                         |
 
 ## Shared architecture
 
@@ -303,8 +303,9 @@ handoff tokens, raw prompts, model output, contact data, or complete provider pa
 
 ## Verification and deployment evidence
 
-This table is intentionally incomplete. Replace placeholders only with evidence from the final
-combined release; do not reuse results from an earlier worktree after files change.
+This table records the combined release candidate and its hosted acceptance. Provider fulfillment
+rows remain pending by design; a deployed, fail-closed product is not the same as an activated
+provider workflow.
 
 | Gate                         | Required evidence                                                                                          | Current record                                                                                                                                  |
 | ---------------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -314,38 +315,36 @@ combined release; do not reuse results from an earlier worktree after files chan
 | Unit/integration suite       | Passing/skipped totals for `pnpm test:int`                                                                 | 537 passed and 3 opt-in live tests skipped across 44 files.                                                                                     |
 | Payload production build     | Successful `pnpm build`                                                                                    | Passed; Next generated the readiness, diagnostic, Gift Draft, payment-status, and webhook route inventory.                                      |
 | Fixture static export        | Page count and export-verifier result from `pnpm build:site:fixture`                                       | Passed; 27 pages, 11 Build Notes, two prototype routes, and the required SEO/media assets were verified.                                        |
-| Browser acceptance           | Focused readiness, diagnostic handoff, Gift Draft, privacy, and public-smoke results                       | Pending final combined run.                                                                                                                     |
-| Payload migrations           | Status/order plus staging table and staff-access checks                                                    | All eight migrations applied in order against a disposable fresh Postgres database; staging deploy evidence remains pending.                    |
-| Blueprint validation         | Authenticated Render validation against the final file                                                     | Pending. The local CLI's unauthenticated request is not acceptance evidence.                                                                    |
+| Browser acceptance           | Focused readiness, diagnostic handoff, Gift Draft, privacy, and public-smoke results                       | All 26 production scenarios passed against `https://saberistic.com`; 23 passed in the parallel run and three parallel page-load timeouts passed immediately on a one-worker retry. The opt-in live Umami delivery case remained skipped. |
+| Payload migrations           | Status/order plus staging table and staff-access checks                                                    | All eight migrations applied in order against a disposable fresh Postgres database. Render startup then migrated `20260831_204405_architecture_diagnostic_funnel`, `20260831_205708_gift_payments`, and `20260831_210012_diagnostic_report_one_time_key` successfully; anonymous reads of both new private collections returned `403`. |
+| Blueprint validation         | Authenticated Render validation against the final file                                                     | Passed through authenticated Blueprint sync `dep-daavhje7bikc73cg91e0`, which finished live on the exact release commit at 22:02:26Z.            |
 | OpenRouter readiness adapter | One real minimized request using the local key                                                             | Passed August 31, 2026 with `openai/gpt-4.1-mini` through Azure using fallback routing: 2,445 tokens and $0.0015888.                            |
 | OpenRouter Gift adapter      | One real cited nine-item search using the local key                                                        | Passed August 31, 2026 with `openai/gpt-4.1`: nine validated ideas, 24 citations, 9,919 tokens, four executed server-tool steps, and $0.041726. |
 | OpenRouter account gates     | Hard spend cap, plugin override review, logging/data-use settings, guardrail, pinned models, ZDR endpoints | Pending; readiness AI must remain off.                                                                                                          |
-| Git release                  | Commit SHA, branch, and clean-tree confirmation                                                            | Pending.                                                                                                                                        |
-| Hosted checks                | GitHub CI and CodeQL run URLs/IDs                                                                          | Pending.                                                                                                                                        |
-| Render Payload deploy        | Deploy ID, commit, live timestamp, `/api/ready`, migration result, and error-log scan                      | Pending.                                                                                                                                        |
-| Render Static Site deploy    | Deploy ID, commit, live timestamp, page count, and custom-domain smoke                                     | Pending.                                                                                                                                        |
-| Render Key Value             | Resource ID, internal-only network state, web-service wiring, limiter acceptance                           | Pending.                                                                                                                                        |
+| Git release                  | Commit SHA, branch, and clean-tree confirmation                                                            | `edc97f116e5f641b2757ef8d528f7b0ebfc42e15` was pushed to `main`; the working tree was clean after the push.                                      |
+| Hosted checks                | GitHub CI and CodeQL run URLs/IDs                                                                          | GitHub [verify](https://github.com/saberistic-team/saberistic-v2/actions/runs/33443910331/job/99658402867), [CodeQL actions](https://github.com/saberistic-team/saberistic-v2/actions/runs/33443910325/job/99658407585), and [CodeQL JavaScript/TypeScript](https://github.com/saberistic-team/saberistic-v2/actions/runs/33443910325/job/99658407878) all completed successfully. |
+| Render Payload deploy        | Deploy ID, commit, live timestamp, `/api/ready`, migration result, and error-log scan                      | Blueprint deploy `dep-daavhje7bikc73cg91e0` and secret-aware follow-on deploy `dep-daavhlo5cbfc738v3sg0` are live on `edc97f1`; the latter finished at 22:04:06Z. `/api/ready` returned `200` with `Cache-Control: no-store`, all three new migrations completed, and the release-window error-level log scan was empty. |
+| Render Static Site deploy    | Deploy ID, commit, live timestamp, page count, and custom-domain smoke                                     | `dep-daavj1brjlhs7382bpig` is live on `edc97f1` as of 22:02:55Z. Render generated 30 static route outputs and verified 11 build notes, five prototype routes, and required media/SEO assets; `/readiness` and `/gifts` returned `200` on the custom domain. |
+| Render Key Value             | Resource ID, internal-only network state, web-service wiring, limiter acceptance                           | `red-daavhj67bikc73cg910g` is available in Ohio on the free plan, persistence off, `noeviction`, and an empty external IP allowlist. Blueprint wiring is live and the production readiness assessment completed through the shared limiter. |
 | Diagnostic fulfillment       | Stripe test session/event IDs, Resend IDs, private request ID, booking redirect, and negative tests        | Pending; do not include customer data.                                                                                                          |
 | Gift fulfillment             | Search smoke, Stripe test session/event IDs, status/refund checks, private payment ID, and negative tests  | Pending; do not include payer data.                                                                                                             |
-| Rollback/deactivation        | Evidence that all four provider flags can be returned to `0` without removing deterministic readiness      | Pending.                                                                                                                                        |
+| Rollback/deactivation        | Evidence that all four provider flags can be returned to `0` without removing deterministic readiness      | Current safe posture is all four provider flags at `0`: the five-section deterministic readiness flow passed, the Gift ideas route returned `503`, and no payment route was activated. A live enable-then-disable rollback drill remains pending. |
 
 ## Remaining gates
 
-The combined release must not be called fully activated until these are closed:
+The fail-closed release is deployed, but the combined product must not be called fully activated
+until these remaining external gates are closed:
 
-1. the final migrations, types, route inventory, and all tests pass from the exact release commit;
-2. authenticated Blueprint validation and checks-gated Render deployment complete;
-3. the Key Value service exists, is internally wired, and has limiter acceptance evidence;
-4. the local OpenRouter key is installed only as a Render secret and has a hard spend limit;
-5. account/workspace plugin defaults, guardrails, logging/data-use choices, pinned models, and ZDR
-   routing satisfy the readiness policy before its AI flag changes;
-6. Diagnostic Stripe, Resend, booking, private-record, webhook, and 90-day review behavior pass in
-   test mode before `DIAGNOSTIC_ENABLED=1`;
-7. Gift Draft search, quote, Checkout, webhook, status, refund, manual fulfillment, and support
-   behavior pass in test mode before either gift flag changes;
-8. provider errors and logs are monitored without retaining prompts, reports, contact data, or
-   provider secrets; and
-9. Free Render database and Key Value resources are replaced with a backed-up, durable production
+1. add a hard OpenRouter account spend limit and the exact versioned account attestation;
+2. confirm account/workspace plugin defaults, guardrails, logging/data-use choices, pinned models,
+   and ZDR routing satisfy the readiness policy before either AI flag changes;
+3. make Diagnostic Stripe, Resend, booking, webhook, and 90-day review behavior pass in test mode
+   before `DIAGNOSTIC_ENABLED=1`;
+4. make Gift Draft Checkout, webhook, status, refund, manual fulfillment, and support behavior pass
+   in test mode before its Checkout flag changes;
+5. monitor provider errors without retaining prompts, reports, contact data, or provider secrets,
+   and perform a live enable-then-disable rollback drill; and
+6. replace the free Render database and Key Value resources with a backed-up, durable production
    plan before this staging proof is described as production infrastructure.
 
 ## Deactivation and rollback
