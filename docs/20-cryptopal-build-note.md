@@ -19,6 +19,8 @@ The implementation adds:
 - four accessible, responsive SVG diagrams derived from the original PlantUML and current code;
 - the owner-supplied CryptoPal sender screen as a statically dimensioned image with explanatory
   caption and reserved layout space;
+- a lazy-loaded, silent 3:20 walkthrough with a purpose-built poster, download link, and
+  timestamped visual transcript;
 - verification and load-test results separated by evidence class; and
 - explicit privacy, custody, interoperability, network, reliability, and production boundaries.
 
@@ -29,7 +31,7 @@ RSS feed, sitemap, JSON-LD, analytics event path, fixture static export, and pub
 
 | Source             | Pinned commit                              | Role                                                                      |
 | ------------------ | ------------------------------------------ | ------------------------------------------------------------------------- |
-| CryptoPal          | `e41f72319ca5b7d0bd6a5cc3de0ac46bf9f91d4d` | Runnable local application, protocol, tests, and load harness             |
+| CryptoPal          | `55f7f00e55c6e915f7ad85c5669eb7c01fe020c5` | Application, protocol, tests, load harness, explorer, and demo recorder   |
 | Original CryptoPal | `de7c055e459167f66f39d56e4feceaa92caf12aa` | 2022 PlantUML, API model, and original receipt/slip/envelope/coupon terms |
 | TurboPass          | `f18da5682c80fb1afe08348187e4c2f39bd4714a` | Exact submodule pin providing issuance and authoritative redemption       |
 
@@ -39,15 +41,11 @@ The source URLs are:
 - [original CryptoPal spec](https://github.com/saberistic/cryptopal-spec); and
 - [TurboPass](https://github.com/saberistic-team/turbopass).
 
-The supplied sender-screen image is presentation evidence only. The implementation task is the
-source of the browser walkthrough and observed local load results. Because that task did not commit
-a video or machine-readable Artillery result, the article labels those claims as session evidence
-rather than repository-verifiable results.
-
-The shared ChatGPT link supplied with the request was not used as an independent factual source
-because its contents were not retrievable in the build environment. The accessible Codex task,
-public repositories, and owner-supplied image provided the required evidence without weakening the
-source standard.
+The supplied sender-screen image is presentation evidence. The supplied WebM is a local-run
+artifact, while commit `55f7f00` contains the code that can reproduce it. The shared implementation
+continuation was read as supplementary session context, never as a replacement for the pinned code
+or independently rerun checks. No Artillery result JSON is retained, so the load observations remain
+session evidence rather than repository-verifiable benchmarks.
 
 ## Product and protocol contract
 
@@ -203,9 +201,60 @@ flattened into images. The owner-supplied screenshot is imported statically thro
 which preserves intrinsic dimensions and prevents layout shift. Its caption distinguishes UI
 evidence from a successful execution result.
 
+## Recorded demo evidence
+
+Commit `55f7f00` adds a reproducible Playwright recorder and an RPC-backed local explorer. The
+recording covers one continuous local journey:
+
+1. connect and fund a disposable sender wallet;
+2. prepare a blinded slip and deposit 1 cUSD into the shared pool;
+3. verify the issuer proof and unblind locally;
+4. authorize a synthetic-email handoff;
+5. select the exact Mailpit message and follow its real claim link;
+6. open the claim without spending it, disconnect the sender, and create a distinct receiver key;
+7. issue, verify, unblind, and redeem a fresh receiver coupon; and
+8. show both parsed Solana transactions plus the final sender / pool / receiver balances of
+   9 / 0 / 1 cUSD.
+
+The supplied artifact is a silent 3:20.04, 1440×900, 25 fps VP8 WebM:
+
+- size: `17,119,896` bytes;
+- SHA-256: `a3c427d7a8864458539ba1c76ff7456c05eb294008f0ac5cf04ab191b23e82be`;
+- one video stream and no audio, caption, or narration track.
+
+For browser delivery, the website stores a same-resolution H.264 fast-start transcode of the same
+recording, reducing the transfer by 47.9%:
+
+- size: `8,916,669` bytes;
+- SHA-256: `cafb08d2f0d0a718db3f3556416ee234a98075fd2155ed0fc0da10491c5d8e03`;
+- poster: `33,050` bytes, 1440×900 WebP, SHA-256
+  `b9a204945a12f120db4ffce1d6e58b929827d5217c9f7f2bf9a7feaf3e63d978`.
+
+The native player uses `controls`, `playsInline`, explicit dimensions, the poster, and
+`preload="none"`; it never autoplays. Because the source is silent, an adjacent timestamped visual
+transcript describes every chapter instead of presenting a misleading empty caption track. The
+content-addressed files receive immutable CDN caching, and the standalone Payload image explicitly
+copies the shared public directory so the article works in both site variants.
+The article JSON-LD adds a `VideoObject` with the content URL, poster, dimensions, duration, file
+size, delivery hash, and transcript accessibility feature alongside the existing `BlogPosting`.
+
+The continuous run uses one browser profile with two different wallet keys. It establishes a
+complete local flow and wallet-key separation, not browser, device, IP, timing, amount, or
+mail-metadata anonymity. The generated JSON report deliberately correlates the synthetic email,
+both wallets, Mailpit message, and transaction signatures to audit that run, so it remains ignored
+and is not published with the note.
+
+The recorder refuses proxy environments and non-loopback web, Mailpit, claim, or Solana targets. It
+uses a unique synthetic recipient, selects that exact inbox message, retries only an identical slip
+after the exact `502 TURBOPASS_UNAVAILABLE` condition, and polls the same coupon idempotently. Query
+parameters are treated as hints until live RPC verifies the accounts, transactions, and token
+deltas. The disposable validator uses 128 ticks per slot so the sender transaction remains in its
+recent-status cache during the deliberately slow recording; that is a local demo accommodation, not
+a production Solana recommendation.
+
 ## Repository verification
 
-Independent verification at CryptoPal commit `e41f723` produced:
+Independent verification at CryptoPal commit `55f7f00` produced:
 
 | Check                  | Result                                              |
 | ---------------------- | --------------------------------------------------- |
@@ -214,9 +263,9 @@ Independent verification at CryptoPal commit `e41f723` produced:
 | Rust client-crypto     | 6 tests passed                                      |
 | Total non-load tests   | 33 passed, zero failed                              |
 | TypeScript             | Both API and web workspaces passed                  |
-| Production web build   | Passed; 550 modules transformed                     |
+| Production web build   | Passed; 551 modules transformed                     |
 | Wasm asset             | 161.80 kB; 61.25 kB gzip                            |
-| Main JavaScript bundle | 737.17 kB; 233.31 kB gzip; Vite over-500 kB warning |
+| Main JavaScript bundle | 747.75 kB; 236.12 kB gzip; Vite over-500 kB warning |
 
 The bundle warning remains a documented performance follow-up rather than being hidden by the
 passing build.
@@ -267,18 +316,19 @@ The article preserves the important build failures and corrections:
 
 The website release sequence is:
 
-1. Add the immutable Build Note manifest record and article route.
-2. Add the four diagrams, supplied screen, image styles, and source-linked prose.
-3. Extend unit coverage for metadata bounds, three repository pins, article truth statements,
-   code blocks, and accessible diagrams.
-4. Add the route to public browser smoke coverage.
-5. Run formatting, focused Build Note tests, site type checks, full root verification, Payload
-   production build, fixture static export, and export verifier.
-6. Inspect the generated public page for title, screenshot, SVG count, source destinations,
-   canonical metadata, RSS, and sitemap inclusion.
-7. Publish through the existing checks-gated GitHub and Render Static Site workflow.
-8. Verify the production route, record the website commit, CI/CodeQL result, Render deployment,
-   generated route count, and public acceptance below.
+1. Update the CryptoPal pin to the recorder commit and incorporate the remaining shared-session
+   evidence without treating chat prose as code proof.
+2. Add the H.264 delivery asset, WebP poster, native player, visual transcript, provenance hashes,
+   and explicit privacy boundary.
+3. Copy shared media into the static export and standalone Payload image, then add immutable Render
+   caching and an explicit same-origin CSP media policy.
+4. Extend unit and export coverage for the new pin, player semantics, transcript, exact media size
+   and hash, Docker public assets, and Blueprint headers.
+5. Run formatting, focused tests, site type checks, full root verification, Payload production
+   build, fixture static export, and export verifier.
+6. Publish through the existing checks-gated GitHub and Render Static Site workflow.
+7. Verify the production article and media response, then record the website commit, CI/CodeQL
+   result, Render deployment, generated route count, and public acceptance below.
 
 No Payload schema or prototype record is required. Build Notes remain the intentionally narrow
 Git-authored exception defined by ADR-020, while Payload continues to own general editorial content.

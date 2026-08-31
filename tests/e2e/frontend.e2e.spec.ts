@@ -21,6 +21,28 @@ test.describe('Public site smoke', () => {
     })
   }
 
+  test('CryptoPal exposes a lazy native player and visual transcript', async ({ page }) => {
+    const response = await page.goto('/build-notes/cryptopal-wallet-email-wallet')
+    expect(response?.ok()).toBe(true)
+
+    const video = page.getByLabel('CryptoPal local private-transfer walkthrough')
+    await expect(video).toBeVisible()
+    await expect(video).toHaveAttribute('controls', '')
+    await expect(video).toHaveAttribute('preload', 'none')
+    await expect(video).toHaveAttribute('width', '1440')
+    await expect(video).toHaveAttribute('height', '900')
+    await expect(video.locator('source')).toHaveAttribute('type', 'video/mp4')
+    await expect(video.locator('source')).toHaveAttribute(
+      'src',
+      '/media/build-notes/cryptopal/cryptopal-private-transfer.cafb08d2.mp4',
+    )
+
+    const transcript = page.getByText('Visual transcript for the silent recording')
+    await expect(transcript).toBeVisible()
+    await transcript.click()
+    await expect(page.getByText('There is no voice or audio track.')).toBeVisible()
+  })
+
   test('/api/health is a cache-safe, non-sensitive liveness response', async ({ request }) => {
     const response = await request.get('/api/health')
 

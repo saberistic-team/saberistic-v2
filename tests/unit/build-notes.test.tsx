@@ -50,7 +50,7 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('three-lovable-prototypes')?.repositories).toHaveLength(3)
     expect(getBuildNote('cryptopal-wallet-email-wallet')?.repositories).toHaveLength(3)
     expect(getBuildNote('cryptopal-wallet-email-wallet')?.repositories[0]?.commit.slice(0, 7)).toBe(
-      'e41f723',
+      '55f7f00',
     )
   })
 
@@ -69,6 +69,16 @@ describe('Git-authored build notes', () => {
     expect(html).toContain('Only a resettable local Solana/Agave ledger')
     expect(html).toContain('not a wire-compatible RFC 9497')
     expect(html).toContain('Owner-supplied CryptoPal sender screen')
+    expect(html).toContain('cryptopal-private-transfer.cafb08d2.mp4')
+    expect(html).toContain('cryptopal-private-transfer-poster.b9a20494.webp')
+    expect(html).toContain('preload="none"')
+    expect(html).toContain('playsInline=""')
+    expect(html).toContain('Visual transcript for the silent recording')
+    expect(html).toContain('exact message in the local Mailpit inbox')
+    expect(html).toContain('one browser profile but two distinct wallet keys')
+    expect(html).toContain('55f7f00')
+    expect(html).not.toContain('autoPlay')
+    expect(html).not.toContain('loop=""')
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
     expect(html.match(/<svg aria-labelledby=/g)?.length).toBe(4)
     expect(html.match(/<title id=/g)?.length).toBe(4)

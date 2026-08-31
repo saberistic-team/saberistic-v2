@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node --import=tsx ./scripts/fetch-content.ts && next build --webpack && node ./scripts/verify-export.mjs",
+    "build": "node --import=tsx ./scripts/fetch-content.ts && next build --webpack && node ./scripts/copy-shared-media.mjs && node ./scripts/verify-export.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

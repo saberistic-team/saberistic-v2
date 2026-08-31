@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 const blueprint = readFileSync(path.join(repositoryRoot, 'render.yaml'), 'utf8')
+const dockerfile = readFileSync(path.join(repositoryRoot, 'Dockerfile'), 'utf8')
 const dailyWorkflow = readFileSync(
   path.join(repositoryRoot, '.github/workflows/static-site-rebuild.yml'),
   'utf8',
@@ -49,7 +50,7 @@ describe('Render Static Site Blueprint', () => {
     expect(staticService).toContain('name: Content-Security-Policy')
   })
 
-  it('preserves equivalent legacy URLs and caches the committed brand asset safely', () => {
+  it('preserves equivalent legacy URLs and caches committed media safely', () => {
     for (const source of [
       '/about',
       '/brief',
@@ -66,6 +67,10 @@ describe('Render Static Site Blueprint', () => {
 
     expect(staticService).toContain('path: /brand/*')
     expect(staticService).toContain('max-age=86400, stale-while-revalidate=604800')
+    expect(staticService).toContain("media-src 'self'")
+    expect(staticService).toContain('path: /media/*')
+    expect(staticService).toContain('max-age=31536000, immutable')
+    expect(dockerfile).toContain('/app/public ./public')
   })
 
   it('queues a daily refresh without committing the secret hook value', () => {

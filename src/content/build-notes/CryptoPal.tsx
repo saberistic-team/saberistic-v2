@@ -9,9 +9,14 @@ import {
   CryptoPalStateDiagram,
 } from '@/components/build-notes/CryptoPalDiagrams'
 
-const commit = 'e41f72319ca5b7d0bd6a5cc3de0ac46bf9f91d4d'
+const commit = '55f7f00e55c6e915f7ad85c5669eb7c01fe020c5'
 const repository = 'https://github.com/saberistic-team/cryptopal'
 const source = (path: string, anchor = '') => `${repository}/blob/${commit}/${path}${anchor}`
+
+const continuationUrl = 'https://chatgpt.com/s/cx_6a94d75c52d88191aaf7d3acdd8d44e0'
+const recordingPath = '/media/build-notes/cryptopal/cryptopal-private-transfer.cafb08d2.mp4'
+const recordingPosterPath =
+  '/media/build-notes/cryptopal/cryptopal-private-transfer-poster.b9a20494.webp'
 
 const specCommit = 'de7c055e459167f66f39d56e4feceaa92caf12aa'
 const specRepository = 'https://github.com/saberistic/cryptopal-spec'
@@ -206,6 +211,14 @@ docker compose up --build
 # Processor API    http://127.0.0.1:3001
 # Mailpit inbox    http://localhost:8025
 # Solana JSON-RPC  http://127.0.0.1:8899`
+
+const demoRecorderCommands = `docker compose up --build --detach
+npm ci
+npx playwright install chromium
+npm run demo:video
+
+# Optional: watch the annotated run at a slower pace.
+CRYPTOPAL_DEMO_SLOW_MO=300 npm run demo:video -- --headed`
 
 const verificationCommands = `$ npm --workspace apps/api test
 # 3 files · 14 tests passed
@@ -490,6 +503,146 @@ export function CryptoPalArticle() {
             </div>
           </li>
         </ol>
+        <h3>Watch the complete local transfer</h3>
+        <p>
+          The final recorder turns the protocol into one continuous, caption-led walkthrough. It
+          opens the exact message in Mailpit, follows the real delivered claim link, creates a
+          different receiver wallet only after the claim opens, and finishes in a new RPC-backed
+          local explorer. The player is deliberately lazy: its poster loads with the article, while
+          the video waits until a visitor presses play.
+        </p>
+        <figure className="article-video">
+          <video
+            aria-describedby="cryptopal-private-transfer-caption cryptopal-private-transfer-transcript-summary"
+            aria-label="CryptoPal local private-transfer walkthrough"
+            controls
+            height={900}
+            playsInline
+            poster={recordingPosterPath}
+            preload="none"
+            width={1440}
+          >
+            <source src={recordingPath} type="video/mp4" />
+            <p>
+              Your browser cannot play this recording.{' '}
+              <a download href={recordingPath}>
+                Download the MP4 video
+              </a>
+              .
+            </p>
+          </video>
+          <figcaption id="cryptopal-private-transfer-caption">
+            <strong>CryptoPal local privacy demo · silent · 3:20</strong>
+            <span>
+              One cUSD moves from a sender wallet through the shared pool and an email-delivered
+              claim into a fresh receiver wallet.{' '}
+              <a download href={recordingPath}>
+                Download the 8.5 MiB MP4
+              </a>
+              .
+            </span>
+          </figcaption>
+        </figure>
+        <details className="article-details article-transcript">
+          <summary id="cryptopal-private-transfer-transcript-summary">
+            Visual transcript for the silent recording
+          </summary>
+          <div>
+            <p>
+              There is no voice or audio track. These chapters describe the visible actions, chapter
+              cards, and privacy captions.
+            </p>
+            <ol>
+              <li>
+                <time dateTime="PT0S">00:00–00:30</time>
+                <span>
+                  The overview frames the route as wallet → private pool → email → wallet. A sender
+                  burner wallet connects and receives local SOL plus 10 demo cUSD.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT30S">00:30–00:55</time>
+                <span>
+                  The browser prepares a blinded slip, approves a 1 cUSD deposit, and shows the
+                  sender-to-pool transaction confirmed on the disposable local ledger.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT55S">00:55–01:15</time>
+                <span>
+                  The browser verifies the issuer proof and unblinds the slip locally before any
+                  recipient email is chosen.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT1M15S">01:15–01:40</time>
+                <span>
+                  The sender enters the synthetic recipient, authorizes the handoff, and the UI
+                  states that the email address is not written to Solana.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT1M40S">01:40–02:05</time>
+                <span>
+                  The run selects that exact message in the local Mailpit inbox and opens its real
+                  one-time claim link.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT2M5S">02:05–02:25</time>
+                <span>
+                  The claim is inspected without spending it. Only then is the sender disconnected
+                  and a fresh receiver burner-wallet key selected.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT2M25S">02:25–02:50</time>
+                <span>
+                  A second blinded coupon is created, verified, unblinded, bound to the receiver
+                  wallet at redemption, and exchanged for 1 cUSD.
+                </span>
+              </li>
+              <li>
+                <time dateTime="PT2M50S">02:50–03:20</time>
+                <span>
+                  The local explorer verifies both parsed Solana transactions and the final 9 / 0 /
+                  1 cUSD balances for sender, pool, and receiver.
+                </span>
+              </li>
+            </ol>
+          </div>
+        </details>
+        <CodeBlock
+          code={demoRecorderCommands}
+          label="Reproduce the annotated local recording"
+          language="shell"
+          sourceHref={source('tests/demo/README.md', '#L26-L50')}
+        />
+        <p>
+          This is a fail-closed recorder, not a loose screen macro. It refuses proxy environments or
+          non-loopback web, Mailpit, claim, and Solana endpoints; chooses a unique synthetic
+          recipient; checks the exact delivered message; and treats wallet and signature query
+          values as hints until RPC verification succeeds. It retries only the identical bound slip
+          after the exact <code>502 TURBOPASS_UNAVAILABLE</code> response and polls the same coupon
+          idempotently for payout.
+        </p>
+        <p>
+          The disposable Agave validator also moved to 128 ticks per slot so its recent-transaction
+          cache retains the sender hop through the intentionally slow three-minute recording. That
+          is a local observability setting, not a Solana production recommendation.{' '}
+          <a href={source('tests/demo/README.md', '#L52-L72')} rel="external">
+            Read the recorder’s evidence and safety contract
+          </a>
+          .
+        </p>
+        <ArticleCallout title="WHAT THIS RECORDING PROVES" tone="warning">
+          <p>
+            The continuous run uses one browser profile but two distinct wallet keys. It
+            demonstrates the complete local flow and wallet-key separation—not browser, device, IP,
+            timing, amount, or mail-metadata anonymity. The public chain hops remain visible and the
+            pool remains custodial.
+          </p>
+        </ArticleCallout>
       </section>
 
       <section id="hop-one">
@@ -762,7 +915,7 @@ export function CryptoPalArticle() {
         <h2>The pinned public commit builds and its committed checks pass.</h2>
         <div className="article-metrics" aria-label="Verified CryptoPal repository metrics">
           <div>
-            <strong>85</strong>
+            <strong>89</strong>
             <span>tracked paths</span>
           </div>
           <div>
@@ -770,7 +923,7 @@ export function CryptoPalArticle() {
             <span>non-load tests passing</span>
           </div>
           <div>
-            <strong>550</strong>
+            <strong>551</strong>
             <span>web modules built</span>
           </div>
           <div>
@@ -790,19 +943,20 @@ export function CryptoPalArticle() {
           TypeScript workspaces typechecked and the production web build completed.
         </p>
         <p>
-          The build produced a 161.80 kB Wasm asset (61.25 kB gzip) and a 737.17 kB main JavaScript
-          bundle (233.31 kB gzip). Vite’s over-500 kB warning is a real performance follow-up: the
+          The build produced a 161.80 kB Wasm asset (61.25 kB gzip) and a 747.75 kB main JavaScript
+          bundle (236.12 kB gzip). Vite’s over-500 kB warning is a real performance follow-up: the
           wallet and Solana dependency tree should be split or modernized before treating this UI as
           a production frontend.
         </p>
         <ArticleCallout title="FULL BROWSER WALKTHROUGH" tone="success">
           <p>
-            The recorded implementation session also completed the actual local journey with two
-            wallets, the Agave validator, one cUSD deposit, TurboPass proof verification and
-            unblinding, SMTP acceptance by Mailpit, a fresh coupon, and a confirmed final receiver
-            balance. The receiver used the locally exposed demo claim link; inbox rendering was not
-            part of this walkthrough. That is development-session evidence; the public commit
-            contains the runnable system and tests, not a captured video or immutable run report.
+            Commit <code>{commit.slice(0, 7)}</code> adds the reproducible Playwright recorder and
+            local explorer. The supplied 3:20 WebM follows the exact Mailpit message and its real
+            claim link, then verifies distinct wallet keys, both confirmed transactions, and final 9
+            / 0 / 1 cUSD balances. Its SHA-256 is{' '}
+            <code>a3c427d7a8864458539ba1c76ff7456c05eb294008f0ac5cf04ab191b23e82be</code>. The site
+            serves a smaller H.264 transcode of the same recording; the original recording and
+            generated correlation report remain outside the CryptoPal repository.
           </p>
         </ArticleCallout>
       </section>
@@ -1014,6 +1168,27 @@ export function CryptoPalArticle() {
               </li>
             </ul>
           </article>
+          <article>
+            <p className="eyebrow">REPRODUCE THE WALKTHROUGH</p>
+            <h3>Recorder and live evidence</h3>
+            <ul>
+              <li>
+                <a href={source('tests/demo/README.md')} rel="external">
+                  Recording contract, commands, and evidence limits
+                </a>
+              </li>
+              <li>
+                <a href={source('tests/demo/record-demo.mjs')} rel="external">
+                  Playwright journey and verification report
+                </a>
+              </li>
+              <li>
+                <a href={source('apps/web/src/pages/LocalExplorerPage.tsx')} rel="external">
+                  RPC-backed balances and parsed transactions
+                </a>
+              </li>
+            </ul>
+          </article>
         </div>
       </section>
 
@@ -1038,13 +1213,14 @@ export function CryptoPalArticle() {
 
       <section id="sources">
         <p className="eyebrow">18 / EVIDENCE LEDGER</p>
-        <h2>Three immutable source pins and one clearly labelled session record.</h2>
+        <h2>Three immutable source pins, one supplied recording, and one session record.</h2>
         <ul className="source-list">
           <li>
             <a href={`${repository}/tree/${commit}`} rel="external">
               CryptoPal implementation at {commit.slice(0, 7)}
             </a>{' '}
-            — the runnable local application, protocol, tests, and load harness.
+            — the runnable local application, protocol, tests, load harness, local explorer, and
+            reproducible demo recorder.
           </li>
           <li>
             <a href={`${specRepository}/tree/${specCommit}`} rel="external">
@@ -1059,10 +1235,24 @@ export function CryptoPalArticle() {
             — the exact submodule commit providing issuance and spent-token enforcement.
           </li>
           <li>
-            The owner-supplied demo screenshot documents the interface. The private implementation
-            task documents the browser walkthrough and local load observations; because it contains
-            no committed machine-readable report, this note labels those measurements as session
-            evidence rather than repository verification.
+            The owner-supplied screenshot documents the interface. The owner-supplied WebM is the
+            17,119,896-byte source recording with SHA-256{' '}
+            <code>a3c427d7a8864458539ba1c76ff7456c05eb294008f0ac5cf04ab191b23e82be</code>. This page
+            serves an 8,916,669-byte H.264 delivery copy with SHA-256{' '}
+            <code>cafb08d2f0d0a718db3f3556416ee234a98075fd2155ed0fc0da10491c5d8e03</code>.
+          </li>
+          <li>
+            <a href={continuationUrl} rel="external">
+              Shared implementation continuation
+            </a>{' '}
+            — supplementary session evidence for the recorder chronology and the stated demo
+            boundaries, not a substitute for the pinned code or independently rerun checks.
+          </li>
+          <li>
+            The recorder’s ignored JSON report intentionally correlates the synthetic email, both
+            wallets, Mailpit message, and transaction signatures to audit this one local run. It is
+            not published here. Load observations still have no retained Artillery result artifact
+            and remain labelled as session evidence.
           </li>
         </ul>
       </section>

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -7,6 +8,9 @@ const dirname = path.dirname(fileURLToPath(import.meta.url))
 const siteRoot = path.resolve(dirname, '..')
 const outputRoot = path.join(siteRoot, 'out')
 const snapshotPath = path.join(siteRoot, '.generated/public-content.json')
+const cryptopalVideoPath = 'media/build-notes/cryptopal/cryptopal-private-transfer.cafb08d2.mp4'
+const cryptopalPosterPath =
+  'media/build-notes/cryptopal/cryptopal-private-transfer-poster.b9a20494.webp'
 
 async function readOutput(relativePath) {
   return readFile(path.join(outputRoot, relativePath), 'utf8')
@@ -82,6 +86,23 @@ for (const slug of buildNoteSlugs) {
   assert.match(html, /<time dateTime="\d{4}-\d{2}-\d{2}"/)
 }
 
+const cryptopal = await readOutput('build-notes/cryptopal-wallet-email-wallet/index.html')
+assert.match(cryptopal, /<video[^>]*aria-label="CryptoPal local private-transfer walkthrough"/)
+assert.match(cryptopal, /<video[^>]*controls=""/)
+assert.match(cryptopal, /<video[^>]*playsInline=""/)
+assert.match(cryptopal, /<video[^>]*preload="none"/)
+assert.match(cryptopal, new RegExp(`poster="/${cryptopalPosterPath}"`))
+assert.match(cryptopal, new RegExp(`<source src="/${cryptopalVideoPath}" type="video/mp4"`))
+assert.match(cryptopal, /Visual transcript for the silent recording/)
+assert.match(cryptopal, /The run selects that exact message in the local Mailpit inbox/)
+assert.match(cryptopal, /"@type":"VideoObject"/)
+assert.match(cryptopal, /"duration":"PT3M20S"/)
+assert.match(
+  cryptopal,
+  new RegExp(`"contentUrl":"https://saberistic.com/${cryptopalVideoPath.replaceAll('/', '\\/')}"`),
+)
+assert.doesNotMatch(cryptopal, /<video[^>]*(?:autoplay|loop)/)
+
 for (const prototype of snapshot.prototypes.items) {
   const canonical = `https://saberistic.com/prototypes/${prototype.slug}/`
   const html = await readOutput(`prototypes/${prototype.slug}/index.html`)
@@ -128,6 +149,19 @@ for (const relativePath of ['apple-icon.png', 'brand/saberistic-mark.png', 'icon
   assert.ok((await stat(path.join(outputRoot, relativePath))).size > 0)
 }
 
+const cryptopalVideo = await readFile(path.join(outputRoot, cryptopalVideoPath))
+assert.equal(cryptopalVideo.byteLength, 8_916_669)
+assert.equal(
+  createHash('sha256').update(cryptopalVideo).digest('hex'),
+  'cafb08d2f0d0a718db3f3556416ee234a98075fd2155ed0fc0da10491c5d8e03',
+)
+const cryptopalPoster = await readFile(path.join(outputRoot, cryptopalPosterPath))
+assert.equal(cryptopalPoster.byteLength, 33_050)
+assert.equal(
+  createHash('sha256').update(cryptopalPoster).digest('hex'),
+  'b9a204945a12f120db4ffce1d6e58b929827d5217c9f7f2bf9a7feaf3e63d978',
+)
+
 console.log(
-  `Verified static SEO, brand assets, ${buildNoteSlugs.length} build note(s), and ${snapshot.prototypes.items.length} prototype route(s).`,
+  `Verified static SEO, brand and CryptoPal media assets, ${buildNoteSlugs.length} build note(s), and ${snapshot.prototypes.items.length} prototype route(s).`,
 )

@@ -54,7 +54,7 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
   if (!note || !Article) notFound()
 
   const canonical = `https://saberistic.com/build-notes/${note.slug}/`
-  const structuredData = [
+  const structuredData: Record<string, unknown>[] = [
     {
       '@context': 'https://schema.org',
       '@type': 'BreadcrumbList',
@@ -104,6 +104,40 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
       url: canonical,
     },
   ]
+
+  if (note.slug === 'cryptopal-wallet-email-wallet') {
+    structuredData.push({
+      '@context': 'https://schema.org',
+      '@type': 'VideoObject',
+      accessibilityFeature: 'transcript',
+      accessibilitySummary:
+        'This silent recording has an adjacent timestamped visual transcript describing every chapter.',
+      accessMode: 'visual',
+      author: {
+        '@type': 'Person',
+        name: 'AmirSaber Sharifi',
+        url: 'https://saberistic.com/#about',
+      },
+      caption:
+        'A complete local CryptoPal transfer from sender wallet through an email claim to a distinct receiver wallet.',
+      contentSize: '8916669 bytes',
+      contentUrl:
+        'https://saberistic.com/media/build-notes/cryptopal/cryptopal-private-transfer.cafb08d2.mp4',
+      description:
+        'A silent 3:20 local demo of one cUSD moving through two independently blinded credential handoffs, Mailpit delivery, a fresh receiver wallet, and RPC-verified final balances.',
+      duration: 'PT3M20S',
+      encodingFormat: 'video/mp4',
+      height: 900,
+      inLanguage: 'en',
+      isAccessibleForFree: true,
+      name: 'CryptoPal private transfer: wallet to email to wallet',
+      sha256: 'cafb08d2f0d0a718db3f3556416ee234a98075fd2155ed0fc0da10491c5d8e03',
+      thumbnailUrl:
+        'https://saberistic.com/media/build-notes/cryptopal/cryptopal-private-transfer-poster.b9a20494.webp',
+      uploadDate: note.modifiedAt,
+      width: 1440,
+    })
+  }
 
   return (
     <article className="build-note">

@@ -22,14 +22,14 @@ export const buildNotes = [
   {
     eyebrow: 'DAY 005 / CRYPTOPAL',
     footerSummary:
-      'The three pinned repositories separate the original protocol idea, the runnable Solana demonstrator, and the blinded-token service it depends on.',
+      'Three pinned repositories separate the original idea, runnable Solana demonstrator, and blinded-token service; the embedded recording makes the complete local journey inspectable.',
     footerTitle: 'Inspect both privacy hops—and every boundary they do not hide.',
     modifiedAt: '2026-08-30',
     publishedAt: '2026-08-30',
-    readingMinutes: 29,
+    readingMinutes: 33,
     repositories: [
       {
-        commit: 'e41f72319ca5b7d0bd6a5cc3de0ac46bf9f91d4d',
+        commit: '55f7f00e55c6e915f7ad85c5669eb7c01fe020c5',
         label: 'CryptoPal',
         url: 'https://github.com/saberistic-team/cryptopal',
       },
@@ -49,7 +49,7 @@ export const buildNotes = [
       ['scope', 'What shipped'],
       ['original-sketch', 'Original sketch'],
       ['architecture', 'Architecture'],
-      ['local-demo', 'The interaction'],
+      ['local-demo', 'Interface and recording'],
       ['hop-one', 'Wallet to email'],
       ['hop-two', 'Email to wallet'],
       ['zkp-precision', 'What ZKP means'],
