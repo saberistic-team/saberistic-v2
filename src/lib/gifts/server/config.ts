@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { readinessPolicyVersion } from '@/lib/readiness/types'
+
 const modelPattern = /^[a-z0-9][a-z0-9._~-]*\/[a-z0-9][a-z0-9._~-]*$/i
 const giftWebhookSecretPattern = /^whsec_[A-Za-z0-9]{16,}$/
 
@@ -98,7 +100,12 @@ function stripeGiftBaseConfig(environment: NodeJS.ProcessEnv): StripeGiftConfig 
 export function resolveOpenRouterGiftConfig(
   environment: NodeJS.ProcessEnv = process.env,
 ): OpenRouterGiftConfig | null {
-  if (environment.GIFTING_AI_ENABLED !== '1') return null
+  if (
+    environment.GIFTING_AI_ENABLED !== '1' ||
+    environment.OPENROUTER_ACCOUNT_GATES_CONFIRMED !== readinessPolicyVersion
+  ) {
+    return null
+  }
 
   const apiKey = environment.OPENROUTER_API_KEY?.trim()
   const primaryModel = configuredModel(environment.OPENROUTER_GIFT_PRIMARY_MODEL)
@@ -127,7 +134,7 @@ export function resolveOpenRouterGiftConfig(
     primaryModel,
     quoteSecret,
     siteOrigin: configuredSiteOrigin(environment),
-    timeoutMs: boundedInteger(environment.OPENROUTER_GIFT_TIMEOUT_MS, 25_000, 8_000, 45_000),
+    timeoutMs: boundedInteger(environment.OPENROUTER_GIFT_TIMEOUT_MS, 60_000, 8_000, 60_000),
   }
 }
 

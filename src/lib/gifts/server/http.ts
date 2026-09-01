@@ -78,10 +78,11 @@ export function giftJSONResponse(
 export function giftOptionsResponse(
   request: Request,
   environment: NodeJS.ProcessEnv = process.env,
+  methods = 'POST, OPTIONS',
 ): Response {
   const origin = validatedGiftOrigin(request, environment)
   if (!origin) return giftJSONResponse(null, { error: 'Request origin is not allowed.' }, 403)
-  return new Response(null, { headers: giftCORSHeaders(origin), status: 204 })
+  return new Response(null, { headers: giftCORSHeaders(origin, methods), status: 204 })
 }
 
 export function giftRequestMediaType(request: Request): string {

@@ -3,7 +3,7 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 
 import { validateGiftRecommendationRequest, type GiftIdea } from '../index'
-import { resolveOpenRouterGiftConfig } from './config'
+import { resolveOpenRouterGiftConfig, resolveStripeGiftConfig } from './config'
 import {
   giftClientAddress,
   giftJSONResponse,
@@ -104,7 +104,32 @@ export function handleGiftIdeasOptions(
   request: Request,
   environment: NodeJS.ProcessEnv = process.env,
 ): Response {
-  return giftOptionsResponse(request, environment)
+  return giftOptionsResponse(request, environment, 'GET, POST, OPTIONS')
+}
+
+export function handleGiftIdeasStatus(
+  request: Request,
+  environment: NodeJS.ProcessEnv = process.env,
+): Response {
+  const origin = validatedGiftOrigin(request, environment)
+  if (request.headers.has('origin') && !origin) {
+    return giftJSONResponse(
+      null,
+      { error: 'Request origin is not allowed.' },
+      403,
+      'GET, POST, OPTIONS',
+    )
+  }
+
+  return giftJSONResponse(
+    origin,
+    {
+      checkoutEnabled: Boolean(resolveStripeGiftConfig(environment)),
+      ideasEnabled: Boolean(resolveOpenRouterGiftConfig(environment)),
+    },
+    200,
+    'GET, POST, OPTIONS',
+  )
 }
 
 export async function handleGiftIdeas(
@@ -220,7 +245,9 @@ export async function handleGiftIdeas(
       model: result.model,
       outcome: 'completed',
       promptTokens: result.usage.promptTokens,
+      searchModel: result.searchModel,
       searchRequests: result.usage.searchRequests,
+      serverToolCalls: result.usage.serverToolCalls,
       theme: validation.value.theme,
       totalTokens: result.usage.totalTokens,
     })
@@ -235,11 +262,18 @@ export async function handleGiftIdeas(
   } catch (error) {
     const response = publicSearchError(error)
     safeLog({
+      completionTokens:
+        error instanceof GiftSearchError ? error.usage?.completionTokens : undefined,
+      cost: error instanceof GiftSearchError ? error.usage?.cost : undefined,
       duration: durationBucket(now() - startedAt),
       generationId: error instanceof GiftSearchError ? error.upstream.generationId : undefined,
       outcome: 'failed',
+      promptTokens: error instanceof GiftSearchError ? error.usage?.promptTokens : undefined,
       reason: error instanceof GiftSearchError ? error.reason : 'internal',
       retryAfter: error instanceof GiftSearchError ? error.upstream.retryAfter : undefined,
+      searchRequests: error instanceof GiftSearchError ? error.usage?.searchRequests : undefined,
+      serverToolCalls: error instanceof GiftSearchError ? error.usage?.serverToolCalls : undefined,
+      totalTokens: error instanceof GiftSearchError ? error.usage?.totalTokens : undefined,
       upstreamStatus: error instanceof GiftSearchError ? error.upstream.status : undefined,
     })
     return giftJSONResponse(origin, { error: response.message }, response.status)

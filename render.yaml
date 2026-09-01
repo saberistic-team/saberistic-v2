@@ -112,7 +112,7 @@ projects:
               - key: READINESS_REJECT_IP_WINDOW_SECONDS
                 value: '3600'
               - key: OPENROUTER_GIFT_TIMEOUT_MS
-                value: '25000'
+                value: '60000'
               - key: OPENROUTER_GIFT_MAX_COMPLETION_TOKENS
                 value: '3000'
               - key: GIFTING_IP_LIMIT
@@ -120,7 +120,7 @@ projects:
               - key: GIFTING_TOKEN_LIMIT
                 value: '4'
               - key: GIFTING_DAILY_LIMIT
-                value: '100'
+                value: '50'
               - key: GIFTING_CONCURRENCY_LIMIT
                 value: '2'
               - key: GIFTING_CHECKOUT_IP_LIMIT

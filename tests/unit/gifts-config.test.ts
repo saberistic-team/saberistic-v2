@@ -15,6 +15,7 @@ function environment(): NodeJS.ProcessEnv {
     GIFTING_CHECKOUT_ENABLED: '1',
     GIFT_QUOTE_SECRET: 'q'.repeat(40),
     NODE_ENV: 'test',
+    OPENROUTER_ACCOUNT_GATES_CONFIRMED: '2026-09-01.1',
     OPENROUTER_API_KEY: 'openrouter-test-key',
     OPENROUTER_GIFT_FALLBACK_MODEL: 'google/gemini-3.7-flash',
     OPENROUTER_GIFT_PRIMARY_MODEL: 'openai/gpt-5.6-luna',
@@ -25,9 +26,13 @@ function environment(): NodeJS.ProcessEnv {
 }
 
 describe('Gift Draft server configuration', () => {
+  it('reserves one bounded deadline for research and strict synthesis', () => {
+    expect(resolveOpenRouterGiftConfig(environment())).toMatchObject({ timeoutMs: 60_000 })
+  })
+
   it('resolves pinned OpenRouter models and bounded runtime settings', () => {
     const value = environment()
-    value.OPENROUTER_GIFT_TIMEOUT_MS = '45000'
+    value.OPENROUTER_GIFT_TIMEOUT_MS = '60000'
     value.OPENROUTER_GIFT_MAX_COMPLETION_TOKENS = '6000'
 
     expect(resolveOpenRouterGiftConfig(value)).toEqual({
@@ -37,12 +42,13 @@ describe('Gift Draft server configuration', () => {
       primaryModel: 'openai/gpt-5.6-luna',
       quoteSecret: 'q'.repeat(40),
       siteOrigin: 'https://saberistic.example',
-      timeoutMs: 45_000,
+      timeoutMs: 60_000,
     })
   })
 
   it.each([
     ['GIFTING_AI_ENABLED', '0'],
+    ['OPENROUTER_ACCOUNT_GATES_CONFIRMED', '2026-08-31.1'],
     ['OPENROUTER_API_KEY', ''],
     ['GIFT_QUOTE_SECRET', 'short'],
     ['OPENROUTER_GIFT_PRIMARY_MODEL', 'openrouter/auto'],

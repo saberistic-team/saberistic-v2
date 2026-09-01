@@ -34,8 +34,21 @@ describe('Gift Draft rate limiting', () => {
     const admissionArgs = evalCall.mock.calls[0]
     expect(admissionArgs.join(' ')).not.toContain('203.0.113.8')
     expect(admissionArgs.join(' ')).not.toContain('anonymous-browser-token')
+    expect(admissionArgs[13]).toBe(1_800_000_075_000)
+    const script = String(admissionArgs[0])
+    const purgeExpired = script.indexOf("redis.call('ZREMRANGEBYSCORE'")
+    const countActive = script.indexOf("redis.call('ZCARD'")
+    const reserveLease = script.indexOf("redis.call('ZADD'")
+    const incrementQuota = script.indexOf("redis.call('INCR'")
+    expect(purgeExpired).toBeGreaterThanOrEqual(0)
+    expect(countActive).toBeGreaterThan(purgeExpired)
+    expect(reserveLease).toBeGreaterThan(countActive)
+    expect(incrementQuota).toBeGreaterThan(reserveLease)
 
-    if (permit.allowed) await permit.release()
+    if (permit.allowed) {
+      await permit.release()
+      await permit.release()
+    }
     expect(evalCall).toHaveBeenCalledTimes(2)
     expect(evalCall.mock.calls[1]?.at(-1)).toBe('123e4567-e89b-42d3-a456-426614174000')
   })

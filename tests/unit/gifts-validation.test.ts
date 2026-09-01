@@ -5,6 +5,7 @@ import {
   isGiftRecommendationResponse,
   safeGiftSourceURL,
   validateGiftRecommendationRequest,
+  validateModelGiftIdea,
   validateModelGiftIdeas,
   type ModelGiftIdea,
 } from '@/lib/gifts/validation'
@@ -23,7 +24,7 @@ function giftIdeas(prices: readonly number[]): ModelGiftIdea[] {
     name: `Verified gift idea ${index + 1}`,
     observedPriceCents,
     retailer: `Retailer ${index + 1}`,
-    sourceUrl: `https://shop${index + 1}.example/products/gift-${index + 1}`,
+    sourceUrl: `https://www.adafruit.com/products/gift-${index + 1}`,
     whyItFits: `A durable and thoughtful choice for a curious systems builder number ${index + 1}.`,
   }))
 }
@@ -127,6 +128,85 @@ describe('gift model output validation', () => {
       ok: false,
     })
   })
+
+  it.each([
+    'https://learn.adafruit.com/products/gift-1',
+    'https://www.adafruit.com.attacker.example/products/gift-1',
+    'https://marketplace.example/products/gift-1',
+  ])('rejects a product URL outside the exact reviewed host set: %s', (sourceUrl) => {
+    const ideas = giftIdeas([1_000, 1_200, 1_400, 1_600, 1_800, 2_000, 2_200, 2_400, 3_000])
+    const unapproved = ideas.map((idea, index) => (index === 0 ? { ...idea, sourceUrl } : idea))
+
+    expect(
+      validateModelGiftIdeas({ ideas: unapproved }, 'under_30', citedURLs(unapproved)),
+    ).toEqual({
+      error: 'The gift scout returned an invalid deck.',
+      ok: false,
+    })
+  })
+
+  it.each([
+    ['Digital gift card', 'Gift card'],
+    ['Monthly maker box', 'Subscription'],
+    ['Small-batch whiskey bottle', 'Beverage'],
+    ['Daily vitamin set', 'Wellness supplement'],
+    ['Crypto token voucher', 'Financial asset'],
+    ['Compact camping knife', 'Outdoor tool'],
+    ['Casino poker chip set', 'Game'],
+    ['CBD relaxation gummies', 'Personal care'],
+    ['Merino hoodie', 'Clothing'],
+    ['Merino beanie', 'Accessories'],
+    ['Leatherman Wave+ Multi-Tool', 'Everyday carry'],
+  ])('rejects prohibited product identity %s', (name, category) => {
+    const ideas = giftIdeas([1_000, 1_200, 1_400, 1_600, 1_800, 2_000, 2_200, 2_400, 3_000])
+    const prohibited = ideas.map((idea, index) =>
+      index === 0 ? { ...idea, category, name } : idea,
+    )
+
+    expect(
+      validateModelGiftIdeas({ ideas: prohibited }, 'under_30', citedURLs(prohibited)),
+    ).toEqual({
+      error: 'The gift scout returned an invalid deck.',
+      ok: false,
+    })
+  })
+
+  it.each([
+    {
+      whyItFits:
+        'A compact desk comfort set with nourishing hand cream for long building sessions.',
+    },
+    { retailer: 'Leatherman' },
+    { sourceUrl: 'https://www.adafruit.com/products/merino-%62eanie' },
+    { name: `Merino be​anie` },
+  ])('rejects prohibited product clues outside name and category: %o', (clue) => {
+    const ideas = giftIdeas([1_000, 1_200, 1_400, 1_600, 1_800, 2_000, 2_200, 2_400, 3_000])
+    const prohibited = ideas.map((idea, index) => (index === 0 ? { ...idea, ...clue } : idea))
+
+    expect(
+      validateModelGiftIdeas({ ideas: prohibited }, 'under_30', citedURLs(prohibited)),
+    ).toEqual({
+      error: 'The gift scout returned an invalid deck.',
+      ok: false,
+    })
+  })
+
+  it('rejects a prohibited identity exposed only by the independent citation title', () => {
+    const candidate = giftIdeas([1_500])[0]!
+    expect(validateModelGiftIdea(candidate, 'under_30', 'Leatherman Wave+ multi-tool')).toBeNull()
+  })
+
+  it.each([
+    'A collection of short stories',
+    'Security token holder',
+    'The Body of Knowledge desk book',
+    'Axis design reference',
+    'Spirited software teams',
+    'Bottle opener stand',
+  ])('keeps a safe near-miss valid: %s', (name) => {
+    const candidate = { ...giftIdeas([1_500])[0]!, name }
+    expect(validateModelGiftIdea(candidate, 'under_30')).toEqual(candidate)
+  })
 })
 
 describe('gift model response schema', () => {
@@ -140,7 +220,8 @@ describe('gift model response schema', () => {
     expect(schema.additionalProperties).toBe(false)
     expect(schema.properties.ideas).toMatchObject({ maxItems: 9, minItems: 9 })
     expect(ideaSchema.additionalProperties).toBe(false)
-    expect(ideaSchema.properties.observedPriceCents).toEqual({
+    expect(ideaSchema.properties.observedPriceCents).toMatchObject({
+      description: expect.stringContaining('between 7500 and 15000 inclusive'),
       maximum: 15_000,
       minimum: 7_500,
       type: 'integer',

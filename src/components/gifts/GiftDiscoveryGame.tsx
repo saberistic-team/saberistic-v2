@@ -24,6 +24,7 @@ export type GiftDiscoveryGameProps = {
 }
 
 type CheckoutReturn = 'canceled' | 'success' | null
+type GiftAvailability = { checkoutEnabled: boolean; ideasEnabled: boolean }
 type PaymentVerification = 'checking' | 'unverified' | GiftPaymentStatus | null
 type FocusTarget = 'checkout' | 'final' | 'round' | 'setup'
 
@@ -42,6 +43,8 @@ const anonymousTokenKey = 'saberistic:gift-draft:anonymous-token:v1'
 const safeTokenPattern = /^[A-Za-z0-9_-]{16,160}$/
 const maximumRecommendationBytes = 256 * 1024
 const maximumCheckoutBytes = 32 * 1024
+const availabilityRequestTimeoutMs = 45_000
+const paymentRequestTimeoutMs = 45_000
 
 const currencyFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
@@ -173,6 +176,15 @@ function isGiftPaymentStatusResponse(
     Object.keys(value).length === 1 &&
     typeof value.paymentStatus === 'string' &&
     giftPaymentStatuses.some((status) => status === value.paymentStatus)
+  )
+}
+
+function isGiftAvailability(value: unknown): value is GiftAvailability {
+  return (
+    isRecord(value) &&
+    Object.keys(value).length === 2 &&
+    typeof value.checkoutEnabled === 'boolean' &&
+    typeof value.ideasEnabled === 'boolean'
   )
 }
 
@@ -359,14 +371,20 @@ function GiftIdeaCard({
 }
 
 function GiftSetup({
+  availability,
+  availabilityCheckFailed,
   budget,
+  onAvailabilityRetry,
   onBudgetChange,
   onDeal,
   onThemeChange,
   setupHeading,
   theme,
 }: {
+  availability: GiftAvailability | null
+  availabilityCheckFailed: boolean
   budget: GiftBudgetId | null
+  onAvailabilityRetry: () => void
   onBudgetChange: (budget: GiftBudgetId) => void
   onDeal: () => void
   onThemeChange: (theme: GiftThemeId) => void
@@ -429,9 +447,30 @@ function GiftSetup({
       </fieldset>
 
       <div className="gift-game__actions">
-        <p>Every new deal uses a fresh variation, so different visitors can see different lists.</p>
-        <button className="button" disabled={!budget || !theme} onClick={onDeal} type="button">
-          Deal the first round
+        <p role="status">
+          {availabilityCheckFailed
+            ? 'The page could not check the live Gift Draft status. No draw will start until that check succeeds.'
+            : availability === null
+              ? 'Checking whether the live gift scout is ready…'
+              : availability.ideasEnabled
+                ? 'Every new deal uses a fresh variation, so different visitors can see different lists.'
+                : 'The live gift scout is paused while its current listings and safety checks are reviewed.'}
+        </p>
+        <button
+          className="button"
+          disabled={
+            !availabilityCheckFailed && (!budget || !theme || availability?.ideasEnabled !== true)
+          }
+          onClick={availabilityCheckFailed ? onAvailabilityRetry : onDeal}
+          type="button"
+        >
+          {availabilityCheckFailed
+            ? 'Try status again'
+            : availability === null
+              ? 'Checking Gift Draft…'
+              : availability.ideasEnabled
+                ? 'Deal the first round'
+                : 'Gift Draft is paused'}
         </button>
       </div>
     </div>
@@ -458,6 +497,9 @@ export function GiftDiscoveryGame({
   ideasEndpoint = '/api/gifts/ideas',
   paymentStatusEndpoint = '/api/gifts/payment-status',
 }: GiftDiscoveryGameProps) {
+  const [availability, setAvailability] = useState<GiftAvailability | null>(null)
+  const [availabilityCheckFailed, setAvailabilityCheckFailed] = useState(false)
+  const [availabilityCheckTick, setAvailabilityCheckTick] = useState(0)
   const [budget, setBudget] = useState<GiftBudgetId | null>(null)
   const [checkoutReturn, setCheckoutReturn] = useState<CheckoutReturn>(null)
   const [completed, setCompleted] = useState(false)
@@ -496,6 +538,12 @@ export function GiftDiscoveryGame({
     setFocusTick((current) => current + 1)
   }
 
+  function retryAvailability() {
+    setAvailability(null)
+    setAvailabilityCheckFailed(false)
+    setAvailabilityCheckTick((current) => current + 1)
+  }
+
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       const stored = readStoredDraft()
@@ -524,12 +572,49 @@ export function GiftDiscoveryGame({
   }, [])
 
   useEffect(() => {
+    let active = true
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), availabilityRequestTimeoutMs)
+
+    void (async () => {
+      try {
+        const result = await fetch(ideasEndpoint, {
+          cache: 'no-store',
+          credentials: 'omit',
+          headers: { Accept: 'application/json' },
+          method: 'GET',
+          redirect: 'error',
+          signal: controller.signal,
+        })
+        const data = await readJSON(result, maximumCheckoutBytes)
+        if (!result.ok || !isGiftAvailability(data)) throw new Error('invalid_status')
+        if (active) setAvailability(data)
+      } catch {
+        if (active) {
+          setAvailability(null)
+          setAvailabilityCheckFailed(true)
+        }
+      } finally {
+        window.clearTimeout(timeout)
+      }
+    })()
+
+    return () => {
+      active = false
+      window.clearTimeout(timeout)
+      controller.abort()
+    }
+  }, [availabilityCheckTick, ideasEndpoint])
+
+  useEffect(() => {
     if (!hasRestored || checkoutReturn !== 'success') return
 
     const search = new URLSearchParams(window.location.search)
     const sessionIds = search.getAll('session_id')
     const sessionId = sessionIds[0]
     const controller = new AbortController()
+    let active = true
+    let timeout: number | undefined
 
     void (async () => {
       await Promise.resolve()
@@ -546,6 +631,7 @@ export function GiftDiscoveryGame({
       }
 
       setPaymentVerification('checking')
+      timeout = window.setTimeout(() => controller.abort(), paymentRequestTimeoutMs)
       try {
         const endpoint = new URL(paymentStatusEndpoint, window.location.origin)
         endpoint.searchParams.set('session_id', sessionId)
@@ -558,6 +644,7 @@ export function GiftDiscoveryGame({
           signal: controller.signal,
         })
         const data = await readJSON(result, maximumCheckoutBytes)
+        if (!active) return
         if (!result.ok || !isGiftPaymentStatusResponse(data)) {
           setCompleted(false)
           setPaymentVerification('unverified')
@@ -574,14 +661,20 @@ export function GiftDiscoveryGame({
         setPaymentVerification(status)
         setLiveMessage(`Stripe payment status: ${status.replaceAll('_', ' ')}.`)
       } catch {
-        if (!controller.signal.aborted) {
+        if (active) {
           setCompleted(false)
           setPaymentVerification('unverified')
         }
+      } finally {
+        if (timeout !== undefined) window.clearTimeout(timeout)
       }
     })()
 
-    return () => controller.abort()
+    return () => {
+      active = false
+      if (timeout !== undefined) window.clearTimeout(timeout)
+      controller.abort()
+    }
   }, [checkoutReturn, hasRestored, paymentStatusEndpoint, paymentVerificationTick])
 
   useEffect(() => {
@@ -655,7 +748,7 @@ export function GiftDiscoveryGame({
   }
 
   async function dealDeck() {
-    if (!budget || !theme || isLoading) return
+    if (!budget || !theme || isLoading || availability?.ideasEnabled !== true) return
 
     const request = validateGiftRecommendationRequest({
       anonymousToken: anonymousToken(),
@@ -684,7 +777,7 @@ export function GiftDiscoveryGame({
       window.setTimeout(() => setLoadingMessage('Checking price and availability…'), 2_200),
       window.setTimeout(() => setLoadingMessage('Keeping the nine ideas varied…'), 5_000),
     ]
-    const timeout = window.setTimeout(() => controller.abort(), 55_000)
+    const timeout = window.setTimeout(() => controller.abort(), 70_000)
 
     try {
       const result = await fetch(ideasEndpoint, {
@@ -702,6 +795,12 @@ export function GiftDiscoveryGame({
       const data = await readJSON(result, maximumRecommendationBytes)
 
       if (!result.ok) {
+        if (result.status === 503) {
+          setAvailability((current) => ({
+            checkoutEnabled: current?.checkoutEnabled ?? false,
+            ideasEnabled: false,
+          }))
+        }
         setError(
           safeAPIMessage(
             data,
@@ -767,11 +866,21 @@ export function GiftDiscoveryGame({
   }
 
   async function startCheckout() {
-    if (!selectedIdea || !hasAcknowledgedContribution || isCheckingOut || completed) return
+    if (
+      !selectedIdea ||
+      !hasAcknowledgedContribution ||
+      isCheckingOut ||
+      completed ||
+      availability?.checkoutEnabled !== true
+    ) {
+      return
+    }
 
     setError(null)
     setIsCheckingOut(true)
     setLiveMessage('Opening secure Stripe Checkout…')
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), paymentRequestTimeoutMs)
 
     try {
       const result = await fetch(checkoutEndpoint, {
@@ -784,6 +893,7 @@ export function GiftDiscoveryGame({
         },
         method: 'POST',
         redirect: 'error',
+        signal: controller.signal,
       })
       const data = await readJSON(result, maximumCheckoutBytes)
 
@@ -804,9 +914,12 @@ export function GiftDiscoveryGame({
       window.location.assign(checkoutUrl)
     } catch {
       setError(
-        'Stripe Checkout could not be reached. No new checkout was started; please try again.',
+        controller.signal.aborted
+          ? 'Stripe Checkout took too long to answer. No new checkout was started; please try again.'
+          : 'Stripe Checkout could not be reached. No new checkout was started; please try again.',
       )
     } finally {
+      window.clearTimeout(timeout)
       setIsCheckingOut(false)
     }
   }
@@ -909,7 +1022,10 @@ export function GiftDiscoveryGame({
 
           {!isLoading && !response ? (
             <GiftSetup
+              availability={availability}
+              availabilityCheckFailed={availabilityCheckFailed}
               budget={budget}
+              onAvailabilityRetry={retryAvailability}
               onBudgetChange={(value) => {
                 setBudget(value)
                 setError(null)
@@ -1045,14 +1161,39 @@ export function GiftDiscoveryGame({
                         </dl>
                         <p className="gift-checkout-disclaimer">{response.disclaimer}</p>
 
-                        {completed ? (
+                        {availabilityCheckFailed ? (
                           <div className="gift-checkout-complete" role="note">
-                            <strong>
-                              This saved draft already returned successfully from Stripe.
-                            </strong>
+                            <strong>The page could not check contribution availability.</strong>
                             <span>
-                              A second checkout is disabled here. Start another Gift Draft for a new
-                              gift.
+                              No Stripe Checkout can open until the status check succeeds.
+                            </span>
+                            <button
+                              className="button button--quiet"
+                              onClick={retryAvailability}
+                              type="button"
+                            >
+                              Try status again
+                            </button>
+                          </div>
+                        ) : availability === null ? (
+                          <div className="gift-checkout-complete" role="note">
+                            <strong>Checking contribution availability…</strong>
+                            <span>No Stripe Checkout can open while this check is running.</span>
+                          </div>
+                        ) : !availability.checkoutEnabled ? (
+                          <div className="gift-checkout-complete" role="note">
+                            <strong>Gift contribution checkout is currently paused.</strong>
+                            <span>
+                              You can still review the reference listing. No Stripe Checkout can be
+                              opened until the payment path finishes acceptance.
+                            </span>
+                          </div>
+                        ) : completed ? (
+                          <div className="gift-checkout-complete" role="note">
+                            <strong>This saved draft already has a Stripe Checkout session.</strong>
+                            <span>
+                              A second checkout is disabled here. Check the result of that session
+                              or start another Gift Draft for a new gift.
                             </span>
                           </div>
                         ) : (
@@ -1089,14 +1230,32 @@ export function GiftDiscoveryGame({
                   )}
 
                   <div className="gift-game__actions">
-                    <p>Want a different set? A new variation searches for nine different ideas.</p>
+                    <p>
+                      {availabilityCheckFailed
+                        ? 'The page could not check whether a new Gift Draft can start.'
+                        : availability === null
+                          ? 'Checking whether a new Gift Draft can start…'
+                          : availability.ideasEnabled
+                            ? 'Want a different set? A new variation searches for nine different ideas.'
+                            : 'New Gift Drafts are paused while the live listings and safety checks are reviewed.'}
+                    </p>
                     <button
                       className="button button--quiet"
-                      disabled={isLoading || isCheckingOut}
-                      onClick={dealDeck}
+                      disabled={
+                        isLoading ||
+                        isCheckingOut ||
+                        (!availabilityCheckFailed && availability?.ideasEnabled !== true)
+                      }
+                      onClick={availabilityCheckFailed ? retryAvailability : dealDeck}
                       type="button"
                     >
-                      Deal a new deck
+                      {availabilityCheckFailed
+                        ? 'Try status again'
+                        : availability === null
+                          ? 'Checking Gift Draft…'
+                          : availability.ideasEnabled
+                            ? 'Deal a new deck'
+                            : 'Gift Draft is paused'}
                     </button>
                   </div>
                 </div>

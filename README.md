@@ -25,7 +25,7 @@ The product direction, research record, content evidence rules, AI-readiness des
 - multi-stage production images, GitHub Actions CI, and a Render Blueprint
 - CMS publication hooks plus a daily reconciliation build for the public static site
 
-Self-hosted Umami is live as disposable validation infrastructure. The owner has authorized temporary collection from the public site through `umami.saberistic.com` while the service still shares the expiring Free database; this is an explicit launch exception, not production-grade analytics acceptance. The readiness implementation keeps scores, levels, blocker IDs, and next-step routing in deterministic code. Its OpenRouter layer can only rewrite bounded explanations and reorder approved actions, and it remains disabled in the staging Blueprint until the dedicated key, pinned models, Guardrail, ZDR route, and budget controls have been verified in the live account. Gift Draft's AI search and Stripe Checkout are independently disabled by default until their keys, account controls, and fulfillment policy are ready.
+Self-hosted Umami is live as disposable validation infrastructure. The owner has authorized temporary collection from the public site through `umami.saberistic.com` while the service still shares the expiring Free database; this is an explicit launch exception, not production-grade analytics acceptance. The readiness implementation keeps scores, levels, blocker IDs, and next-step routing in deterministic code. Its OpenRouter layer can only rewrite bounded explanations and reorder approved actions; the dedicated key, pinned models, Guardrail, ZDR route, budget controls, hosted smoke, and reviewed activation flag are live. Gift Draft's AI search and Stripe Checkout remain independently disabled by default until their separate search, limiter, listing-review, and fulfillment gates pass.
 
 ## Local development
 
@@ -65,12 +65,16 @@ Dashboard-only feature-flag change.
 Direct local development requests use a loopback-only abuse bucket when no trusted proxy header is
 present, so the optional local AI explanation does not require a fabricated client-IP header.
 
-Gift Draft has no invented offline deck: a draw succeeds only when OpenRouter performs a web search,
-returns nine unique HTTPS-cited listings, and every listing passes the local price and schema checks.
+Gift Draft has no invented offline deck: a draw succeeds only when OpenRouter performs web research,
+the app builds a citation-matched canonical candidate ledger from reviewed product hosts, and a
+separate strict no-tools model call selects nine IDs whose unchanged listings pass the final local
+price, product-policy, hostname, and schema checks. The public page reads a no-store feature-status
+response and presents a paused state instead of offering a dead draw when either path is disabled.
 To try it locally, configure Redis/Valkey, `GIFTING_RATE_LIMIT_SECRET`, `GIFT_QUOTE_SECRET`, the two
 `OPENROUTER_GIFT_*_MODEL` values, and the existing `OPENROUTER_API_KEY`; then set
-`GIFTING_AI_ENABLED=1`. OpenRouter's web-search server tool is beta, so keep a hard key spend limit
-and leave the feature off if its contract or account privacy controls change. Before enabling it,
+`OPENROUTER_ACCOUNT_GATES_CONFIRMED` to the current policy version and `GIFTING_AI_ENABLED=1`.
+OpenRouter's web-search server tool is beta, so keep a hard key spend limit and leave the feature off
+if its contract or account privacy controls change. Before enabling it,
 run `pnpm test:gifts:openrouter:live`; this opt-in check performs a real search and consumes a small
 amount of OpenRouter credit.
 

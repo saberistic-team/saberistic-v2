@@ -60,6 +60,33 @@ describe('Render Static Site Blueprint', () => {
     )
   })
 
+  it('keeps Gift Draft fail-closed with server-only provider controls and bounded limits', () => {
+    for (const key of [
+      'OPENROUTER_GIFT_PRIMARY_MODEL',
+      'OPENROUTER_GIFT_FALLBACK_MODEL',
+      'STRIPE_RESTRICTED_KEY',
+      'STRIPE_GIFT_WEBHOOK_SECRET',
+    ]) {
+      expect(payloadService).toMatch(new RegExp(`- key: ${key}\\n\\s+sync: false`))
+      expect(staticService).not.toContain(key)
+    }
+
+    for (const key of ['GIFTING_RATE_LIMIT_SECRET', 'GIFT_QUOTE_SECRET']) {
+      expect(payloadService).toMatch(new RegExp(`- key: ${key}\\n\\s+generateValue: true`))
+      expect(staticService).not.toContain(key)
+    }
+
+    expect(payloadService).toMatch(/- key: GIFTING_AI_ENABLED\n\s+value: '0'/)
+    expect(payloadService).toMatch(/- key: GIFTING_CHECKOUT_ENABLED\n\s+value: '0'/)
+    expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_TIMEOUT_MS\n\s+value: '60000'/)
+    expect(payloadService).toMatch(/- key: GIFTING_TOKEN_LIMIT\n\s+value: '4'/)
+    expect(payloadService).toMatch(/- key: GIFTING_DAILY_LIMIT\n\s+value: '50'/)
+    expect(payloadService).toMatch(/- key: GIFTING_CONCURRENCY_LIMIT\n\s+value: '2'/)
+    expect(payloadService).toMatch(
+      /- key: REDIS_URL\n\s+fromService:\n\s+name: saberistic-readiness-limits-staging/,
+    )
+  })
+
   it('declares the externally managed deploy hook only on Payload', () => {
     expect(payloadService).toMatch(/- key: STATIC_SITE_DEPLOY_HOOK_URL\n\s+sync: false/)
     expect(staticService).not.toContain('STATIC_SITE_DEPLOY_HOOK_URL')

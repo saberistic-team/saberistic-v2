@@ -19,12 +19,18 @@ function recommendationDeck(): GiftRecommendationResponse {
       observedPriceCents: 1_500 + index * 100,
       quoteToken: `gq1.${'a'.repeat(40 + index)}.${'b'.repeat(43)}`,
       retailer: `Retailer ${index + 1}`,
-      sourceUrl: `https://retailer${index + 1}.example/products/gift-${index + 1}`,
+      sourceUrl: `https://www.adafruit.com/products/gift-${index + 1}`,
       whyItFits: `A useful and durable choice for a design-conscious systems builder number ${index + 1}.`,
     })),
     runId: 'run_1234567890123456',
     searchedAt: '2026-08-31T15:30:00.000Z',
   }
+}
+
+function availabilityResponse(
+  overrides: Partial<{ checkoutEnabled: boolean; ideasEnabled: boolean }> = {},
+) {
+  return Response.json({ checkoutEnabled: true, ideasEnabled: true, ...overrides })
 }
 
 beforeEach(() => {
@@ -49,16 +55,23 @@ describe('Gift Draft game', () => {
       '',
       '/gifts?checkout=success&session_id=cs_test_1234567890123456',
     )
-    const fetchMock = vi.fn(async () => Response.json({ paymentStatus: 'paid' }))
+    const fetchMock = vi.fn(async (input: string | URL | Request) =>
+      new URL(String(input), window.location.origin).pathname === '/api/gifts/ideas'
+        ? availabilityResponse()
+        : Response.json({ paymentStatus: 'paid' }),
+    )
     vi.stubGlobal('fetch', fetchMock)
 
     const view = render(<GiftDiscoveryGame />)
 
     expect(await view.findByRole('heading', { name: 'The gift contribution is in.' })).toBeTruthy()
     expect(view.getByText('PAYMENT CONFIRMED')).toBeTruthy()
-    expect(fetchMock).toHaveBeenCalledOnce()
+    expect(fetchMock).toHaveBeenCalledTimes(2)
 
-    const [endpoint, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    const statusCall = fetchMock.mock.calls.find(([endpoint]) =>
+      String(endpoint).includes('/api/gifts/payment-status'),
+    )
+    const [endpoint, init] = statusCall as unknown as [string, RequestInit]
     const statusURL = new URL(endpoint)
     expect(statusURL.pathname).toBe('/api/gifts/payment-status')
     expect(statusURL.searchParams.get('session_id')).toBe('cs_test_1234567890123456')
@@ -67,7 +80,7 @@ describe('Gift Draft game', () => {
 
   it('does not trust a success query without exactly one valid Stripe Session ID', async () => {
     window.history.replaceState({}, '', '/gifts?checkout=success')
-    const fetchMock = vi.fn()
+    const fetchMock = vi.fn(async () => availabilityResponse())
     vi.stubGlobal('fetch', fetchMock)
 
     const view = render(<GiftDiscoveryGame />)
@@ -76,7 +89,7 @@ describe('Gift Draft game', () => {
       await view.findByRole('heading', { name: 'The Stripe return needs another check.' }),
     ).toBeTruthy()
     expect(view.getByText('STATUS NOT VERIFIED')).toBeTruthy()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('can retry a transient payment-status verification failure', async () => {
@@ -85,10 +98,16 @@ describe('Gift Draft game', () => {
       '',
       '/gifts?checkout=success&session_id=cs_test_1234567890123456',
     )
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce(Response.json({ error: 'temporarily unavailable' }, { status: 503 }))
-      .mockResolvedValueOnce(Response.json({ paymentStatus: 'paid' }))
+    let paymentStatusCalls = 0
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      if (new URL(String(input), window.location.origin).pathname === '/api/gifts/ideas') {
+        return availabilityResponse()
+      }
+      paymentStatusCalls += 1
+      return paymentStatusCalls === 1
+        ? Response.json({ error: 'temporarily unavailable' }, { status: 503 })
+        : Response.json({ paymentStatus: 'paid' })
+    })
     vi.stubGlobal('fetch', fetchMock)
 
     const view = render(<GiftDiscoveryGame />)
@@ -97,11 +116,13 @@ describe('Gift Draft game', () => {
     fireEvent.click(view.getByRole('button', { name: 'Check Stripe again' }))
 
     expect(await view.findByRole('heading', { name: 'The gift contribution is in.' })).toBeTruthy()
-    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
   it('deals three rounds and requires contribution acknowledgment before checkout', async () => {
-    const fetchMock = vi.fn(async () => Response.json(recommendationDeck()))
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) =>
+      init?.method === 'GET' ? availabilityResponse() : Response.json(recommendationDeck()),
+    )
     vi.stubGlobal('fetch', fetchMock)
     const view = render(<GiftDiscoveryGame />)
 
@@ -145,13 +166,91 @@ describe('Gift Draft game', () => {
     )
     expect((checkout as HTMLButtonElement).disabled).toBe(false)
 
-    expect(fetchMock).toHaveBeenCalledOnce()
-    const [endpoint, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit]
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    const ideasCall = fetchMock.mock.calls.find(([, init]) => init?.method === 'POST')
+    const [endpoint, init] = ideasCall as unknown as [string, RequestInit]
     expect(endpoint).toBe('/api/gifts/ideas')
     expect(init.method).toBe('POST')
     expect(JSON.parse(String(init.body))).toMatchObject({
       budget: 'under_30',
       theme: 'build_fuel',
     })
+  })
+
+  it('shows an honest paused state without offering a dead draw', async () => {
+    const fetchMock = vi.fn(async () =>
+      availabilityResponse({ checkoutEnabled: false, ideasEnabled: false }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const view = render(<GiftDiscoveryGame />)
+
+    fireEvent.click(await view.findByRole('radio', { name: /Under \$30/ }))
+    fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
+
+    expect(view.getByText(/live gift scout is paused while its current listings/i)).toBeTruthy()
+    expect(
+      (view.getByRole('button', { name: 'Gift Draft is paused' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('retries a failed availability check before enabling a live draw', async () => {
+    let availabilityCalls = 0
+    const fetchMock = vi.fn(async () => {
+      availabilityCalls += 1
+      return availabilityCalls === 1
+        ? Response.json({ error: 'temporarily unavailable' }, { status: 503 })
+        : availabilityResponse()
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const view = render(<GiftDiscoveryGame />)
+
+    expect(await view.findByText(/could not check the live Gift Draft status/i)).toBeTruthy()
+    fireEvent.click(view.getByRole('button', { name: 'Try status again' }))
+
+    await waitFor(() => {
+      expect(view.getByText(/Every new deal uses a fresh variation/i)).toBeTruthy()
+    })
+    fireEvent.click(view.getByRole('radio', { name: /Under \$30/ }))
+    fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
+
+    expect(
+      (view.getByRole('button', { name: 'Deal the first round' }) as HTMLButtonElement).disabled,
+    ).toBe(false)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps a restored draft reviewable while both checkout and new draws are paused', async () => {
+    const response = recommendationDeck()
+    const picks = [response.ideas[0]!.id, response.ideas[3]!.id, response.ideas[6]!.id]
+    window.localStorage.setItem(
+      'saberistic:gift-draft:v1',
+      JSON.stringify({
+        budget: 'under_30',
+        completed: true,
+        finalId: picks[0],
+        picks,
+        response,
+        theme: 'build_fuel',
+        version: 1,
+      }),
+    )
+    const fetchMock = vi.fn(async () =>
+      availabilityResponse({ checkoutEnabled: false, ideasEnabled: false }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const view = render(<GiftDiscoveryGame />)
+
+    expect(
+      await view.findByRole('heading', { name: 'One gift gets the checkout button.' }),
+    ).toBeTruthy()
+    expect(view.getByText('Gift contribution checkout is currently paused.')).toBeTruthy()
+    expect(view.queryByRole('button', { name: /Open Stripe Checkout/ })).toBeNull()
+
+    const pausedDeckAction = view.getByRole('button', { name: /paused/i })
+    expect((pausedDeckAction as HTMLButtonElement).disabled).toBe(true)
+    expect(view.queryByRole('button', { name: 'Deal a new deck' })).toBeNull()
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 })
