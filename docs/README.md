@@ -62,6 +62,7 @@ The product promise is:
 | [26 — Harness Platform M4 Durable Control Plane](./26-harness-durable-control-plane-m4-build-note.md)             | Fenced scheduling, replay-safe sessions, deterministic audit export, content-addressed artifacts, Kubernetes topology, and gaps.   |
 | [27 — Three converging AI product workstreams](./27-converging-ai-product-workstreams-build-note.md)              | Readiness, paid diagnostic, and Gift Draft boundaries, activation runbooks, evidence placeholders, and release gates.              |
 | [28 — Harness Platform M5 Conditional Polyglot Review](./28-harness-polyglot-review-m5-build-note.md)             | Evidence-gated runtime decision, Step 0 exit-gate hardening, run-report/v2, two-PR delivery, and residual host trust boundaries.   |
+| [29 — Harness Platform M6 Runtime Contracts](./29-harness-runtime-contracts-m6-build-note.md)                     | One-request runtime, streaming compatibility, append-before-yield events, lifecycle controls, checks, and self-hosting limits.     |
 
 ## Recommended first release
 
@@ -204,6 +205,17 @@ routes, then passed custom-domain article, structured-data, feed, sitemap, CDN-c
 overflow, and security-header acceptance. Implementation, claim controls, and the production
 record are in
 [28](./28-harness-polyglot-review-m5-build-note.md).
+Build Note 013 is implemented from Harness Platform M6 merge `98924a6`. It documents the additive
+one-request runtime, streaming completion compatibility, canonical event vocabulary,
+append-before-yield ordering, consumer-driven backpressure, typed steering and cancellation, and
+the explicit boundary between M6 and future tool-loop, compaction, replay, and self-hosting work.
+Public PR-head evidence passed 568 offline tests across 39 files, strict TypeScript, one golden
+scenario, a 15-path pre/post gate with zero violations, and four automated checks; separate CI and
+CodeQL passed on the exact merge. A clean publication checkout reproduced 568/568 tests, strict
+types, and 1/1 golden scenario. The 17.377-second report field is treated as whole-suite timing,
+not a benchmark, and the release is described as checks-gated rather than peer-reviewed.
+Publication details and the final production acceptance record are maintained in
+[29](./29-harness-runtime-contracts-m6-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

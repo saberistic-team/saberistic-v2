@@ -15,6 +15,7 @@ import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScra
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
 import { HarnessPolyglotReviewArticle } from '@/content/build-notes/HarnessPolyglotReview'
+import { HarnessRuntimeContractsArticle } from '@/content/build-notes/HarnessRuntimeContracts'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -37,6 +38,7 @@ const articleBySlug = {
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
   'harness-permissioned-agent-services-m3': HarnessPermissionedServicesArticle,
   'harness-polyglot-review-m5': HarnessPolyglotReviewArticle,
+  'harness-runtime-contracts-m6': HarnessRuntimeContractsArticle,
   'spiral-safe-passkey-signing-platform': SpiralSafeArticle,
   'three-lovable-prototypes': LovablePrototypeTrioArticle,
   'turbopass-rust-temporal': TurboPassArticle,

@@ -16,6 +16,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/harness-permissioned-agent-services-m3',
     '/build-notes/harness-polyglot-review-m5',
+    '/build-notes/harness-runtime-contracts-m6',
     '/build-notes/spiral-safe-passkey-signing-platform',
     '/build-notes/three-lovable-prototypes',
     '/build-notes/turbopass-rust-temporal',
@@ -108,6 +109,44 @@ test.describe('Public site smoke', () => {
     )
     await expect(page.getByText('INSUFFICIENT EVIDENCE IS NOT A NODE VICTORY')).toBeVisible()
     await expect(page.getByText('THE 16.94-SECOND RUN IS NOT A BENCHMARK')).toBeVisible()
+  })
+
+  test('Harness M6 keeps runtime ordering separate from future self-hosting', async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 })
+    const response = await page.goto('/build-notes/harness-runtime-contracts-m6')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M6: making the agent runtime observable by construction',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('98924a6')
+    await expect(page.getByRole('link', { name: 'Append before yield' })).toHaveAttribute(
+      'href',
+      '#append-before-yield',
+    )
+    await expect(page.getByRole('link', { name: 'Steering and cancellation' })).toHaveAttribute(
+      'href',
+      '#lifecycle',
+    )
+    await expect(page.getByText('APPEND BEFORE YIELD', { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('M6 IS A CONTRACT LAYER, NOT A SELF-HOSTED AGENT', { exact: true }),
+    ).toBeVisible()
+
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth)
+
+    const diagramCanvases = page.locator('.article-diagram__canvas--scrollable')
+    await expect(diagramCanvases).toHaveCount(4)
+    for (let index = 0; index < 4; index += 1) {
+      await expect(diagramCanvases.nth(index)).toHaveAttribute('tabindex', '0')
+    }
   })
 
   test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({

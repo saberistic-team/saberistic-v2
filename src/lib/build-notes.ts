@@ -20,6 +20,46 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 6',
+    footerSummary:
+      'The pinned public merge contains the compatibility-first runtime, streaming model adapter, canonical event vocabulary, append-before-yield semantics, lifecycle controls, and offline proof described here.',
+    footerTitle: 'Inspect the minimal runtime contract—and the self-hosting work it leaves open.',
+    modifiedAt: '2026-08-31',
+    publishedAt: '2026-08-31',
+    readingMinutes: 27,
+    repositories: [
+      {
+        commit: '98924a66628bc66a88093ec6bee05f426f0fea9d',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['roadmap-boundary', 'Roadmap boundary'],
+      ['kernel-boundary', 'Kernel ownership'],
+      ['event-vocabulary', 'Event vocabulary'],
+      ['append-before-yield', 'Append before yield'],
+      ['model-adapter', 'Model compatibility'],
+      ['lifecycle', 'Steering and cancellation'],
+      ['compatibility', 'Additive migration'],
+      ['task-gate', 'Machine-readable scope'],
+      ['delivery', 'Checks-gated delivery'],
+      ['verification', 'Verified result'],
+      ['evidence-artifact', 'Evidence artifact'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M6: durable runtime contracts',
+    slug: 'harness-runtime-contracts-m6',
+    summary:
+      'How M6 adds a one-request agent runtime with streaming model compatibility, append-before-yield events, typed steering and cancellation, and explicit self-hosting limits.',
+    tags: ['Agent runtime', 'Event sourcing', 'Backpressure', 'Lifecycle contracts'],
+    title: 'Harness Platform M6: making the agent runtime observable by construction',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 5',
     footerSummary:
       'The pinned public merge records the conditional runtime decision, the hardened manifest-to-report gate beneath it, the checks-gated two-PR release, and every trust boundary described here.',

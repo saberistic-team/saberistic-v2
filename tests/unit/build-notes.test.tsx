@@ -11,6 +11,7 @@ import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScra
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
 import { HarnessPolyglotReviewArticle } from '@/content/build-notes/HarnessPolyglotReview'
+import { HarnessRuntimeContractsArticle } from '@/content/build-notes/HarnessRuntimeContracts'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -45,7 +46,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-polyglot-review-m5')
+    expect(buildNotes[0]?.slug).toBe('harness-runtime-contracts-m6')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -78,6 +79,9 @@ describe('Git-authored build notes', () => {
     ).toBe('d3b2859')
     expect(getBuildNote('harness-polyglot-review-m5')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '4bf5f68',
+    )
+    expect(getBuildNote('harness-runtime-contracts-m6')?.repositories[0]?.commit.slice(0, 7)).toBe(
+      '98924a6',
     )
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
@@ -166,6 +170,25 @@ describe('Git-authored build notes', () => {
     expect(html.match(/role="region"/g)?.length).toBe(5)
     expect(html).toContain('tabindex="0"')
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(9)
+  })
+
+  it('renders M6 with append-before-yield ordering and explicit self-hosting limits', () => {
+    const html = renderToStaticMarkup(createElement(HarnessRuntimeContractsArticle))
+
+    expect(html).toContain('makes the smallest agent run observable by construction')
+    expect(html).toContain('M6 IS A CONTRACT LAYER, NOT A SELF-HOSTED AGENT')
+    expect(html).toContain('The completed message is replay truth')
+    expect(html).toContain('APPEND BEFORE YIELD')
+    expect(html).toContain('ONE TEXT-ONLY REQUEST, ZERO TOOL EXECUTION')
+    expect(html).toContain('SteeringClosedError')
+    expect(html).toContain('568 / 568')
+    expect(html).toContain('THE 17.377-SECOND CI FIELD IS NOT A BENCHMARK')
+    expect(html).toContain('CHECKS-GATED, NOT PEER-REVIEWED')
+    expect(html).toContain('98924a6')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {
