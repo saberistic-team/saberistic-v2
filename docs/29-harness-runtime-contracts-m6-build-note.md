@@ -309,12 +309,37 @@ Do not claim that M6:
 
 ## Production record
 
-Pending publication. Record after the checks-gated Render deployment:
+Website implementation commit `f358e2f813bc4652e8adb3cf6fdeffe23b482a37` contains only the M6
+article, four semantic diagrams, manifest and route registration, focused unit/browser checks, and
+this documentation. Unrelated concurrent Gift Draft and Render work remained outside the commit.
 
-- website implementation commit;
-- GitHub CI and CodeQL workflow IDs;
-- Render deployment ID;
-- generated-page and Build Note counts;
-- production article URL;
-- custom-domain acceptance result; and
-- docs-only production-record commit.
+An independent checkout of that exact commit passed both TypeScript checks and repository lint.
+Under the local Node 24.18.0 runtime, the integration lane was run with Node's experimental global
+web storage disabled so JSDOM supplied the browser storage implementation, matching the repository's
+Node 22 CI environment: 541 tests passed across 41 files, with three tests and three files skipped.
+The same checkout passed the Payload production build and a 29-page fixture Static Site export with
+all 13 Build Notes and two prototype fixtures. Focused M6 route acceptance also passed.
+
+The pushed commit then passed website CI run
+[`33456489269`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33456489269)
+and CodeQL run
+[`33456484939`](https://github.com/saberistic-team/saberistic-v2/actions/runs/33456484939).
+Render built the same commit in checks-gated Static Site deploy `dep-dab24tuq1p3s73fdidm0`. The
+remote-content build used public snapshot revision `2e8da5a6f350`, generated 32 static pages, and
+verified 13 Build Notes plus five Payload prototype routes before becoming live at
+`2026-09-01T00:56:12Z`.
+
+Production acceptance at
+[`/build-notes/harness-runtime-contracts-m6/`](https://saberistic.com/build-notes/harness-runtime-contracts-m6/)
+confirmed:
+
+- HTTP 200 on the article, Build Notes index, RSS feed, and sitemap;
+- the expected SEO title, H1, canonical URL, `BlogPosting`, and `BreadcrumbList`;
+- the pinned Harness merge `98924a6`, four accessible semantic diagrams, and all 16 contents links
+  resolving to existing sections;
+- the new route in the Build Notes index, `/build-notes/feed.xml`, and `/sitemap.xml`;
+- no private shared-chat URL, local filesystem path, or temporary evidence path in the article;
+- no page-level horizontal overflow at the focused 390-pixel Chromium viewport, with all four
+  scrollable diagram canvases keyboard-focusable; and
+- a warmed Cloudflare CDN `HIT` with `s-maxage=300`, CSP, permissions policy, strict referrer policy,
+  MIME-sniffing protection, and frame denial intact.
