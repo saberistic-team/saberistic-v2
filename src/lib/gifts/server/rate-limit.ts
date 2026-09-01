@@ -173,7 +173,7 @@ export async function authorizeGiftRequest(
   const prefix = `gifts:${environment.NODE_ENV === 'production' ? 'production' : 'nonproduction'}`
   const limits = {
     concurrency: integerSetting(environment.GIFTING_CONCURRENCY_LIMIT, 2, 1, 10),
-    daily: integerSetting(environment.GIFTING_DAILY_LIMIT, 50, 1, 5_000),
+    daily: integerSetting(environment.GIFTING_DAILY_LIMIT, 10, 1, 5_000),
     ip: integerSetting(environment.GIFTING_IP_LIMIT, 8, 1, 100),
     token: integerSetting(environment.GIFTING_TOKEN_LIMIT, 4, 1, 50),
   }

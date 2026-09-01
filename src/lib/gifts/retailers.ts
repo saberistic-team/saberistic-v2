@@ -52,7 +52,6 @@ export const approvedGiftProductHosts = [
 ] as const
 
 const underThirtyGiftProductHosts: ReadonlySet<string> = new Set([
-  'adafruit.com',
   'barnesandnoble.com',
   'fieldnotesbrand.com',
   'ifixit.com',
@@ -62,7 +61,6 @@ const underThirtyGiftProductHosts: ReadonlySet<string> = new Set([
   'sparkfun.com',
   'store.moma.org',
   'uncommongoods.com',
-  'www.adafruit.com',
   'www.barnesandnoble.com',
   'www.fieldnotesbrand.com',
   'www.ifixit.com',
@@ -75,12 +73,34 @@ const underThirtyGiftProductHosts: ReadonlySet<string> = new Set([
 
 const approvedGiftProductHostSet: ReadonlySet<string> = new Set(approvedGiftProductHosts)
 
+export const verifiableGiftProductHosts = [
+  'adafruit.com',
+  'ifixit.com',
+  'store.moma.org',
+  'uncommongoods.com',
+  'www.adafruit.com',
+  'www.ifixit.com',
+  'www.uncommongoods.com',
+] as const
+
+const verifiableGiftProductHostSet: ReadonlySet<string> = new Set(verifiableGiftProductHosts)
+
 export function isApprovedGiftProductHost(hostname: string): boolean {
   return approvedGiftProductHostSet.has(hostname.toLowerCase())
 }
 
+export function isVerifiableGiftProductHost(hostname: string): boolean {
+  return verifiableGiftProductHostSet.has(hostname.toLowerCase())
+}
+
+export function giftProductHostFamily(hostname: string): string | null {
+  const normalized = hostname.toLowerCase()
+  if (!isVerifiableGiftProductHost(normalized)) return null
+  return normalized.startsWith('www.') ? normalized.slice(4) : normalized
+}
+
 export function giftSearchProductHosts(budget: string): readonly string[] {
-  return budget === 'under_30'
-    ? approvedGiftProductHosts.filter((host) => underThirtyGiftProductHosts.has(host))
-    : approvedGiftProductHosts
+  return verifiableGiftProductHosts.filter(
+    (host) => budget !== 'under_30' || underThirtyGiftProductHosts.has(host),
+  )
 }

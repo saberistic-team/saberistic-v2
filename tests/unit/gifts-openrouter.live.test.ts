@@ -6,6 +6,7 @@ vi.mock('server-only', () => ({}))
 
 import { resolveOpenRouterGiftConfig } from '@/lib/gifts/server/config'
 import { GiftSearchError, searchGiftIdeas } from '@/lib/gifts/server/openrouter'
+import { giftBudgetIds } from '@/lib/gifts/types'
 import { safeGiftSourceURL } from '@/lib/gifts/validation'
 
 const liveTest = process.env.RUN_GIFT_OPENROUTER_LIVE === '1' ? it : it.skip
@@ -145,6 +146,9 @@ describe('OpenRouter Gift Draft live smoke', () => {
       if (!config) return
 
       const runId = randomUUID()
+      const requestedBudget = giftBudgetIds.find(
+        (budget) => budget === process.env.GIFT_OPENROUTER_LIVE_BUDGET,
+      ) ?? 'under_30'
       let upstreamDiagnostic: unknown = null
       const responseEnvelopes: unknown[] = []
       let result
@@ -192,7 +196,7 @@ describe('OpenRouter Gift Draft live smoke', () => {
           },
           request: {
             anonymousToken: `live_smoke_${randomUUID().replaceAll('-', '')}`,
-            budget: 'under_30',
+            budget: requestedBudget,
             theme: 'build_fuel',
             variationSeed: `live_seed_${randomUUID().replaceAll('-', '')}`,
           },
@@ -202,7 +206,7 @@ describe('OpenRouter Gift Draft live smoke', () => {
       } catch (error) {
         if (error instanceof GiftSearchError) {
           throw new Error(
-            `Gift Draft OpenRouter smoke failed: reason=${error.reason}; status=${error.upstream.status ?? 'unknown'}; retryAfter=${error.upstream.retryAfter ?? 'none'}; upstream=${JSON.stringify(upstreamDiagnostic)}; envelopes=${JSON.stringify(responseEnvelopes)}`,
+            `Gift Draft OpenRouter smoke failed: reason=${error.reason}; status=${error.upstream.status ?? 'unknown'}; retryAfter=${error.upstream.retryAfter ?? 'none'}; listingChecks=${error.verification?.checked ?? 'unknown'}; verifiedCandidates=${error.verification?.verified ?? 'unknown'}; sourcePricesChanged=${error.verification?.sourcePricesChanged ?? 'unknown'}; priceBands=${JSON.stringify(error.verification?.priceBands ?? {})}; listingRejections=${JSON.stringify(error.verification?.rejections ?? {})}; upstream=${JSON.stringify(upstreamDiagnostic)}; envelopes=${JSON.stringify(responseEnvelopes)}`,
           )
         }
         throw error
@@ -212,16 +216,25 @@ describe('OpenRouter Gift Draft live smoke', () => {
       expect(result.citations).toBeGreaterThanOrEqual(9)
       expect(result.usage.searchRequests + result.usage.serverToolCalls).toBeGreaterThan(0)
       expect([config.primaryModel, config.fallbackModel]).toContain(result.model)
-      expect([config.primaryModel, config.fallbackModel]).toContain(result.searchModel)
+      expect(
+        result.searchModel
+          .split('+')
+          .every((model) => [config.primaryModel, config.fallbackModel].includes(model)),
+      ).toBe(true)
 
       process.stdout.write(
         `${JSON.stringify({
           attempts: responseEnvelopes,
           citations: result.citations,
+          budget: requestedBudget,
           event: 'gift_openrouter_live_smoke_succeeded',
+          ideas: result.ideas,
+          listingChecks: result.listingChecks,
           model: result.model,
           searchModel: result.searchModel,
+          sourcePricesChanged: result.sourcePricesChanged,
           usage: result.usage,
+          verifiedCandidates: result.verifiedCandidates,
         })}\n`,
       )
     },

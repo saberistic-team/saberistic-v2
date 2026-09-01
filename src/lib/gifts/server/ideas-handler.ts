@@ -220,18 +220,19 @@ export async function handleGiftIdeas(
   }
 
   const runId = createId()
-  const searchedAt = new Date(now()).toISOString()
+  const searchStartedAt = new Date(now()).toISOString()
 
   try {
     const result = await (dependencies.search ?? searchGiftIdeas)({
       config,
       request: validation.value,
       runId,
-      searchedAt,
+      searchedAt: searchStartedAt,
     })
+    const checkedAt = new Date(now()).toISOString()
     const quoteTime = now()
     const ideas = result.ideas.map((idea) =>
-      ideaWithQuote(idea, runId, searchedAt, environment, quoteTime, createId),
+      ideaWithQuote(idea, runId, checkedAt, environment, quoteTime, createId),
     )
 
     if (ideas.some((idea) => idea === null)) throw new Error('quote_creation_failed')
@@ -242,14 +243,17 @@ export async function handleGiftIdeas(
       completionTokens: result.usage.completionTokens,
       cost: result.usage.cost,
       duration: durationBucket(now() - startedAt),
+      listingChecks: result.listingChecks,
       model: result.model,
       outcome: 'completed',
       promptTokens: result.usage.promptTokens,
       searchModel: result.searchModel,
       searchRequests: result.usage.searchRequests,
       serverToolCalls: result.usage.serverToolCalls,
+      sourcePricesChanged: result.sourcePricesChanged,
       theme: validation.value.theme,
       totalTokens: result.usage.totalTokens,
+      verifiedCandidates: result.verifiedCandidates,
     })
 
     return giftJSONResponse(origin, {
@@ -257,7 +261,7 @@ export async function handleGiftIdeas(
         'Prices are recent online observations before tax and shipping. Any Stripe charge is a fixed contribution to Saberistic; AmirSaber may apply it to the selected gift, related costs, or a similar gift if the listing changes.',
       ideas,
       runId,
-      searchedAt,
+      searchedAt: checkedAt,
     })
   } catch (error) {
     const response = publicSearchError(error)
@@ -275,6 +279,19 @@ export async function handleGiftIdeas(
       serverToolCalls: error instanceof GiftSearchError ? error.usage?.serverToolCalls : undefined,
       totalTokens: error instanceof GiftSearchError ? error.usage?.totalTokens : undefined,
       upstreamStatus: error instanceof GiftSearchError ? error.upstream.status : undefined,
+      verifiedCandidates:
+        error instanceof GiftSearchError ? error.verification?.verified : undefined,
+      listingChecks: error instanceof GiftSearchError ? error.verification?.checked : undefined,
+      listingRejections:
+        error instanceof GiftSearchError && error.verification?.rejections
+          ? JSON.stringify(error.verification.rejections)
+          : undefined,
+      priceBands:
+        error instanceof GiftSearchError && error.verification?.priceBands
+          ? JSON.stringify(error.verification.priceBands)
+          : undefined,
+      sourcePricesChanged:
+        error instanceof GiftSearchError ? error.verification?.sourcePricesChanged : undefined,
     })
     return giftJSONResponse(origin, { error: response.message }, response.status)
   } finally {

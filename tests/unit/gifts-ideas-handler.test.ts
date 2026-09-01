@@ -150,8 +150,10 @@ describe('Gift Draft ideas handler', () => {
       search: vi.fn().mockResolvedValue({
         citations: 16,
         ideas: ideas(),
+        listingChecks: 14,
         model: 'openai/gpt-4.1-mini',
         searchModel: 'openai/gpt-4.1',
+        sourcePricesChanged: 2,
         usage: {
           completionTokens: 900,
           cost: 0.04,
@@ -160,6 +162,7 @@ describe('Gift Draft ideas handler', () => {
           serverToolCalls: 3,
           totalTokens: 3_000,
         },
+        verifiedCandidates: 11,
       }),
     })
 
@@ -177,9 +180,12 @@ describe('Gift Draft ideas handler', () => {
       expect.objectContaining({
         citations: 16,
         cost: 0.04,
+        listingChecks: 14,
         model: 'openai/gpt-4.1-mini',
         outcome: 'completed',
         searchModel: 'openai/gpt-4.1',
+        sourcePricesChanged: 2,
+        verifiedCandidates: 11,
       }),
     )
     expect(JSON.stringify(log.mock.calls)).not.toContain('reviewed-gift-')

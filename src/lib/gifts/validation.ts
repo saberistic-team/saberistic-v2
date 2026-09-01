@@ -32,6 +32,9 @@ const prohibitedGiftProductPatterns = [
   /\b(?:hand|body|face|facial|eye|skin|hair|beard|shaving|lip) (?:balm|cream|lotion|oil|wash|cleanser|serum|mask|scrub)s?\b/i,
   /\b(?:cannabis|marijuana|cbd|thc|hemp extract|cannabis edibles?|delta 8|delta 9|cannabinoids?)\b/i,
   /\b(?:adult (?:products?|toys?|content)|sex toys?|vibrators?|dildos?|bondage|fetish|erotic|condoms?)\b/i,
+  /\b(?:used|pre[ -]?owned|refurbished|open[ -]?box|pre[ -]?orders?|back[ -]?orders?)\b/i,
+  /\b(?:replacement|spare parts?|refills?|samples?|add[ -]?ons?)\b/i,
+  /\b(?:batter(?:y|ies)|breakout boards?|development boards?|microcontrollers?|single[ -]?board computers?|sensors?|electronic modules?|components?|bare pcbs?|printed circuit boards?|ribbon cables?|jumper wires?|pin headers?|solder paste|thermal paste|adhesive strips?)\b/i,
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -153,6 +156,24 @@ export function validateModelGiftIdea(
   budget: GiftBudgetId,
   citationTitle?: string,
 ): ModelGiftIdea | null {
+  const candidate = validateModelGiftResearchCandidate(value, citationTitle)
+  if (!candidate) return null
+
+  const range = giftBudgetById(budget)
+  if (
+    candidate.observedPriceCents < range.minimumCents ||
+    candidate.observedPriceCents > range.maximumCents
+  ) {
+    return null
+  }
+
+  return candidate
+}
+
+export function validateModelGiftResearchCandidate(
+  value: unknown,
+  citationTitle?: string,
+): ModelGiftIdea | null {
   if (
     !isRecord(value) ||
     !hasExactKeys(value, [
@@ -177,13 +198,12 @@ export function validateModelGiftIdea(
 
   const sourceUrl = safeGiftSourceURL(value.sourceUrl)
   const price = Number(value.observedPriceCents)
-  const range = giftBudgetById(budget)
 
   if (
     !sourceUrl ||
     !isApprovedGiftProductHost(new URL(sourceUrl).hostname) ||
-    price < range.minimumCents ||
-    price > range.maximumCents ||
+    price < 0 ||
+    price > 1_000_000 ||
     isProhibitedGiftProduct(
       value.name,
       value.category,

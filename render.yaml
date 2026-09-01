@@ -120,7 +120,7 @@ projects:
               - key: GIFTING_TOKEN_LIMIT
                 value: '4'
               - key: GIFTING_DAILY_LIMIT
-                value: '50'
+                value: '10'
               - key: GIFTING_CONCURRENCY_LIMIT
                 value: '2'
               - key: GIFTING_CHECKOUT_IP_LIMIT

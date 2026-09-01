@@ -4,13 +4,14 @@ vi.mock('server-only', () => ({}))
 
 import type { GiftRecommendationRequest } from '@/lib/gifts'
 import type { OpenRouterGiftConfig } from '@/lib/gifts/server/config'
+import type { GiftListingLoader } from '@/lib/gifts/server/listing-verifier'
 import {
   GiftSearchError,
   searchGiftIdeas,
   type OpenRouterGiftFetch,
 } from '@/lib/gifts/server/openrouter'
 import type { ModelGiftIdea } from '@/lib/gifts/validation'
-import { approvedGiftProductHosts } from '@/lib/gifts/retailers'
+import { verifiableGiftProductHosts } from '@/lib/gifts/retailers'
 
 const request: GiftRecommendationRequest = {
   anonymousToken: 'anonymous_token_1234567890',
@@ -42,11 +43,79 @@ function ideas(): ModelGiftIdea[] {
   }))
 }
 
-function annotations() {
-  return ideas().map((idea) => ({
+function verifiedAdafruitIdea(idea: ModelGiftIdea): ModelGiftIdea {
+  return {
+    ...idea,
+    category: 'Builder find',
+    retailer: 'Adafruit',
+    whyItFits: 'A hands-on electronics find for a curious builder who values useful objects.',
+  }
+}
+
+function verifiedIdeas(source: readonly ModelGiftIdea[] = ideas()): ModelGiftIdea[] {
+  return source.map(verifiedAdafruitIdea)
+}
+
+function extraIdeas(start: number, count: number): ModelGiftIdea[] {
+  return Array.from({ length: count }, (_, offset) => {
+    const number = start + offset
+    return {
+      ...ideas()[7]!,
+      name: `Current physical gift ${number}`,
+      observedPriceCents: 18_000 + offset,
+      retailer: `Verified Retailer ${number}`,
+      sourceUrl: `https://www.adafruit.com/products/current-gift-${number}`,
+    }
+  })
+}
+
+function citationsFor(source: readonly ModelGiftIdea[]) {
+  return source.map((idea) => ({
     type: 'url_citation',
     url_citation: { title: idea.name, url: idea.sourceUrl },
   }))
+}
+
+function annotations() {
+  return citationsFor(ideas())
+}
+
+function listingHTML(idea: ModelGiftIdea) {
+  const price = `${Math.floor(idea.observedPriceCents / 100)}.${String(idea.observedPriceCents % 100).padStart(2, '0')}`
+  return `<!doctype html><html><head><script type="application/ld+json">${JSON.stringify({
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: idea.name,
+    offers: {
+      '@type': 'Offer',
+      availability: 'https://schema.org/InStock',
+      price,
+      priceCurrency: 'USD',
+      url: idea.sourceUrl,
+    },
+  })}</script><title>${idea.name}</title><link rel="canonical" href="${idea.sourceUrl}"><meta property="og:url" content="${idea.sourceUrl}"><meta property="og:title" content="${idea.name}"></head></html>`
+}
+
+function successfulListingLoader(overrides: ReadonlyMap<string, ModelGiftIdea> = new Map()) {
+  return vi.fn<GiftListingLoader>(async (url) => {
+    const configured = overrides.get(url.toString())
+    if (configured) return listingHTML(configured)
+
+    const index = Number(url.pathname.match(/current-gift-(\d+)$/)?.[1])
+    const base = ideas()[index - 1]
+    const idea =
+      base ??
+      (index === 10
+        ? {
+            ...ideas()[0]!,
+            name: 'Current physical gift 10',
+            observedPriceCents: 18_000,
+            retailer: 'Verified Retailer 10',
+            sourceUrl: 'https://www.adafruit.com/products/current-gift-10',
+          }
+        : null)
+    return idea ? listingHTML(idea) : null
+  })
 }
 
 function upstreamPayload({
@@ -132,10 +201,14 @@ function successfulFetch(
   })
 }
 
-function run(fetchImpl: OpenRouterGiftFetch) {
+function run(
+  fetchImpl: OpenRouterGiftFetch,
+  listingLoader: GiftListingLoader = successfulListingLoader(),
+) {
   return searchGiftIdeas({
     config,
     fetchImpl,
+    listingLoader,
     request,
     runId: 'run_1234567890123456',
     searchedAt: '2026-08-31T15:30:00.000Z',
@@ -151,8 +224,10 @@ describe('OpenRouter gift search', () => {
     expect(result).toMatchObject({
       citations: 9,
       ideas: expect.any(Array),
+      listingChecks: 9,
       model: config.primaryModel,
       searchModel: config.primaryModel,
+      sourcePricesChanged: 9,
       usage: {
         completionTokens: 1_300,
         cost: 0.09,
@@ -161,6 +236,7 @@ describe('OpenRouter gift search', () => {
         serverToolCalls: 0,
         totalTokens: 3_200,
       },
+      verifiedCandidates: 9,
     })
     expect(result.ideas).toHaveLength(9)
     expect(fetchImpl).toHaveBeenCalledTimes(2)
@@ -200,12 +276,12 @@ describe('OpenRouter gift search', () => {
     expect(researchBody.tools).toEqual([
       {
         parameters: {
-          allowed_domains: approvedGiftProductHosts,
+          allowed_domains: verifiableGiftProductHosts,
           engine: 'exa',
           max_characters: 1500,
-          max_results: 16,
+          max_results: 20,
           max_uses: 2,
-          max_total_results: 32,
+          max_total_results: 40,
         },
         type: 'openrouter:web_search',
       },
@@ -281,6 +357,374 @@ describe('OpenRouter gift search', () => {
     expect(String(synthesisInit?.body)).not.toContain(request.anonymousToken)
   })
 
+  it('exposes only retailer-verified candidate IDs to the strict selector', async () => {
+    const prices = [
+      1_500, 2_500, 4_500, 5_500, 9_000, 14_000, 15_000, 18_000, 22_000, 26_000, 28_000, 30_000,
+    ]
+    const researchIdeas = Array.from({ length: 12 }, (_, index): ModelGiftIdea => ({
+      category: `Category ${index + 1}`,
+      currency: 'usd',
+      name: `Current physical gift ${index + 1}`,
+      observedPriceCents: prices[index]!,
+      retailer: `Verified Retailer ${index + 1}`,
+      sourceUrl: `https://www.adafruit.com/products/current-gift-${index + 1}`,
+      whyItFits: `A useful and durable surprise for a design-conscious systems builder number ${index + 1}.`,
+    }))
+    const responseAnnotations = researchIdeas.map((idea) => ({
+      type: 'url_citation',
+      url_citation: { title: idea.name, url: idea.sourceUrl },
+    }))
+    const listingLoader = vi.fn<GiftListingLoader>(async (url) => {
+      const index = Number(url.pathname.match(/current-gift-(\d+)$/)?.[1]) - 1
+      return index < 2 ? null : listingHTML(researchIdeas[index]!)
+    })
+    const fetchImpl = successfulFetch(
+      upstreamPayload({
+        annotations: responseAnnotations,
+        content: JSON.stringify({ candidates: researchIdeas }),
+      }),
+      synthesisPayload({
+        content: JSON.stringify({
+          candidateIds: Array.from(
+            { length: 9 },
+            (_, index) => `candidate_${String(index + 1).padStart(2, '0')}`,
+          ),
+        }),
+      }),
+    )
+
+    const result = await run(fetchImpl, listingLoader)
+
+    expect(result).toMatchObject({ listingChecks: 12, verifiedCandidates: 10 })
+    expect(result.ideas.map((idea) => idea.name)).toEqual(
+      researchIdeas.slice(2, 11).map((idea) => idea.name),
+    )
+    const synthesisBody = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)) as {
+      response_format?: {
+        json_schema?: {
+          schema?: { properties?: { candidateIds?: { items?: { enum?: unknown } } } }
+        }
+      }
+    }
+    expect(
+      synthesisBody.response_format?.json_schema?.schema?.properties?.candidateIds?.items?.enum,
+    ).toEqual(
+      Array.from({ length: 10 }, (_, index) => `candidate_${String(index + 1).padStart(2, '0')}`),
+    )
+  })
+
+  it('merges distinct fallback listings after a primary listing shortage', async () => {
+    const primaryIdeas = ideas()
+    const fallbackIdeas = extraIdeas(10, 9)
+    const defaultLoader = successfulListingLoader(
+      new Map(fallbackIdeas.map((idea) => [idea.sourceUrl, idea])),
+    )
+    const listingLoader = vi.fn<GiftListingLoader>(async (url, signal) =>
+      url.toString() === primaryIdeas[0]!.sourceUrl
+        ? listingHTML(primaryIdeas[0]!).replace('schema.org/InStock', 'schema.org/OutOfStock')
+        : defaultLoader(url, signal),
+    )
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string; tools?: unknown }
+      if (!body.tools) {
+        return Response.json(synthesisPayload({ model: body.model }), { status: 200 })
+      }
+
+      researchCall += 1
+      return Response.json(
+        upstreamPayload({
+          annotations: citationsFor(researchCall === 1 ? primaryIdeas : fallbackIdeas),
+          content: '{"status":"researched"}',
+          model: body.model,
+        }),
+        { status: 200 },
+      )
+    })
+
+    const result = await run(fetchImpl, listingLoader)
+
+    expect(result).toMatchObject({
+      citations: 18,
+      ideas: verifiedIdeas([...primaryIdeas.slice(1), fallbackIdeas[0]!]),
+      listingChecks: 18,
+      model: config.primaryModel,
+      searchModel: `${config.primaryModel}+${config.fallbackModel}`,
+      sourcePricesChanged: 17,
+      usage: {
+        completionTokens: 2_200,
+        cost: 0.17,
+        promptTokens: 3_100,
+        searchRequests: 4,
+        serverToolCalls: 0,
+        totalTokens: 5_300,
+      },
+      verifiedCandidates: 17,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    const requestBodies = fetchImpl.mock.calls.map(([, init]) =>
+      JSON.parse(String(init?.body)),
+    ) as Array<{
+      messages?: Array<{ content?: string }>
+      model?: string
+      response_format?: {
+        json_schema?: {
+          schema?: { properties?: { candidateIds?: { items?: { enum?: unknown } } } }
+        }
+      }
+    }>
+    expect(requestBodies.map((body) => body.model)).toEqual([
+      config.primaryModel,
+      config.fallbackModel,
+      config.primaryModel,
+    ])
+    expect(fetchImpl.mock.calls[1]?.[1]?.signal).toBe(fetchImpl.mock.calls[0]?.[1]?.signal)
+    expect(fetchImpl.mock.calls[2]?.[1]?.signal).toBe(fetchImpl.mock.calls[0]?.[1]?.signal)
+    expect(String(fetchImpl.mock.calls[1]?.[1]?.body)).toContain(primaryIdeas[0]!.sourceUrl)
+    expect(
+      requestBodies[2]?.response_format?.json_schema?.schema?.properties?.candidateIds?.items?.enum,
+    ).toEqual(
+      Array.from({ length: 17 }, (_, index) => `candidate_${String(index + 1).padStart(2, '0')}`),
+    )
+    const selectorLedger = JSON.parse(requestBodies[2]?.messages?.at(-1)?.content ?? '{}') as {
+      candidates?: Array<{ sourceUrl?: string }>
+    }
+    expect(selectorLedger.candidates?.map((candidate) => candidate.sourceUrl)).not.toContain(
+      primaryIdeas[0]!.sourceUrl,
+    )
+    expect(selectorLedger.candidates?.map((candidate) => candidate.sourceUrl)).toContain(
+      fallbackIdeas[0]!.sourceUrl,
+    )
+  })
+
+  it('preserves eight primary citations and merges them with supplemental fallback research', async () => {
+    const primaryIdeas = ideas().slice(0, 8)
+    const fallbackIdeas = extraIdeas(10, 9)
+    const listingLoader = successfulListingLoader(
+      new Map(fallbackIdeas.map((idea) => [idea.sourceUrl, idea])),
+    )
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string; tools?: unknown }
+      if (!body.tools) {
+        return Response.json(synthesisPayload({ model: body.model }), { status: 200 })
+      }
+
+      researchCall += 1
+      return Response.json(
+        upstreamPayload({
+          annotations: citationsFor(researchCall === 1 ? primaryIdeas : fallbackIdeas),
+          content: '{"status":"researched"}',
+          model: body.model,
+        }),
+        { status: 200 },
+      )
+    })
+
+    const result = await run(fetchImpl, listingLoader)
+
+    expect(result).toMatchObject({
+      citations: 17,
+      ideas: verifiedIdeas([...primaryIdeas, fallbackIdeas[0]!]),
+      listingChecks: 17,
+      searchModel: `${config.primaryModel}+${config.fallbackModel}`,
+      sourcePricesChanged: 17,
+      verifiedCandidates: 17,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    expect(String(fetchImpl.mock.calls[1]?.[1]?.body)).toContain(primaryIdeas[0]!.sourceUrl)
+  })
+
+  it('supplements nine verified mixed-budget listings when one price band is missing', async () => {
+    const primaryPrices = [1_500, 2_500, 4_500, 5_500, 9_000, 14_000, 3_500, 6_500, 12_000]
+    const primaryIdeas = ideas().map((idea, index) => ({
+      ...idea,
+      observedPriceCents: primaryPrices[index]!,
+    }))
+    const fallbackIdeas = extraIdeas(10, 9)
+    const listingLoader = successfulListingLoader(
+      new Map([...primaryIdeas, ...fallbackIdeas].map((idea) => [idea.sourceUrl, idea] as const)),
+    )
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string; tools?: unknown }
+      if (!body.tools) {
+        return Response.json(
+          synthesisPayload({
+            content: JSON.stringify({
+              candidateIds: [
+                ...Array.from(
+                  { length: 8 },
+                  (_, index) => `candidate_${String(index + 1).padStart(2, '0')}`,
+                ),
+                'candidate_10',
+              ],
+            }),
+            model: body.model,
+          }),
+          { status: 200 },
+        )
+      }
+
+      researchCall += 1
+      return Response.json(
+        upstreamPayload({
+          annotations: citationsFor(researchCall === 1 ? primaryIdeas : fallbackIdeas),
+          content: '{"status":"researched"}',
+          model: body.model,
+        }),
+        { status: 200 },
+      )
+    })
+
+    const result = await run(fetchImpl, listingLoader)
+
+    expect(result).toMatchObject({
+      citations: 18,
+      ideas: verifiedIdeas([...primaryIdeas.slice(0, 8), fallbackIdeas[0]!]),
+      listingChecks: 18,
+      searchModel: `${config.primaryModel}+${config.fallbackModel}`,
+      verifiedCandidates: 18,
+    })
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    const fallbackBody = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)) as {
+      messages: Array<{ content: string; role: string }>
+    }
+    const fallbackUserPayload = JSON.parse(fallbackBody.messages[1]!.content) as {
+      requiredPriceBands?: unknown
+    }
+    expect(fallbackUserPayload.requiredPriceBands).toEqual(['high'])
+    expect(fallbackBody.messages[0]!.content).toContain(
+      'Devote the searches to different exact product pages in the still-missing mixed-deck bands: high.',
+    )
+  })
+
+  it('fails closed when supplemental research cannot make a three-band mixed deck', async () => {
+    const primaryPrices = [1_500, 2_500, 4_500, 5_500, 9_000, 14_000, 3_500, 6_500, 12_000]
+    const fallbackPrices = [1_600, 2_600, 4_600, 5_600, 9_100, 14_100, 3_600, 6_600, 12_100]
+    const primaryIdeas = ideas().map((idea, index) => ({
+      ...idea,
+      observedPriceCents: primaryPrices[index]!,
+    }))
+    const fallbackIdeas = extraIdeas(10, 9).map((idea, index) => ({
+      ...idea,
+      observedPriceCents: fallbackPrices[index]!,
+    }))
+    const listingLoader = successfulListingLoader(
+      new Map([...primaryIdeas, ...fallbackIdeas].map((idea) => [idea.sourceUrl, idea] as const)),
+    )
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string }
+      researchCall += 1
+      return Response.json(
+        upstreamPayload({
+          annotations: citationsFor(researchCall === 1 ? primaryIdeas : fallbackIdeas),
+          content: '{"status":"researched"}',
+          model: body.model,
+        }),
+        { status: 200 },
+      )
+    })
+
+    await expect(run(fetchImpl, listingLoader)).rejects.toEqual(
+      expect.objectContaining<Partial<GiftSearchError>>({
+        reason: 'listing_verification',
+        usage: expect.objectContaining({ cost: 0.16, searchRequests: 4 }),
+        verification: expect.objectContaining({
+          checked: 18,
+          priceBands: { high: 0, low: 8, middle: 10 },
+          sourcePricesChanged: 18,
+          verified: 18,
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not re-fetch fallback query or www variants of primary product URLs', async () => {
+    const primaryIdeas = ideas().slice(0, 8)
+    const fallbackIdeas = [
+      ...primaryIdeas.map((idea) => ({
+        ...idea,
+        sourceUrl: idea.sourceUrl.replace('www.adafruit.com', 'adafruit.com') + '?ref=fallback',
+      })),
+      ideas()[8]!,
+    ]
+    const listingLoader = successfulListingLoader()
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string; tools?: unknown }
+      if (!body.tools) {
+        return Response.json(synthesisPayload({ model: body.model }), { status: 200 })
+      }
+
+      researchCall += 1
+      return Response.json(
+        upstreamPayload({
+          annotations: citationsFor(researchCall === 1 ? primaryIdeas : fallbackIdeas),
+          content: '{"status":"researched"}',
+          model: body.model,
+        }),
+        { status: 200 },
+      )
+    })
+
+    const result = await run(fetchImpl, listingLoader)
+
+    expect(result).toMatchObject({
+      citations: 9,
+      listingChecks: 9,
+      sourcePricesChanged: 9,
+      verifiedCandidates: 9,
+    })
+    expect(listingLoader).toHaveBeenCalledTimes(9)
+    const loadedURLs = listingLoader.mock.calls.map(([url]) => url.toString())
+    for (const duplicate of fallbackIdeas.slice(0, 8)) {
+      expect(loadedURLs).not.toContain(duplicate.sourceUrl)
+    }
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+  })
+
+  it('does not start a third research call after provider fallback still has too few listings', async () => {
+    const defaultLoader = successfulListingLoader()
+    const listingLoader = vi.fn<GiftListingLoader>(async (url, signal) =>
+      url.toString() === ideas()[0]!.sourceUrl
+        ? listingHTML(ideas()[0]!).replace('schema.org/InStock', 'schema.org/OutOfStock')
+        : defaultLoader(url, signal),
+    )
+    let researchCall = 0
+    const fetchImpl = vi.fn<OpenRouterGiftFetch>(async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as { model: string }
+      researchCall += 1
+      return Response.json(
+        researchCall === 1
+          ? upstreamPayload({ annotations: [], model: body.model })
+          : upstreamPayload({ model: body.model }),
+        { status: 200 },
+      )
+    })
+
+    await expect(run(fetchImpl, listingLoader)).rejects.toEqual(
+      expect.objectContaining<Partial<GiftSearchError>>({
+        reason: 'listing_verification',
+        usage: expect.objectContaining({ cost: 0.16, searchRequests: 4 }),
+        verification: expect.objectContaining({
+          checked: 9,
+          rejections: { availability: 1 },
+          sourcePricesChanged: 8,
+          verified: 8,
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).model)).toEqual([
+      config.primaryModel,
+      config.fallbackModel,
+    ])
+    expect(fetchImpl.mock.calls[1]?.[1]?.signal).toBe(fetchImpl.mock.calls[0]?.[1]?.signal)
+  })
+
   it('requires nonzero web-search usage even when citations are present', async () => {
     await expect(run(successfulFetch(upstreamPayload({ searchRequests: 0 })))).rejects.toEqual(
       expect.objectContaining<Partial<GiftSearchError>>({ reason: 'no_search' }),
@@ -319,18 +763,18 @@ describe('OpenRouter gift search', () => {
             server_tool_use_details: {
               tool_calls_executed: 4,
               tool_calls_requested: 4,
-              web_search_requests: 3,
+              web_search_requests: 2,
             },
           },
         }),
       ),
     ).resolves.toMatchObject({
-      usage: { searchRequests: 3, serverToolCalls: 4 },
+      usage: { searchRequests: 2, serverToolCalls: 4 },
     })
   })
 
-  it('rejects research that reports more than three actual searches', async () => {
-    await expect(run(successfulFetch(upstreamPayload({ searchRequests: 4 })))).rejects.toEqual(
+  it('rejects research that reports more than two actual searches', async () => {
+    await expect(run(successfulFetch(upstreamPayload({ searchRequests: 3 })))).rejects.toEqual(
       expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_response' }),
     )
   })
@@ -481,7 +925,7 @@ describe('OpenRouter gift search', () => {
     expect(fetchImpl.mock.calls[2]?.[1]?.signal).toBe(fetchImpl.mock.calls[0]?.[1]?.signal)
   })
 
-  it('recovers from an out-of-range primary ledger with a noncanonical fallback ledger', async () => {
+  it('ignores tentative prices and derives current retailer facts without wasting fallback', async () => {
     const primaryIdeas = ideas().map((idea, index) =>
       index === 0 ? { ...idea, observedPriceCents: 30_001 } : idea,
     )
@@ -516,17 +960,18 @@ describe('OpenRouter gift search', () => {
 
     const result = await run(fetchImpl)
 
-    expect(result.searchModel).toBe(config.fallbackModel)
+    expect(result.searchModel).toBe(config.primaryModel)
     expect(result.model).toBe(config.primaryModel)
-    expect(result.ideas).toEqual(ideas())
+    expect(result.ideas).toEqual(verifiedIdeas())
+    expect(result.sourcePricesChanged).toBe(9)
     expect(result.usage).toMatchObject({
-      completionTokens: 2_200,
-      cost: 0.17,
-      promptTokens: 3_100,
-      searchRequests: 4,
-      totalTokens: 5_300,
+      completionTokens: 1_300,
+      cost: 0.09,
+      promptTokens: 1_900,
+      searchRequests: 2,
+      totalTokens: 3_200,
     })
-    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
   })
 
   it('aborts the shared deadline without starting a fallback or synthesis call', async () => {
@@ -687,32 +1132,26 @@ describe('OpenRouter gift search', () => {
     },
   )
 
-  it('rejects unstructured research before strict synthesis', async () => {
-    await expect(
-      run(successfulFetch(upstreamPayload({ content: 'A freeform research brief.' }))),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
-  })
-
-  it('normalizes unambiguous research aliases before strict synthesis', async () => {
-    const noncanonicalResearch = JSON.stringify({
-      gifts: ideas().map((idea) => ({
-        category: idea.category,
-        currency: idea.currency,
-        observed_price_cents: idea.observedPriceCents,
-        product_name: idea.name,
-        retailer: idea.retailer,
-        source_url: idea.sourceUrl,
-        why_it_fits: idea.whyItFits,
-      })),
-    })
-    const fetchImpl = successfulFetch(upstreamPayload({ content: noncanonicalResearch }))
+  it.each([
+    ['freeform text', 'A freeform research brief.'],
+    [
+      'noncanonical fields',
+      JSON.stringify({
+        candidates: ideas().map(() => ({
+          ADDRESS: 'not-a-url',
+          observed_price_cents: 999_999,
+          product_name: 'Leatherman Wave+ multi-tool',
+          source_url: 'https://example.com/untrusted',
+          unexpected: true,
+        })),
+      }),
+    ],
+  ])('ignores model-authored %s and trusts cited retailer pages', async (_label, content) => {
+    const fetchImpl = successfulFetch(upstreamPayload({ content }))
 
     await expect(run(fetchImpl)).resolves.toMatchObject({
-      ideas: expect.arrayContaining([
-        expect.objectContaining({ observedPriceCents: expect.any(Number) }),
-      ]),
+      ideas: verifiedIdeas(),
+      sourcePricesChanged: 9,
     })
     const synthesisBody = JSON.parse(String(fetchImpl.mock.calls[1]?.[1]?.body)) as Record<
       string,
@@ -722,115 +1161,7 @@ describe('OpenRouter gift search', () => {
     expect(synthesisBody.provider).toMatchObject({ require_parameters: true })
   })
 
-  it('normalizes the account Guardrail URL placeholder only when it is a cited HTTPS URL', async () => {
-    const guardrailResearch = ideas().map(({ sourceUrl, ...idea }, index) => ({
-      ...idea,
-      currency: 'USD',
-      [index % 3 === 0 ? 'ADDRESS' : index % 3 === 1 ? 'address' : '[ADDRESS]']: sourceUrl,
-    }))
-
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({ content: JSON.stringify({ candidates: guardrailResearch }) }),
-        ),
-      ),
-    ).resolves.toMatchObject({ ideas: ideas() })
-
-    const unsafeGuardrailResearch = guardrailResearch.map((idea, index) => {
-      if (index !== 0) return idea
-      return { ...idea, ADDRESS: 'not-a-url' }
-    })
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({
-            content: JSON.stringify({ candidates: unsafeGuardrailResearch }),
-          }),
-        ),
-      ),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
-
-    const ambiguousGuardrailResearch = guardrailResearch.map((idea, index) =>
-      index === 0 ? { ...idea, sourceUrl: ideas()[0]!.sourceUrl } : idea,
-    )
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({
-            content: JSON.stringify({ candidates: ambiguousGuardrailResearch }),
-          }),
-        ),
-      ),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
-  })
-
-  it('reconstructs a redacted URL only from one exact matching citation title', async () => {
-    const redactedResearch = ideas().map(({ sourceUrl: _sourceUrl, ...idea }) => ({
-      ...idea,
-      ADDRESS: '[ADDRESS]',
-      currency: 'USD',
-    }))
-
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({ content: JSON.stringify({ candidates: redactedResearch }) }),
-        ),
-      ),
-    ).resolves.toMatchObject({ ideas: ideas() })
-
-    const ambiguousAnnotations = annotations()
-    ambiguousAnnotations[1] = {
-      ...ambiguousAnnotations[1]!,
-      url_citation: {
-        ...ambiguousAnnotations[1]!.url_citation,
-        title: ideas()[0]!.name,
-      },
-    }
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({
-            annotations: ambiguousAnnotations,
-            content: JSON.stringify({ candidates: redactedResearch }),
-          }),
-        ),
-      ),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
-
-    const nearMatchResearch = redactedResearch.map((idea, index) =>
-      index === 0 ? { ...idea, name: 'Pen' } : idea,
-    )
-    const nearMatchAnnotations = annotations()
-    nearMatchAnnotations[0] = {
-      ...nearMatchAnnotations[0]!,
-      url_citation: {
-        ...nearMatchAnnotations[0]!.url_citation,
-        title: 'Pencil Set',
-      },
-    }
-    await expect(
-      run(
-        successfulFetch(
-          upstreamPayload({
-            annotations: nearMatchAnnotations,
-            content: JSON.stringify({ candidates: nearMatchResearch }),
-          }),
-        ),
-      ),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
-  })
-
-  it('rejects a prohibited product identity exposed only by a citation title', async () => {
+  it('does not treat a citation title as retailer-verified product identity', async () => {
     const responseAnnotations = annotations()
     responseAnnotations[0] = {
       ...responseAnnotations[0]!,
@@ -842,12 +1173,10 @@ describe('OpenRouter gift search', () => {
 
     await expect(
       run(successfulFetch(upstreamPayload({ annotations: responseAnnotations }))),
-    ).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'invalid_model_output' }),
-    )
+    ).resolves.toMatchObject({ ideas: verifiedIdeas() })
   })
 
-  it('preserves the locally validated researched price without letting synthesis rewrite it', async () => {
+  it('uses the exact current offer price instead of trusting an in-range model price', async () => {
     const changedResearch = ideas().map((idea, index) =>
       index === 0 ? { ...idea, observedPriceCents: 1_600 } : idea,
     )
@@ -859,6 +1188,64 @@ describe('OpenRouter gift search', () => {
     ).resolves.toMatchObject({
       ideas: expect.arrayContaining([
         expect.objectContaining({
+          observedPriceCents: ideas()[0]!.observedPriceCents,
+          sourceUrl: changedResearch[0]!.sourceUrl,
+        }),
+      ]),
+      sourcePricesChanged: 9,
+    })
+  })
+
+  it('does not inflate verified inventory with duplicate fallback citations', async () => {
+    const defaultLoader = successfulListingLoader()
+    const listingLoader = vi.fn<GiftListingLoader>(async (url, signal) =>
+      url.toString() === ideas()[0]!.sourceUrl
+        ? listingHTML(ideas()[0]!).replace('schema.org/InStock', 'schema.org/OutOfStock')
+        : defaultLoader(url, signal),
+    )
+    const fetchImpl = successfulFetch()
+
+    await expect(run(fetchImpl, listingLoader)).rejects.toEqual(
+      expect.objectContaining<Partial<GiftSearchError>>({
+        reason: 'listing_verification',
+        usage: expect.objectContaining({
+          completionTokens: 1_800,
+          cost: 0.16,
+          promptTokens: 2_400,
+          searchRequests: 4,
+          totalTokens: 4_200,
+        }),
+        verification: expect.objectContaining({
+          checked: 9,
+          rejections: { availability: 1 },
+          sourcePricesChanged: 8,
+          verified: 8,
+        }),
+      }),
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl.mock.calls.map(([, init]) => JSON.parse(String(init?.body)).model)).toEqual([
+      config.primaryModel,
+      config.fallbackModel,
+    ])
+  })
+
+  it('preserves an exact retailer-verified price without letting synthesis rewrite it', async () => {
+    const changedResearch = ideas().map((idea, index) =>
+      index === 0 ? { ...idea, observedPriceCents: 1_600 } : idea,
+    )
+    const listingLoader = successfulListingLoader(
+      new Map([[changedResearch[0]!.sourceUrl, changedResearch[0]!]]),
+    )
+
+    await expect(
+      run(
+        successfulFetch(upstreamPayload({ content: JSON.stringify({ ideas: changedResearch }) })),
+        listingLoader,
+      ),
+    ).resolves.toMatchObject({
+      ideas: expect.arrayContaining([
+        expect.objectContaining({
           observedPriceCents: 1_600,
           sourceUrl: changedResearch[0]?.sourceUrl,
         }),
@@ -866,7 +1253,7 @@ describe('OpenRouter gift search', () => {
     })
   })
 
-  it('discards out-of-range and extra-field research candidates without clamping them', async () => {
+  it('uses cited retailer facts despite out-of-range or extra model-authored fields', async () => {
     const baseIdeas = ideas()
     const extraIdea: ModelGiftIdea = {
       ...baseIdeas[0]!,
@@ -875,7 +1262,7 @@ describe('OpenRouter gift search', () => {
       retailer: 'Verified Retailer 10',
       sourceUrl: 'https://www.adafruit.com/products/current-gift-10',
     }
-    const invalidURL = baseIdeas[0]!.sourceUrl
+    const firstURL = baseIdeas[0]!.sourceUrl
     const researchIdeas = [
       { ...baseIdeas[0]!, observedPriceCents: 30_001 },
       ...baseIdeas.slice(1),
@@ -897,8 +1284,8 @@ describe('OpenRouter gift search', () => {
 
     expect(result.ideas).toHaveLength(9)
     expect(result.ideas.every((idea) => idea.observedPriceCents <= 30_000)).toBe(true)
-    expect(result.ideas.some((idea) => idea.sourceUrl === invalidURL)).toBe(false)
-    expect(result.ideas).toContainEqual(extraIdea)
+    expect(result.ideas).toContainEqual(verifiedAdafruitIdea(baseIdeas[0]!))
+    expect(result.ideas).not.toContainEqual(verifiedAdafruitIdea(extraIdea))
 
     const unknownFieldIdeas = [
       { ...baseIdeas[0]!, salePrice: '$15.00' },
@@ -916,7 +1303,7 @@ describe('OpenRouter gift search', () => {
         }),
       ),
     )
-    expect(unknownFieldResult.ideas.some((idea) => idea.sourceUrl === invalidURL)).toBe(false)
+    expect(unknownFieldResult.ideas.some((idea) => idea.sourceUrl === firstURL)).toBe(true)
   })
 
   it.each([
@@ -948,11 +1335,15 @@ describe('OpenRouter gift search', () => {
     )
   })
 
-  it('requires at least nine safe research citations before synthesis', async () => {
+  it('fails closed when supplemental research still leaves fewer than nine listings', async () => {
     const fetchImpl = successfulFetch(upstreamPayload({ annotations: annotations().slice(0, 8) }))
 
     await expect(run(fetchImpl)).rejects.toEqual(
-      expect.objectContaining<Partial<GiftSearchError>>({ reason: 'no_search' }),
+      expect.objectContaining<Partial<GiftSearchError>>({
+        reason: 'listing_verification',
+        usage: expect.objectContaining({ cost: 0.16, searchRequests: 4 }),
+        verification: expect.objectContaining({ checked: 8, verified: 8 }),
+      }),
     )
     expect(fetchImpl).toHaveBeenCalledTimes(2)
   })

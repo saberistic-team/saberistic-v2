@@ -19,8 +19,8 @@ The product direction, research record, content evidence rules, AI-readiness des
   deterministic fallback reports, and an optional bounded OpenRouter explanation
 - a consented Architecture Diagnostic handoff with private lead storage, Resend report delivery,
   fixed $200 hosted Stripe Checkout, verified payment fulfillment, and calendar-provider routing
-- Gift Draft: a three-round gift game for AmirSaber with OpenRouter web search, citation-backed
-  approximate prices, signed quotes, and Stripe-hosted one-time Checkout
+- Gift Draft: a three-round gift game for AmirSaber with OpenRouter discovery, server-verified
+  retailer listings, signed quotes, and Stripe-hosted one-time Checkout
 - Render Key Value-backed AI request, token, daily-call, and concurrency limits
 - multi-stage production images, GitHub Actions CI, and a Render Blueprint
 - CMS publication hooks plus a daily reconciliation build for the public static site
@@ -65,11 +65,17 @@ Dashboard-only feature-flag change.
 Direct local development requests use a loopback-only abuse bucket when no trusted proxy header is
 present, so the optional local AI explanation does not require a fabricated client-IP header.
 
-Gift Draft has no invented offline deck: a draw succeeds only when OpenRouter performs web research,
-the app builds a citation-matched canonical candidate ledger from reviewed product hosts, and a
-separate strict no-tools model call selects nine IDs whose unchanged listings pass the final local
-price, product-policy, hostname, and schema checks. The public page reads a no-store feature-status
-response and presents a paused state instead of offering a dead draw when either path is disabled.
+Gift Draft has no invented offline deck. OpenRouter performs bounded web research, but its prose and
+product fields are not trusted. The app treats safe citation annotations only as discovery leads,
+fetches every cited page from the currently supported retailer families, and accepts a candidate
+only when the page exposes one unambiguous schema.org Product and Offer for that same URL, in USD,
+in stock, inside the chosen budget, and outside the code-owned product exclusions. The retailer
+page supplies the canonical product name and price. When the first research model leaves fewer than
+nine verified candidates, the second pinned model gets one bounded search attempt for different
+URLs under the same 60-second deadline. A separate strict no-tools call may select only nine IDs
+from the resulting verified ledger; it cannot write or alter product facts. The public page reads a
+no-store feature-status response and presents a paused state instead of offering a dead draw when
+either path is disabled.
 To try it locally, configure Redis/Valkey, `GIFTING_RATE_LIMIT_SECRET`, `GIFT_QUOTE_SECRET`, the two
 `OPENROUTER_GIFT_*_MODEL` values, and the existing `OPENROUTER_API_KEY`; then set
 `OPENROUTER_ACCOUNT_GATES_CONFIRMED` to the current policy version and `GIFTING_AI_ENABLED=1`.
@@ -77,6 +83,20 @@ OpenRouter's web-search server tool is beta, so keep a hard key spend limit and 
 if its contract or account privacy controls change. Before enabling it,
 run `pnpm test:gifts:openrouter:live`; this opt-in check performs a real search and consumes a small
 amount of OpenRouter credit.
+
+Gift Draft is still intentionally paused in Render. The first hosted AI canary returned nine cards,
+but manual source-page review rejected five: one item was out of stock and four cards disagreed with
+the retailer's displayed price. The canary was rolled back, and `GIFTING_AI_ENABLED=0` was confirmed
+by the status endpoint and the disabled `503` ideas response. The hardened citation-first pipeline
+has since passed real OpenRouter runs in both model orders and for both an under-$30 and mixed-price
+deck. The final production-order under-$30 run verified 13 of 36 checked listings and selected nine
+in 25.77 seconds for $0.054866; direct browser review then confirmed the nine visible prices and
+purchase availability. The reverse-order run verified 13 candidates in 35.79 seconds for
+$0.0689972. The mixed-price run verified ten of 25 listings and produced a valid low/middle/high
+deck in 17.56 seconds for $0.054312. That is useful correction evidence, not permission to turn the
+public flag on. The exact hardened commit still needs hosted checks, a hosted canary, the same-token
+Redis limit test, and an enable-to-disable rollback drill. Checkout remains independently off until
+its Stripe acceptance gates pass.
 
 Checkout additionally requires a least-privilege `STRIPE_RESTRICTED_KEY` and an independent
 `STRIPE_GIFT_WEBHOOK_SECRET`. Run the committed Payload migrations, register
