@@ -6,6 +6,8 @@ import * as migration_20260830_163500_retry_lovable_prototype_publication from '
 import * as migration_20260831_204405_architecture_diagnostic_funnel from './20260831_204405_architecture_diagnostic_funnel'
 import * as migration_20260831_205708_gift_payments from './20260831_205708_gift_payments'
 import * as migration_20260831_210012_diagnostic_report_one_time_key from './20260831_210012_diagnostic_report_one_time_key'
+import * as migration_20260901_022500_gift_inventory from './20260901_022500_gift_inventory'
+import * as migration_20260901_232312_gift_inventory_schema_snapshot from './20260901_232312_gift_inventory_schema_snapshot'
 
 export const migrations = [
   {
@@ -47,5 +49,15 @@ export const migrations = [
     up: migration_20260831_210012_diagnostic_report_one_time_key.up,
     down: migration_20260831_210012_diagnostic_report_one_time_key.down,
     name: '20260831_210012_diagnostic_report_one_time_key',
+  },
+  {
+    up: migration_20260901_022500_gift_inventory.up,
+    down: migration_20260901_022500_gift_inventory.down,
+    name: '20260901_022500_gift_inventory',
+  },
+  {
+    up: migration_20260901_232312_gift_inventory_schema_snapshot.up,
+    down: migration_20260901_232312_gift_inventory_schema_snapshot.down,
+    name: '20260901_232312_gift_inventory_schema_snapshot',
   },
 ]

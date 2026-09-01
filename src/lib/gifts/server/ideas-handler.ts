@@ -3,7 +3,7 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 
 import { validateGiftRecommendationRequest, type GiftIdea } from '../index'
-import { resolveOpenRouterGiftConfig, resolveStripeGiftConfig } from './config'
+import { isGiftInventoryEnabled, resolveStripeGiftConfig } from './config'
 import {
   giftClientAddress,
   giftJSONResponse,
@@ -13,7 +13,15 @@ import {
   readBoundedGiftRequestText,
   validatedGiftOrigin,
 } from './http'
-import { GiftSearchError, searchGiftIdeas, type GiftSearchResult } from './openrouter'
+import {
+  dealAvailableGiftItems,
+  enqueueBestEffortReplenishRequest,
+  enqueueDueGiftInventoryRevalidation,
+  getGiftInventoryDatabase,
+  isGiftInventoryReady,
+  type GiftInventoryDatabase,
+  type GiftInventoryItem,
+} from './inventory'
 import { createGiftQuoteToken } from './quote-token'
 import { authorizeGiftRequest, type GiftRequestPermit } from './rate-limit'
 
@@ -24,11 +32,16 @@ type IdeasHandlerDependencies = {
     anonymousToken: string
     clientAddress: string
   }) => Promise<GiftRequestPermit>
+  database?: GiftInventoryDatabase
+  deal?: typeof dealAvailableGiftItems
   environment?: NodeJS.ProcessEnv
+  enqueueReplenish?: typeof enqueueBestEffortReplenishRequest
+  enqueueRevalidation?: typeof enqueueDueGiftInventoryRevalidation
   log?: (record: SafeLogRecord) => void
   now?: () => number
   randomUUID?: () => string
-  search?: typeof searchGiftIdeas
+  readiness?: typeof isGiftInventoryReady
+  scheduleMaintenance?: (task: () => Promise<void>) => void
 }
 
 function defaultLog(record: SafeLogRecord) {
@@ -51,40 +64,22 @@ function parseJSON(text: string): unknown {
   }
 }
 
-function publicSearchError(error: unknown): { message: string; status: number } {
-  if (!(error instanceof GiftSearchError)) {
-    return { message: 'The gift scout could not finish this draw. Try again.', status: 502 }
-  }
-
-  if (error.reason === 'timeout' || error.reason === 'network' || error.reason === 'http') {
-    return { message: 'The gift scout is taking a break. Try another draw shortly.', status: 502 }
-  }
-
-  return {
-    message: 'Nothing trustworthy landed in that draw. Try a new range or theme.',
-    status: 502,
-  }
-}
-
 function ideaWithQuote(
-  result: GiftSearchResult['ideas'][number],
+  item: GiftInventoryItem,
   runId: string,
-  searchedAt: string,
   environment: NodeJS.ProcessEnv,
   nowMs: number,
-  createId: () => string,
 ): GiftIdea | null {
-  const id = createId()
   const quoteToken = createGiftQuoteToken(
     {
-      amountCents: result.observedPriceCents,
-      category: result.category,
-      currency: result.currency,
-      itemName: result.name,
-      offerId: id,
-      retailer: result.retailer,
+      amountCents: item.observedPriceCents,
+      category: item.category,
+      currency: item.currency,
+      itemName: item.name,
+      offerId: item.id,
+      retailer: item.retailer,
       runId,
-      sourceUrl: result.sourceUrl,
+      sourceUrl: item.sourceUrl,
     },
     environment,
     nowMs,
@@ -93,10 +88,18 @@ function ideaWithQuote(
   if (!quoteToken) return null
 
   return {
-    ...result,
-    checkedAt: searchedAt,
-    id,
+    artworkUrl: item.artworkUrl,
+    category: item.category,
+    checkedAt: item.checkedAt,
+    currency: item.currency,
+    id: item.id,
+    name: item.name,
+    observedPriceCents: item.observedPriceCents,
+    productDescription: item.productDescription,
     quoteToken,
+    retailer: item.retailer,
+    sourceUrl: item.sourceUrl,
+    whyItFits: item.whyItFits,
   }
 }
 
@@ -107,10 +110,11 @@ export function handleGiftIdeasOptions(
   return giftOptionsResponse(request, environment, 'GET, POST, OPTIONS')
 }
 
-export function handleGiftIdeasStatus(
+export async function handleGiftIdeasStatus(
   request: Request,
-  environment: NodeJS.ProcessEnv = process.env,
-): Response {
+  dependencies: Pick<IdeasHandlerDependencies, 'database' | 'environment' | 'readiness'> = {},
+): Promise<Response> {
+  const environment = dependencies.environment ?? process.env
   const origin = validatedGiftOrigin(request, environment)
   if (request.headers.has('origin') && !origin) {
     return giftJSONResponse(
@@ -121,11 +125,24 @@ export function handleGiftIdeasStatus(
     )
   }
 
+  let ideasEnabled = false
+  const inventoryConfigured = isGiftInventoryEnabled(environment)
+  if (inventoryConfigured) {
+    try {
+      ideasEnabled = await (dependencies.readiness ?? isGiftInventoryReady)(
+        dependencies.database ?? getGiftInventoryDatabase(),
+      )
+    } catch {
+      ideasEnabled = false
+    }
+  }
+
   return giftJSONResponse(
     origin,
     {
       checkoutEnabled: Boolean(resolveStripeGiftConfig(environment)),
-      ideasEnabled: Boolean(resolveOpenRouterGiftConfig(environment)),
+      ideasEnabled,
+      inventoryStatus: ideasEnabled ? 'ready' : inventoryConfigured ? 'restocking' : 'paused',
     },
     200,
     'GET, POST, OPTIONS',
@@ -174,12 +191,11 @@ export async function handleGiftIdeas(
     return giftJSONResponse(origin, { error: validation.error }, 400)
   }
 
-  const config = resolveOpenRouterGiftConfig(environment)
-  if (!config) {
+  if (!isGiftInventoryEnabled(environment)) {
     safeLog({ outcome: 'unavailable', reason: 'configuration' })
     return giftJSONResponse(
       origin,
-      { error: 'The live gift scout is not configured yet. Try again later.' },
+      { error: 'The cached gift inventory is not configured yet. Try again later.' },
       503,
     )
   }
@@ -220,80 +236,77 @@ export async function handleGiftIdeas(
   }
 
   const runId = createId()
-  const searchStartedAt = new Date(now()).toISOString()
+  const drawStartedAt = new Date(now()).toISOString()
 
   try {
-    const result = await (dependencies.search ?? searchGiftIdeas)({
-      config,
-      request: validation.value,
-      runId,
-      searchedAt: searchStartedAt,
+    const database = dependencies.database ?? getGiftInventoryDatabase()
+    const inventory = await (dependencies.deal ?? dealAvailableGiftItems)(database, {
+      budget: validation.value.budget,
+      limit: 9,
+      seed: `${validation.value.variationSeed}:${runId}`,
+      theme: validation.value.theme,
     })
-    const checkedAt = new Date(now()).toISOString()
     const quoteTime = now()
-    const ideas = result.ideas.map((idea) =>
-      ideaWithQuote(idea, runId, checkedAt, environment, quoteTime, createId),
-    )
+    const ideas = inventory.map((item) => ideaWithQuote(item, runId, environment, quoteTime))
 
-    if (ideas.some((idea) => idea === null)) throw new Error('quote_creation_failed')
+    const maintenance = async () => {
+      await Promise.allSettled([
+        (dependencies.enqueueReplenish ?? enqueueBestEffortReplenishRequest)(
+          { budget: validation.value.budget, theme: validation.value.theme },
+          database,
+        ),
+        (dependencies.enqueueRevalidation ?? enqueueDueGiftInventoryRevalidation)(database),
+      ])
+    }
+    try {
+      if (dependencies.scheduleMaintenance) dependencies.scheduleMaintenance(maintenance)
+      else void maintenance()
+    } catch {
+      // The next draw or worker maintenance pass will make the same idempotent checks.
+    }
+
+    if (ideas.length !== 9 || ideas.some((idea) => idea === null)) {
+      safeLog({
+        budget: validation.value.budget,
+        duration: durationBucket(now() - startedAt),
+        inventoryCandidates: inventory.length,
+        outcome: 'unavailable',
+        reason: 'restocking',
+        theme: validation.value.theme,
+      })
+      return giftJSONResponse(
+        origin,
+        { error: 'That product lane is restocking. Try another range or theme shortly.' },
+        503,
+      )
+    }
 
     safeLog({
       budget: validation.value.budget,
-      citations: result.citations,
-      completionTokens: result.usage.completionTokens,
-      cost: result.usage.cost,
       duration: durationBucket(now() - startedAt),
-      listingChecks: result.listingChecks,
-      model: result.model,
+      inventoryCandidates: inventory.length,
       outcome: 'completed',
-      promptTokens: result.usage.promptTokens,
-      searchModel: result.searchModel,
-      searchRequests: result.usage.searchRequests,
-      serverToolCalls: result.usage.serverToolCalls,
-      sourcePricesChanged: result.sourcePricesChanged,
       theme: validation.value.theme,
-      totalTokens: result.usage.totalTokens,
-      verifiedCandidates: result.verifiedCandidates,
     })
 
     return giftJSONResponse(origin, {
       disclaimer:
-        'Prices are recent online observations before tax and shipping. Any Stripe charge is a fixed contribution to Saberistic; AmirSaber may apply it to the selected gift, related costs, or a similar gift if the listing changes.',
+        'Real product images, descriptions, retailer links, prices, and availability are cached references that may change. Any Stripe charge is a fixed gift contribution to Saberistic, not a retailer order; AmirSaber may use it toward the selected product, related costs, a substitute, or another gift.',
       ideas,
       runId,
-      searchedAt: checkedAt,
+      searchedAt: drawStartedAt,
     })
-  } catch (error) {
-    const response = publicSearchError(error)
+  } catch {
     safeLog({
-      completionTokens:
-        error instanceof GiftSearchError ? error.usage?.completionTokens : undefined,
-      cost: error instanceof GiftSearchError ? error.usage?.cost : undefined,
       duration: durationBucket(now() - startedAt),
-      generationId: error instanceof GiftSearchError ? error.upstream.generationId : undefined,
       outcome: 'failed',
-      promptTokens: error instanceof GiftSearchError ? error.usage?.promptTokens : undefined,
-      reason: error instanceof GiftSearchError ? error.reason : 'internal',
-      retryAfter: error instanceof GiftSearchError ? error.upstream.retryAfter : undefined,
-      searchRequests: error instanceof GiftSearchError ? error.usage?.searchRequests : undefined,
-      serverToolCalls: error instanceof GiftSearchError ? error.usage?.serverToolCalls : undefined,
-      totalTokens: error instanceof GiftSearchError ? error.usage?.totalTokens : undefined,
-      upstreamStatus: error instanceof GiftSearchError ? error.upstream.status : undefined,
-      verifiedCandidates:
-        error instanceof GiftSearchError ? error.verification?.verified : undefined,
-      listingChecks: error instanceof GiftSearchError ? error.verification?.checked : undefined,
-      listingRejections:
-        error instanceof GiftSearchError && error.verification?.rejections
-          ? JSON.stringify(error.verification.rejections)
-          : undefined,
-      priceBands:
-        error instanceof GiftSearchError && error.verification?.priceBands
-          ? JSON.stringify(error.verification.priceBands)
-          : undefined,
-      sourcePricesChanged:
-        error instanceof GiftSearchError ? error.verification?.sourcePricesChanged : undefined,
+      reason: 'inventory',
     })
-    return giftJSONResponse(origin, { error: response.message }, response.status)
+    return giftJSONResponse(
+      origin,
+      { error: 'The cached product inventory is temporarily unavailable. Try again shortly.' },
+      503,
+    )
   } finally {
     try {
       await permit.release()

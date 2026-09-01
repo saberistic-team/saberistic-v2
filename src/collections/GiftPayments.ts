@@ -58,6 +58,14 @@ export const GiftPayments: CollectionConfig = {
       required: true,
     }),
     providerControlledField({
+      name: 'inventoryReservationId',
+      type: 'text',
+      index: true,
+      maxLength: 96,
+      required: true,
+      unique: true,
+    }),
+    providerControlledField({
       name: 'itemName',
       type: 'text',
       maxLength: 120,

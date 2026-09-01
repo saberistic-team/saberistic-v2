@@ -569,6 +569,7 @@ export interface GiftPayment {
   id: number;
   giftOfferId: string;
   giftRunId: string;
+  inventoryReservationId: string;
   itemName: string;
   category: string;
   referenceRetailer: string;
@@ -1065,6 +1066,7 @@ export interface DiagnosticRequestsSelect<T extends boolean = true> {
 export interface GiftPaymentsSelect<T extends boolean = true> {
   giftOfferId?: T;
   giftRunId?: T;
+  inventoryReservationId?: T;
   itemName?: T;
   category?: T;
   referenceRetailer?: T;

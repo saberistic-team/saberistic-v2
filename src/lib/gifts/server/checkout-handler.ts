@@ -15,20 +15,39 @@ import {
 import { verifyGiftQuoteToken } from './quote-token'
 import { authorizeGiftCheckout } from './rate-limit'
 import {
+  attachGiftInventoryStripeSession,
+  getGiftInventoryDatabase,
+  releaseGiftInventoryAfterDefinitiveCheckoutFailure,
+  reserveGiftInventoryItem,
+  type GiftInventoryDatabase,
+} from './inventory'
+import {
   createGiftCheckoutSession,
+  GiftCheckoutProviderError,
   giftCheckoutExpiresAt,
+  giftCheckoutIdentifiers,
   giftCheckoutMinimumLeadSeconds,
 } from './stripe'
 
 type CheckoutHandlerDependencies = {
   createCheckout?: typeof createGiftCheckoutSession
   authorizeCheckout?: typeof authorizeGiftCheckout
+  attachInventorySession?: typeof attachGiftInventoryStripeSession
+  database?: GiftInventoryDatabase
   environment?: NodeJS.ProcessEnv
   now?: () => number
+  releaseInventoryAfterDefinitiveFailure?: typeof releaseGiftInventoryAfterDefinitiveCheckoutFailure
+  reserveInventory?: typeof reserveGiftInventoryItem
 }
 
 function checkoutLog(record: {
-  outcome: 'created' | 'provider_error' | 'rate_limited' | 'rate_limit_unavailable'
+  outcome:
+    | 'created'
+    | 'inventory_error'
+    | 'provider_error'
+    | 'rate_limited'
+    | 'rate_limit_unavailable'
+    | 'unavailable'
   quoteReference: string
   status: number
 }) {
@@ -163,20 +182,83 @@ export async function handleGiftCheckout(
     )
   }
 
+  const reservationId = giftCheckoutIdentifiers(quoteToken).inventoryReservationId
+  const reservationTtlSeconds = giftCheckoutExpiresAt(claim) - Math.floor(currentTime / 1_000)
+  let database: GiftInventoryDatabase
+  let reservation
   try {
-    const checkoutUrl = await (dependencies.createCheckout ?? createGiftCheckoutSession)(
+    database = dependencies.database ?? getGiftInventoryDatabase()
+    reservation = await (dependencies.reserveInventory ?? reserveGiftInventoryItem)(database, {
+      expected: {
+        category: claim.category,
+        currency: claim.currency,
+        name: claim.itemName,
+        observedPriceCents: claim.amountCents,
+        retailer: claim.retailer,
+        sourceUrl: claim.sourceUrl,
+      },
+      offerId: claim.offerId,
+      reservationId,
+      ttlSeconds: reservationTtlSeconds,
+    })
+  } catch {
+    checkoutLog({ outcome: 'inventory_error', quoteReference: reference, status: 503 })
+    return giftJSONResponse(
+      origin,
+      { error: 'Gift inventory is temporarily unavailable. No payment was taken.' },
+      503,
+    )
+  }
+
+  if (!reservation) {
+    checkoutLog({ outcome: 'unavailable', quoteReference: reference, status: 409 })
+    return giftJSONResponse(
+      origin,
+      { error: 'That gift was just claimed. Choose another product from a fresh deck.' },
+      409,
+    )
+  }
+
+  try {
+    const checkout = await (dependencies.createCheckout ?? createGiftCheckoutSession)(
       claim,
       quoteToken,
       config,
       currentTime,
     )
+    if (checkout.inventoryReservationId !== reservationId) {
+      throw new GiftCheckoutProviderError('ambiguous')
+    }
+    const attached = await (
+      dependencies.attachInventorySession ?? attachGiftInventoryStripeSession
+    )(database, {
+      offerId: claim.offerId,
+      reservationId,
+      stripeCheckoutSessionId: checkout.sessionId,
+    })
+    if (!attached) throw new GiftCheckoutProviderError('ambiguous')
     checkoutLog({ outcome: 'created', quoteReference: reference, status: 200 })
-    return giftJSONResponse(origin, { checkoutUrl })
-  } catch {
+    return giftJSONResponse(origin, { checkoutUrl: checkout.checkoutUrl })
+  } catch (error) {
+    if (error instanceof GiftCheckoutProviderError && error.certainty === 'definitive') {
+      try {
+        await (
+          dependencies.releaseInventoryAfterDefinitiveFailure ??
+          releaseGiftInventoryAfterDefinitiveCheckoutFailure
+        )(database, { offerId: claim.offerId, reservationId })
+      } catch {
+        // The reservation expires if a definitive provider rejection cannot be released now.
+      }
+    }
     checkoutLog({ outcome: 'provider_error', quoteReference: reference, status: 502 })
     return giftJSONResponse(
       origin,
-      { error: 'Stripe Checkout did not open. No payment was taken.' },
+      {
+        error:
+          error instanceof GiftCheckoutProviderError && error.certainty === 'definitive'
+            ? 'Stripe Checkout did not open. No payment was taken.'
+            : 'Stripe Checkout status could not be confirmed. Check for an existing confirmation before trying again.',
+      },
       502,
     )
   }

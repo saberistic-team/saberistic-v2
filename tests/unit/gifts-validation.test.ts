@@ -29,18 +29,16 @@ function giftIdeas(prices: readonly number[]): ModelGiftIdea[] {
   }))
 }
 
-function citedURLs(ideas: readonly ModelGiftIdea[]): Set<string> {
-  return new Set(ideas.map((idea) => idea.sourceUrl))
-}
-
 function recommendationResponse() {
   return {
     disclaimer: 'Prices are approximate and the contribution is fixed.',
     ideas: giftIdeas([1_500, 2_500, 4_999, 5_000, 9_000, 14_999, 15_000, 22_000, 30_000]).map(
       (idea, index) => ({
         ...idea,
+        artworkUrl: `/api/gifts/artwork/inventory_${String(index + 1).padStart(8, '0')}`,
         checkedAt: '2026-08-31T15:30:00.000Z',
         id: `offer_${String(index + 1).padStart(8, '0')}`,
+        productDescription: `A canonical retailer description for verified gift idea ${index + 1}.`,
         quoteToken: `gq1.${'a'.repeat(40 + index)}.${'b'.repeat(43)}`,
       }),
     ),
@@ -78,22 +76,10 @@ describe('gift model output validation', () => {
     ).toBeNull()
   })
 
-  it('requires all nine listings to be backed by response citations', () => {
+  it('accepts model-authored references without response citations', () => {
     const ideas = giftIdeas([1_600, 2_400, 3_200, 5_500, 8_000, 12_000, 16_000, 22_000, 29_000])
-    const citations = citedURLs(ideas)
-    citations.delete(ideas[8]!.sourceUrl)
 
-    expect(validateModelGiftIdeas({ ideas }, 'mixed', citations)).toEqual({
-      error: 'The gift scout could not verify every listing.',
-      ok: false,
-    })
-  })
-
-  it('normalizes harmless citation fragments before matching a listing', () => {
-    const ideas = giftIdeas([1_600, 2_400, 3_200, 5_500, 8_000, 12_000, 16_000, 22_000, 29_000])
-    const citations = new Set(ideas.map((idea) => `${idea.sourceUrl}#purchase-panel`))
-
-    expect(validateModelGiftIdeas({ ideas }, 'mixed', citations)).toEqual({
+    expect(validateModelGiftIdeas({ ideas }, 'mixed')).toEqual({
       ok: true,
       value: ideas,
     })
@@ -102,16 +88,16 @@ describe('gift model output validation', () => {
   it('requires a mixed deck to include low, middle, and high price bands', () => {
     const ideas = giftIdeas([1_500, 1_800, 2_000, 2_200, 2_500, 2_800, 3_000, 3_400, 4_900])
 
-    expect(validateModelGiftIdeas({ ideas }, 'mixed', citedURLs(ideas))).toEqual({
+    expect(validateModelGiftIdeas({ ideas }, 'mixed')).toEqual({
       error: 'The mixed deck did not cover enough price ranges.',
       ok: false,
     })
   })
 
-  it('accepts a cited mixed deck spanning every required price band', () => {
+  it('accepts a mixed deck spanning every required price band', () => {
     const ideas = giftIdeas([1_500, 2_500, 4_999, 5_000, 9_000, 14_999, 15_000, 22_000, 30_000])
 
-    expect(validateModelGiftIdeas({ ideas }, 'mixed', citedURLs(ideas))).toEqual({
+    expect(validateModelGiftIdeas({ ideas }, 'mixed')).toEqual({
       ok: true,
       value: ideas,
     })
@@ -123,7 +109,7 @@ describe('gift model output validation', () => {
       index === 0 ? { ...idea, confidence: 0.99 } : idea,
     )
 
-    expect(validateModelGiftIdeas({ ideas: expanded }, 'under_30', citedURLs(ideas))).toEqual({
+    expect(validateModelGiftIdeas({ ideas: expanded }, 'under_30')).toEqual({
       error: 'The gift scout returned an invalid deck.',
       ok: false,
     })
@@ -137,9 +123,7 @@ describe('gift model output validation', () => {
     const ideas = giftIdeas([1_000, 1_200, 1_400, 1_600, 1_800, 2_000, 2_200, 2_400, 3_000])
     const unapproved = ideas.map((idea, index) => (index === 0 ? { ...idea, sourceUrl } : idea))
 
-    expect(
-      validateModelGiftIdeas({ ideas: unapproved }, 'under_30', citedURLs(unapproved)),
-    ).toEqual({
+    expect(validateModelGiftIdeas({ ideas: unapproved }, 'under_30')).toEqual({
       error: 'The gift scout returned an invalid deck.',
       ok: false,
     })
@@ -163,9 +147,7 @@ describe('gift model output validation', () => {
       index === 0 ? { ...idea, category, name } : idea,
     )
 
-    expect(
-      validateModelGiftIdeas({ ideas: prohibited }, 'under_30', citedURLs(prohibited)),
-    ).toEqual({
+    expect(validateModelGiftIdeas({ ideas: prohibited }, 'under_30')).toEqual({
       error: 'The gift scout returned an invalid deck.',
       ok: false,
     })
@@ -183,9 +165,7 @@ describe('gift model output validation', () => {
     const ideas = giftIdeas([1_000, 1_200, 1_400, 1_600, 1_800, 2_000, 2_200, 2_400, 3_000])
     const prohibited = ideas.map((idea, index) => (index === 0 ? { ...idea, ...clue } : idea))
 
-    expect(
-      validateModelGiftIdeas({ ideas: prohibited }, 'under_30', citedURLs(prohibited)),
-    ).toEqual({
+    expect(validateModelGiftIdeas({ ideas: prohibited }, 'under_30')).toEqual({
       error: 'The gift scout returned an invalid deck.',
       ok: false,
     })
@@ -207,6 +187,16 @@ describe('gift model output validation', () => {
     const candidate = { ...giftIdeas([1_500])[0]!, name }
     expect(validateModelGiftIdea(candidate, 'under_30')).toEqual(candidate)
   })
+
+  it('does not reject ordinary retailer prose as a used, component, or battery listing', () => {
+    const candidate = {
+      ...giftIdeas([1_500])[0]!,
+      whyItFits:
+        'Designed to be used every day, with sturdy components and batteries included for convenience.',
+    }
+
+    expect(validateModelGiftIdea(candidate, 'under_30')).toEqual(candidate)
+  })
 })
 
 describe('gift model response schema', () => {
@@ -217,6 +207,7 @@ describe('gift model response schema', () => {
 
     expect(responseFormat.type).toBe('json_schema')
     expect(responseFormat.json_schema.strict).toBe(true)
+    expect(responseFormat.json_schema.name).toBe('gift_inventory_research_batch')
     expect(schema.additionalProperties).toBe(false)
     expect(schema.properties.ideas).toMatchObject({ maxItems: 9, minItems: 9 })
     expect(ideaSchema.additionalProperties).toBe(false)
@@ -256,5 +247,21 @@ describe('gift browser response validation', () => {
 
     expect(isGiftRecommendationResponse({ ...response, ideas: duplicateId })).toBe(false)
     expect(isGiftRecommendationResponse({ ...response, ideas: duplicateURL })).toBe(false)
+  })
+
+  it('requires locally cached product artwork and the searchedAt response timestamp', () => {
+    const response = recommendationResponse()
+    const remoteArtwork = response.ideas.map((idea, index) =>
+      index === 0 ? { ...idea, artworkUrl: 'https://retailer.example/product.jpg' } : idea,
+    )
+
+    expect(isGiftRecommendationResponse({ ...response, ideas: remoteArtwork })).toBe(false)
+    expect(
+      isGiftRecommendationResponse({
+        ...response,
+        generatedAt: response.searchedAt,
+        searchedAt: undefined,
+      }),
+    ).toBe(false)
   })
 })

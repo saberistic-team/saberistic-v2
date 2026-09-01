@@ -73,6 +73,10 @@ projects:
                 sync: false
               - key: OPENROUTER_GIFT_FALLBACK_MODEL
                 sync: false
+              - key: OPENROUTER_GIFT_RESEARCH_MODEL
+                sync: false
+              - key: OPENROUTER_GIFT_INVENTORY_MODEL
+                sync: false
               - key: STRIPE_RESTRICTED_KEY
                 sync: false
               - key: STRIPE_GIFT_WEBHOOK_SECRET
@@ -120,7 +124,9 @@ projects:
               - key: GIFTING_TOKEN_LIMIT
                 value: '4'
               - key: GIFTING_DAILY_LIMIT
-                value: '10'
+                value: '500'
+              - key: GIFT_INVENTORY_DAILY_DISCOVERY_LIMIT
+                value: '48'
               - key: GIFTING_CONCURRENCY_LIMIT
                 value: '2'
               - key: GIFTING_CHECKOUT_IP_LIMIT
@@ -161,7 +167,7 @@ projects:
             headers:
               - path: /*
                 name: Content-Security-Policy
-                value: "default-src 'self'; base-uri 'self'; connect-src 'self' https://saberistic-web-staging.onrender.com https://umami.saberistic.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data:; media-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://umami.saberistic.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
+                value: "default-src 'self'; base-uri 'self'; connect-src 'self' https://saberistic-web-staging.onrender.com https://umami.saberistic.com; font-src 'self' data:; form-action 'self'; frame-ancestors 'none'; img-src 'self' data: https://saberistic-web-staging.onrender.com; media-src 'self'; object-src 'none'; script-src 'self' 'unsafe-inline' https://umami.saberistic.com; style-src 'self' 'unsafe-inline'; upgrade-insecure-requests"
               - path: /*
                 name: Permissions-Policy
                 value: camera=(), geolocation=(), microphone=(), payment=(), usb=()

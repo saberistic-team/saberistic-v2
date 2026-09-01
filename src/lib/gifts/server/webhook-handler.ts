@@ -9,6 +9,11 @@ import {
   type GiftPaymentStore,
   upsertGiftPayment,
 } from './payments'
+import {
+  getGiftInventoryDatabase,
+  transitionGiftInventoryFromPaymentStatus,
+  type GiftInventoryDatabase,
+} from './inventory'
 import { createGiftStripeClient } from './stripe'
 import { hasGiftDraftMetadata } from './stripe-metadata'
 
@@ -25,7 +30,9 @@ type WebhookDependencies = {
     paymentIntentId: string,
     config: StripeGiftWebhookConfig,
   ) => Promise<Stripe.Checkout.Session | null>
+  inventoryDatabase?: GiftInventoryDatabase
   store?: GiftPaymentStore
+  transitionInventory?: typeof transitionGiftInventoryFromPaymentStatus
 }
 
 function webhookResponse(body: unknown, status = 200): Response {
@@ -204,6 +211,16 @@ export async function handleGiftWebhook(
 
   try {
     const result = await upsertGiftPayment(dependencies.store ?? (await defaultStore()), payment)
+    const inventoryTransition = await (
+      dependencies.transitionInventory ?? transitionGiftInventoryFromPaymentStatus
+    )(dependencies.inventoryDatabase ?? getGiftInventoryDatabase(), {
+      offerId: result.record.giftOfferId,
+      paymentStatus: result.record.paymentStatus,
+      reservationId: result.record.inventoryReservationId,
+    })
+    if (inventoryTransition === 'unchanged') {
+      throw new Error('gift_inventory_transition_failed')
+    }
     webhookLog({
       duplicate: result.duplicate,
       outcome: 'handled',

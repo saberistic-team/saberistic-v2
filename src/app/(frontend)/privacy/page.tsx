@@ -170,34 +170,41 @@ export default function PrivacyPage() {
 
           <section aria-labelledby="gift-processing-heading">
             <p className="eyebrow">07 / GIFT DRAFT PROCESSING</p>
-            <h2 id="gift-processing-heading">A searched deck, not a personal dossier</h2>
+            <h2 id="gift-processing-heading">Cached product inventory, not a personal dossier</h2>
             <p className="long-copy">
               Gift Draft sends the chosen price range, theme, a random variation seed, and an
               anonymous browser token to Saberistic&apos;s application server. It does not ask for a
               visitor&apos;s name, relationship, interests, address, or recipient profile. The
-              server combines those controls with AmirSaber&apos;s curated public gift profile and
-              asks OpenRouter to search current US online listings. OpenRouter, an eligible model
-              provider, the selected search provider, and the cited retailer pages process that
-              minimized request in transit. The route requests zero-data-retention providers, denies
-              provider data collection, disables response caching, and treats search pages as
-              untrusted evidence.
+              server deals from durable inventory of real products previously found at actual
+              retailers, so a draw does not wait for OpenRouter or a retailer page. The selected
+              controls and anonymous token are used for the draw and abuse limits; they are not
+              stored as a visitor profile.
             </p>
             <p className="long-copy">
-              Search results are checked against a strict local format. Every displayed listing must
-              have an HTTPS citation, and every exact checkout amount is placed in a short-lived,
-              signed quote so the browser cannot change it. A recent listing is still not inventory:
-              displayed prices are approximate observations before tax and shipping, can move, and
-              are checked again by AmirSaber before the retailer purchase. The amount shown at
-              Stripe is a fixed gift contribution, not a retailer price guarantee; AmirSaber may
-              apply it to the selected gift, related tax or shipping, or a similar gift if the
-              listing changes.
+              Each draw performs a best-effort minimum-stock check. When replenishment is needed, a
+              background job combines bounded gift criteria with AmirSaber&apos;s curated public
+              gift profile and asks OpenRouter to research real retailer products. OpenRouter, an
+              eligible model provider, the selected search provider, and the researched retailer
+              pages may process that product-only request in transit. The job applies product,
+              budget, URL, retailer, and duplicate checks before a record becomes eligible.
+            </p>
+            <p className="long-copy">
+              Saberistic stores the retailer product URL, retailer name, observed price, copied
+              product description, copied product image, suitability note, and validation timing and
+              status in its own PostgreSQL-backed inventory. The copied description and image let an
+              existing draw remain usable when a retailer or image host is temporarily unavailable.
+              Periodic background jobs revisit non-sold items to refresh availability, price,
+              description, and image. A temporary or ambiguous validation failure does not block a
+              draw that has a usable cached record; a product confirmed unavailable or unsafe is
+              retired from future draws.
             </p>
             <p className="long-copy">
               The current deck and game choices can be kept in your browser&apos;s local storage so
-              a canceled checkout does not erase the round. Saberistic does not put the deck or
-              picks into Payload or Umami. Short-lived Key Value counters use one-way HMAC-derived
-              network and browser-token values to limit search cost; the raw identifiers and choices
-              are not stored in those counters.
+              a canceled checkout does not erase the round. Saberistic does not put a visitor&apos;s
+              deck or picks into Payload or Umami; the shared product inventory is not linked to a
+              visitor identity. Short-lived Key Value counters use one-way HMAC-derived network and
+              browser-token values to limit requests and cost; the raw identifiers and choices are
+              not stored in those counters.
             </p>
             <p className="long-copy">
               If you continue, Stripe hosts the payment page and handles the payment details.
@@ -205,12 +212,16 @@ export default function PrivacyPage() {
               Saberistic keeps a staff-only payment record containing the selected item reference,
               contribution amount and status, Stripe session, payment, charge, and event
               identifiers, the payer email supplied to Stripe, any optional checkout note, and the
-              manual fulfillment status. The record receives a deletion review date 90 days after
-              the Stripe event; a later payment or refund event can move that review date forward.
-              The payment goes to Saberistic; it does not pay the cited retailer or place a retailer
-              order automatically. AmirSaber makes that purchase manually after confirmed payment.
-              Stripe&apos;s own processing is described in its{' '}
-              <a href="https://stripe.com/privacy">privacy policy</a>.
+              manual fulfillment status. The selected inventory item is reserved while Checkout is
+              pending. Confirmed payment retires it from future draws; a definitively failed or
+              expired Checkout releases it. A refund does not automatically put the item back into
+              inventory. The record receives a deletion review date 90 days after the Stripe event;
+              a later payment or refund event can move that review date forward. The payment is a
+              contribution to Saberistic; it does not pay the displayed retailer or place a retailer
+              order automatically. AmirSaber decides what to buy after confirmed payment and may
+              choose the suggested product, related costs, or a similar gift. Stripe&apos;s own
+              processing is described in its{' '}
+              <a href="https://stripe.com/privacy">privacy policy.</a>
             </p>
           </section>
 
@@ -239,7 +250,7 @@ export default function PrivacyPage() {
             <p className="long-copy">
               This page will be updated if the collected fields, event allowlist, retention process,
               readiness processing, diagnostic handoff, Gift Draft processing, payment handling, or
-              analytics infrastructure changes. Last updated August 31, 2026.
+              analytics infrastructure changes. Last updated September 1, 2026.
             </p>
           </section>
         </div>

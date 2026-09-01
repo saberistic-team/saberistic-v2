@@ -106,12 +106,14 @@ export type GiftRecommendationRequest = {
 }
 
 export type GiftIdea = {
+  artworkUrl: string
   category: string
   checkedAt: string
   currency: 'usd'
   id: string
   name: string
   observedPriceCents: number
+  productDescription: string
   quoteToken: string
   retailer: string
   sourceUrl: string

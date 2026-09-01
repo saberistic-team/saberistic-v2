@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useEffect, useRef, useState } from 'react'
 
 import {
@@ -24,7 +25,11 @@ export type GiftDiscoveryGameProps = {
 }
 
 type CheckoutReturn = 'canceled' | 'success' | null
-type GiftAvailability = { checkoutEnabled: boolean; ideasEnabled: boolean }
+type GiftAvailability = {
+  checkoutEnabled: boolean
+  ideasEnabled: boolean
+  inventoryStatus: 'paused' | 'ready' | 'restocking'
+}
 type PaymentVerification = 'checking' | 'unverified' | GiftPaymentStatus | null
 type FocusTarget = 'checkout' | 'final' | 'round' | 'setup'
 
@@ -182,9 +187,10 @@ function isGiftPaymentStatusResponse(
 function isGiftAvailability(value: unknown): value is GiftAvailability {
   return (
     isRecord(value) &&
-    Object.keys(value).length === 2 &&
+    Object.keys(value).length === 3 &&
     typeof value.checkoutEnabled === 'boolean' &&
-    typeof value.ideasEnabled === 'boolean'
+    typeof value.ideasEnabled === 'boolean' &&
+    ['paused', 'ready', 'restocking'].includes(String(value.inventoryStatus))
   )
 }
 
@@ -198,13 +204,13 @@ function paymentReturnCopy(status: PaymentVerification) {
       }
     case 'paid':
       return {
-        body: 'Stripe confirmed the contribution and the private fulfillment queue now tracks it. AmirSaber will make the separate retailer purchase manually.',
+        body: 'Stripe confirmed the gift contribution. No retailer order was placed automatically; AmirSaber may use the contribution toward the selected product or another gift.',
         eyebrow: 'PAYMENT CONFIRMED',
         title: 'The gift contribution is in.',
       }
     case 'pending':
       return {
-        body: 'Stripe has not confirmed the funds yet. AmirSaber will wait for payment confirmation before making the separate retailer purchase.',
+        body: 'Stripe has not confirmed the funds yet. No retailer order will be placed automatically while the contribution is pending.',
         eyebrow: 'PAYMENT PENDING',
         title: 'Stripe is still processing this contribution.',
       }
@@ -222,7 +228,7 @@ function paymentReturnCopy(status: PaymentVerification) {
       }
     case 'failed':
       return {
-        body: 'Stripe did not confirm the funds, so no retailer purchase will be made from this checkout.',
+        body: 'Stripe did not confirm the funds, so no gift contribution was completed and no retailer order was placed.',
         eyebrow: 'PAYMENT NOT CONFIRMED',
         title: 'The contribution did not complete.',
       }
@@ -334,16 +340,26 @@ function GiftIdeaCard({
 
   return (
     <article className={selected ? 'gift-card gift-card--selected' : 'gift-card'}>
+      <figure className="gift-card__product-image">
+        <Image
+          alt={`${idea.name} product image`}
+          fill
+          sizes="(max-width: 52rem) 100vw, 33vw"
+          src={idea.artworkUrl}
+        />
+        <figcaption>Cached product image</figcaption>
+      </figure>
       <div className="gift-card__meta">
         <span>{String(displayIndex).padStart(2, '0')}</span>
         <span className="status">{idea.category}</span>
       </div>
       <h3 id={titleId}>{idea.name}</h3>
       <p className="gift-card__reason">{idea.whyItFits}</p>
+      <p className="gift-card__description">{idea.productDescription}</p>
       <div className="gift-card__price" id={detailId}>
-        <strong>Approx. {formatPrice(idea.observedPriceCents)}</strong>
+        <strong>Approx. cached price {formatPrice(idea.observedPriceCents)}</strong>
         <span>
-          Seen at {idea.retailer} · checked {formatCheckedAt(idea.checkedAt)}
+          {idea.retailer} · last checked {formatCheckedAt(idea.checkedAt)}
         </span>
       </div>
       <div className="gift-card__actions">
@@ -354,7 +370,7 @@ function GiftIdeaCard({
           rel="noopener noreferrer"
           target="_blank"
         >
-          View listing <span aria-hidden="true">↗</span>
+          View retailer <span aria-hidden="true">↗</span>
         </a>
         <button
           aria-describedby={`${titleId} ${detailId}`}
@@ -363,7 +379,7 @@ function GiftIdeaCard({
           onClick={onSelect}
           type="button"
         >
-          {selected ? 'Selected for checkout' : actionLabel}
+          {selected ? 'Selected for contribution' : actionLabel}
         </button>
       </div>
     </article>
@@ -399,8 +415,8 @@ function GiftSetup({
           Choose the shape of the surprise.
         </h2>
         <p>
-          Pick a spending range and a lane. Each game searches for nine different ideas suited to
-          AmirSaber, then deals them across three rounds.
+          Pick a spending range and a theme. Each quick round draws three real products from the
+          ready inventory while background discovery refreshes future games.
         </p>
       </div>
 
@@ -451,10 +467,12 @@ function GiftSetup({
           {availabilityCheckFailed
             ? 'The page could not check the live Gift Draft status. No draw will start until that check succeeds.'
             : availability === null
-              ? 'Checking whether the live gift scout is ready…'
+              ? 'Checking whether the cached product inventory is ready…'
               : availability.ideasEnabled
-                ? 'Every new deal uses a fresh variation, so different visitors can see different lists.'
-                : 'The live gift scout is paused while its current listings and safety checks are reviewed.'}
+                ? 'Each deal is instant from cached inventory; background discovery refreshes later games.'
+                : availability.inventoryStatus === 'restocking'
+                  ? 'Real products are being checked and cached now. This page will retry automatically.'
+                  : 'The cached product inventory is paused right now. Try again later.'}
         </p>
         <button
           className="button"
@@ -467,10 +485,12 @@ function GiftSetup({
           {availabilityCheckFailed
             ? 'Try status again'
             : availability === null
-              ? 'Checking Gift Draft…'
+              ? 'Checking inventory…'
               : availability.ideasEnabled
                 ? 'Deal the first round'
-                : 'Gift Draft is paused'}
+                : availability.inventoryStatus === 'restocking'
+                  ? 'Restocking real products…'
+                  : 'Product inventory is paused'}
         </button>
       </div>
     </div>
@@ -480,9 +500,11 @@ function GiftSetup({
 function GiftLoading({ message }: { message: string }) {
   return (
     <div aria-live="polite" className="gift-loading" role="status">
-      <p className="eyebrow">BUILDING THE DECK</p>
+      <p className="eyebrow">DEALING FROM CACHED INVENTORY</p>
       <h2>{message}</h2>
-      <p>Online search and verification can take a few moments.</p>
+      <p>
+        Ready products keep this draw quick while discovery and validation refresh future games.
+      </p>
       <div aria-hidden="true" className="gift-loading__cards">
         <span />
         <span />
@@ -511,7 +533,7 @@ export function GiftDiscoveryGame({
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [liveMessage, setLiveMessage] = useState('')
-  const [loadingMessage, setLoadingMessage] = useState('Searching trusted shops…')
+  const [loadingMessage, setLoadingMessage] = useState('Assembling your cached product deck…')
   const [picks, setPicks] = useState<string[]>([])
   const [paymentVerification, setPaymentVerification] = useState<PaymentVerification>(null)
   const [paymentVerificationTick, setPaymentVerificationTick] = useState(0)
@@ -605,6 +627,16 @@ export function GiftDiscoveryGame({
       controller.abort()
     }
   }, [availabilityCheckTick, ideasEndpoint])
+
+  useEffect(() => {
+    if (availability?.inventoryStatus !== 'restocking') return
+    const retry = window.setTimeout(() => {
+      setAvailability(null)
+      setAvailabilityCheckFailed(false)
+      setAvailabilityCheckTick((current) => current + 1)
+    }, 60_000)
+    return () => window.clearTimeout(retry)
+  }, [availability?.inventoryStatus, availabilityCheckTick])
 
   useEffect(() => {
     if (!hasRestored || checkoutReturn !== 'success') return
@@ -768,14 +800,14 @@ export function GiftDiscoveryGame({
     setHasAcknowledgedContribution(false)
     setIsLoading(true)
     setLiveMessage('')
-    setLoadingMessage('Searching trusted shops…')
+    setLoadingMessage('Assembling your cached product deck…')
     setPaymentVerification(null)
     clearCheckoutQuery()
 
     const controller = new AbortController()
     const progressTimers = [
-      window.setTimeout(() => setLoadingMessage('Checking price and availability…'), 2_200),
-      window.setTimeout(() => setLoadingMessage('Keeping the nine ideas varied…'), 5_000),
+      window.setTimeout(() => setLoadingMessage('Opening the ready inventory…'), 2_200),
+      window.setTimeout(() => setLoadingMessage('Checking the nine-product mix…'), 5_000),
     ]
     const timeout = window.setTimeout(() => controller.abort(), 70_000)
 
@@ -799,12 +831,13 @@ export function GiftDiscoveryGame({
           setAvailability((current) => ({
             checkoutEnabled: current?.checkoutEnabled ?? false,
             ideasEnabled: false,
+            inventoryStatus: 'restocking',
           }))
         }
         setError(
           safeAPIMessage(
             data,
-            'The gift scout could not build a verified deck. Review the settings and try again.',
+            'The cached inventory could not assemble a usable deck. Review the settings and try again.',
           ),
         )
         return
@@ -817,13 +850,13 @@ export function GiftDiscoveryGame({
       setFinalId(null)
       setPicks([])
       setResponse(data)
-      setLiveMessage('Nine verified ideas are ready. Round 1 of 3.')
+      setLiveMessage('Nine gift ideas are ready. Round 1 of 3.')
       requestFocus('round')
     } catch {
       setError(
         controller.signal.aborted
-          ? 'The gift scout took too long to answer. Try dealing another deck.'
-          : 'The gift scout could not be reached. No checkout was started; please try again.',
+          ? 'The cached inventory took too long to answer. Try dealing another deck.'
+          : 'The cached inventory could not be reached. No checkout was started; please try again.',
       )
     } finally {
       progressTimers.forEach((timer) => window.clearTimeout(timer))
@@ -930,14 +963,13 @@ export function GiftDiscoveryGame({
         <p className="eyebrow">SABERISTIC / GIFT DRAFT</p>
         <h1>Pick one. Pass two. Make my day.</h1>
         <p className="page-hero__lede">
-          Choose a range and a theme. The gift scout searches current listings and deals three
-          fitting ideas per round. Keep one from each, then send a fixed gift contribution with
-          Stripe.
+          Keep one of three real retailer products in each round. The deck loads instantly from a
+          cached inventory while background discovery refreshes later games.
         </p>
         <p className="safety-line safety-line--large">
-          <span aria-hidden="true">◇</span> This is a gift for AmirSaber. Nothing is shipped to you,
-          retailer prices are approximate, and AmirSaber—not Stripe—makes the retailer purchase
-          manually afterward.
+          <span aria-hidden="true">◇</span> Cached images, links, prices, and availability can
+          change. Choosing a product sends a fixed gift contribution; it does not place a retailer
+          order, and AmirSaber may use the contribution toward any gift.
         </p>
       </header>
 
@@ -1052,8 +1084,8 @@ export function GiftDiscoveryGame({
                       Keep one. The other two leave the deck.
                     </h2>
                     <p>
-                      Prices came from the linked listings and were checked when this deck was
-                      built. Tax, shipping, and later price changes are not included.
+                      These real products came from the cached, validated inventory. Retailer links,
+                      prices, and availability can change without blocking your gift contribution.
                     </p>
                   </div>
                   <div className="gift-card-grid">
@@ -1083,8 +1115,8 @@ export function GiftDiscoveryGame({
                       One gift gets the checkout button.
                     </h2>
                     <p>
-                      Choose a finalist, review exactly who receives the payment and how the gift is
-                      fulfilled, then continue to Stripe.
+                      Choose the product that best captures your intention, then review exactly who
+                      receives the fixed contribution and what the retailer link does not do.
                     </p>
                   </div>
 
@@ -1121,16 +1153,16 @@ export function GiftDiscoveryGame({
                           You are sending a fixed gift contribution—not placing a retailer order.
                         </h3>
                         <p>
-                          The reference listing suggested a{' '}
+                          The cached listing suggested a{' '}
                           {formatPrice(selectedIdea.observedPriceCents)} contribution for{' '}
-                          {selectedIdea.name}. Stripe sends that fixed amount to Saberistic, not to{' '}
-                          {selectedIdea.retailer}. Nothing is shipped to you, and the amount is not
-                          a retailer price guarantee.
+                          {selectedIdea.name}. Stripe would send that fixed amount to Saberistic,
+                          not to {selectedIdea.retailer}. Nothing is ordered or shipped to you
+                          automatically.
                         </p>
                         <p>
-                          The listing price is approximate. AmirSaber may apply the contribution to
-                          the selected item, its tax or shipping, or a similar gift if the listing
-                          or price changes before the manual purchase.
+                          The retailer link, cached price, and availability may change. That does
+                          not block the gift contribution: AmirSaber may use it toward the selected
+                          product, related costs, a substitute, or any other gift.
                         </p>
                       </div>
 
@@ -1155,7 +1187,7 @@ export function GiftDiscoveryGame({
                           <div>
                             <dt>How it is used</dt>
                             <dd>
-                              Selected gift, related costs, or a similar gift if the listing changes
+                              Selected product, related costs, a substitute, or any other gift
                             </dd>
                           </div>
                         </dl>
@@ -1184,8 +1216,8 @@ export function GiftDiscoveryGame({
                           <div className="gift-checkout-complete" role="note">
                             <strong>Gift contribution checkout is currently paused.</strong>
                             <span>
-                              You can still review the reference listing. No Stripe Checkout can be
-                              opened until the payment path finishes acceptance.
+                              You can still finish the game and review the cached listing. No Stripe
+                              Checkout can open until the payment path finishes acceptance.
                             </span>
                           </div>
                         ) : completed ? (
@@ -1236,8 +1268,10 @@ export function GiftDiscoveryGame({
                         : availability === null
                           ? 'Checking whether a new Gift Draft can start…'
                           : availability.ideasEnabled
-                            ? 'Want a different set? A new variation searches for nine different ideas.'
-                            : 'New Gift Drafts are paused while the live listings and safety checks are reviewed.'}
+                            ? 'Want a different set? Deal instantly from cached inventory while discovery refreshes future games.'
+                            : availability.inventoryStatus === 'restocking'
+                              ? 'Real products are being checked and cached for the next game.'
+                              : 'New Gift Drafts are paused right now. Try again later.'}
                     </p>
                     <button
                       className="button button--quiet"
@@ -1255,7 +1289,9 @@ export function GiftDiscoveryGame({
                           ? 'Checking Gift Draft…'
                           : availability.ideasEnabled
                             ? 'Deal a new deck'
-                            : 'Gift Draft is paused'}
+                            : availability.inventoryStatus === 'restocking'
+                              ? 'Restocking real products…'
+                              : 'Gift Draft is paused'}
                     </button>
                   </div>
                 </div>
@@ -1266,7 +1302,7 @@ export function GiftDiscoveryGame({
 
         <aside aria-labelledby="gift-method-heading" className="gift-method">
           <div>
-            <p className="eyebrow">METHOD / FIT, VARIETY, PRICE</p>
+            <p className="eyebrow">METHOD / FIT, CACHE, CLARITY</p>
             <h2 id="gift-method-heading">A playful draft with a literal payment boundary.</h2>
           </div>
           <div className="gift-method__grid">
@@ -1274,7 +1310,7 @@ export function GiftDiscoveryGame({
               <span aria-hidden="true">01</span>
               <h3>Appropriate by design</h3>
               <p>
-                Ideas are ranked against AmirSaber’s published interests: useful, durable,
+                Real products are matched to AmirSaber’s published interests: useful, durable,
                 design-conscious tools, books, desk objects, and reasons to step away from a screen.
               </p>
             </section>
@@ -1282,16 +1318,17 @@ export function GiftDiscoveryGame({
               <span aria-hidden="true">02</span>
               <h3>Different every game</h3>
               <p>
-                A fresh variation changes the candidate mix while the server still requires nine
-                distinct, cited listings in the selected range.
+                Each game deals from a ready product cache. Background discovery and validation
+                refresh that rolling inventory for later games without slowing this draw.
               </p>
             </section>
             <section>
               <span aria-hidden="true">03</span>
-              <h3>Reference price, fixed contribution</h3>
+              <h3>Cached price, fixed contribution</h3>
               <p>
-                The linked retailer supplies an observed price. Stripe collects a clearly disclosed,
-                fixed gift contribution for Saberistic; AmirSaber completes the separate purchase.
+                The approximate observed price and retailer link are references that may change.
+                Stripe would collect a clearly disclosed gift contribution for Saberistic; no
+                retailer order is placed automatically.
               </p>
             </section>
           </div>

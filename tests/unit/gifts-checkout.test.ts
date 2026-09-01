@@ -4,17 +4,22 @@ vi.mock('server-only', () => ({}))
 
 import type { GiftQuoteClaim } from '@/lib/gifts'
 import { handleGiftCheckout } from '@/lib/gifts/server/checkout-handler'
+import type { GiftInventoryDatabase, GiftInventoryItem } from '@/lib/gifts/server/inventory'
 import { createGiftQuoteToken } from '@/lib/gifts/server/quote-token'
 import {
   buildGiftCheckoutParams,
+  GiftCheckoutProviderError,
   giftCheckoutIdentifiers,
   giftCheckoutLifetimeSeconds,
+  giftCheckoutProviderErrorCertainty,
 } from '@/lib/gifts/server/stripe'
 
 const nowMs = 1_800_000_000_000
 const publicOrigin = 'https://saberistic.com'
 const backendOrigin = 'https://saberistic-web.example'
 const quoteSecret = 'test-gift-quote-secret-that-is-at-least-32-characters'
+const inventoryReservationId = `gift-reservation-${'a'.repeat(64)}`
+const inventoryDatabase = {} as GiftInventoryDatabase
 
 const quoteInput: Omit<GiftQuoteClaim, 'expiresAt' | 'issuedAt' | 'version'> = {
   amountCents: 12_345,
@@ -49,6 +54,28 @@ function requiredToken(issuedAt: number = nowMs): string {
   return token
 }
 
+function reservedInventoryItem(): GiftInventoryItem {
+  return {
+    artworkUrl: '/api/gifts/artwork/offer_12345678',
+    category: quoteInput.category,
+    checkedAt: new Date(nowMs).toISOString(),
+    contributionAmountCents: quoteInput.amountCents,
+    createdAt: new Date(nowMs).toISOString(),
+    currency: 'usd',
+    id: quoteInput.offerId,
+    name: quoteInput.itemName,
+    observedPriceCents: quoteInput.amountCents,
+    originalImageUrl: 'https://maker.example/images/desk-organizer.webp',
+    productDescription: 'A durable machined aluminum desk organizer for a focused workspace.',
+    retailer: quoteInput.retailer,
+    sourceUrl: quoteInput.sourceUrl,
+    status: 'reserved',
+    themes: ['desk_life'],
+    validationStatus: 'valid',
+    whyItFits: 'A durable desk upgrade that keeps frequently used tools within reach.',
+  }
+}
+
 function checkoutRequest(quoteToken: string, extra: Record<string, unknown> = {}): Request {
   return new Request(`${backendOrigin}/api/gifts/checkout`, {
     body: JSON.stringify({ quoteToken, ...extra }),
@@ -73,7 +100,11 @@ describe('gift checkout handler', () => {
     ['tampered', () => tamper(requiredToken()), nowMs],
     ['expired', () => requiredToken(), nowMs + 7_201_000],
   ] as const)('rejects a %s quote before calling Stripe', async (_label, token, checkoutTime) => {
-    const createCheckout = vi.fn(async () => 'https://checkout.stripe.com/c/pay_never')
+    const createCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.com/c/pay_never',
+      inventoryReservationId,
+      sessionId: 'cs_test_1234567890abcdef',
+    }))
 
     const response = await handleGiftCheckout(checkoutRequest(token()), {
       createCheckout,
@@ -90,13 +121,23 @@ describe('gift checkout handler', () => {
 
   it('passes the signed listing amount and claim to the injected checkout boundary', async () => {
     const token = requiredToken()
-    const createCheckout = vi.fn(async () => 'https://checkout.stripe.com/c/pay_gift_draft')
+    const expectedReservationId = giftCheckoutIdentifiers(token).inventoryReservationId
+    const createCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.com/c/pay_gift_draft',
+      inventoryReservationId: expectedReservationId,
+      sessionId: 'cs_test_1234567890abcdef',
+    }))
+    const reserveInventory = vi.fn(async () => reservedInventoryItem())
+    const attachInventorySession = vi.fn(async () => true)
 
     const response = await handleGiftCheckout(checkoutRequest(token), {
+      attachInventorySession,
       authorizeCheckout: async () => ({ allowed: true }),
       createCheckout,
+      database: inventoryDatabase,
       environment: environment(),
       now: () => nowMs,
+      reserveInventory,
     })
 
     expect(response.status).toBe(200)
@@ -119,10 +160,118 @@ describe('gift checkout handler', () => {
       },
       nowMs,
     )
+    expect(reserveInventory).toHaveBeenCalledWith(
+      inventoryDatabase,
+      expect.objectContaining({
+        offerId: quoteInput.offerId,
+        reservationId: expectedReservationId,
+      }),
+    )
+    expect(attachInventorySession).toHaveBeenCalledWith(inventoryDatabase, {
+      offerId: quoteInput.offerId,
+      reservationId: expectedReservationId,
+      stripeCheckoutSessionId: 'cs_test_1234567890abcdef',
+    })
+    expect(reserveInventory.mock.invocationCallOrder[0]).toBeLessThan(
+      createCheckout.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
+    )
+  })
+
+  it('returns a conflict without calling Stripe when the product is already claimed', async () => {
+    const token = requiredToken()
+    const createCheckout = vi.fn()
+
+    const response = await handleGiftCheckout(checkoutRequest(token), {
+      authorizeCheckout: async () => ({ allowed: true }),
+      createCheckout,
+      database: inventoryDatabase,
+      environment: environment(),
+      now: () => nowMs,
+      reserveInventory: async () => null,
+    })
+
+    expect(response.status).toBe(409)
+    await expect(response.json()).resolves.toEqual({
+      error: 'That gift was just claimed. Choose another product from a fresh deck.',
+    })
+    expect(createCheckout).not.toHaveBeenCalled()
+  })
+
+  it('releases a reservation after a definitive Stripe rejection', async () => {
+    const token = requiredToken()
+    const releaseInventoryAfterDefinitiveFailure = vi.fn(async () => true)
+
+    const response = await handleGiftCheckout(checkoutRequest(token), {
+      authorizeCheckout: async () => ({ allowed: true }),
+      createCheckout: async () => {
+        throw new GiftCheckoutProviderError('definitive')
+      },
+      database: inventoryDatabase,
+      environment: environment(),
+      now: () => nowMs,
+      releaseInventoryAfterDefinitiveFailure,
+      reserveInventory: async () => reservedInventoryItem(),
+    })
+
+    expect(response.status).toBe(502)
+    expect(releaseInventoryAfterDefinitiveFailure).toHaveBeenCalledWith(inventoryDatabase, {
+      offerId: quoteInput.offerId,
+      reservationId: giftCheckoutIdentifiers(token).inventoryReservationId,
+    })
+  })
+
+  it('keeps the reservation when Stripe creation has an ambiguous outcome', async () => {
+    const releaseInventoryAfterDefinitiveFailure = vi.fn(async () => true)
+
+    const response = await handleGiftCheckout(checkoutRequest(requiredToken()), {
+      authorizeCheckout: async () => ({ allowed: true }),
+      createCheckout: async () => {
+        throw new GiftCheckoutProviderError('ambiguous')
+      },
+      database: inventoryDatabase,
+      environment: environment(),
+      now: () => nowMs,
+      releaseInventoryAfterDefinitiveFailure,
+      reserveInventory: async () => reservedInventoryItem(),
+    })
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Stripe Checkout status could not be confirmed. Check for an existing confirmation before trying again.',
+    })
+    expect(releaseInventoryAfterDefinitiveFailure).not.toHaveBeenCalled()
+  })
+
+  it('treats an unexpected checkout failure as ambiguous and does not release inventory', async () => {
+    const releaseInventoryAfterDefinitiveFailure = vi.fn(async () => true)
+
+    const response = await handleGiftCheckout(checkoutRequest(requiredToken()), {
+      authorizeCheckout: async () => ({ allowed: true }),
+      createCheckout: async () => {
+        throw new Error('unexpected checkout boundary failure')
+      },
+      database: inventoryDatabase,
+      environment: environment(),
+      now: () => nowMs,
+      releaseInventoryAfterDefinitiveFailure,
+      reserveInventory: async () => reservedInventoryItem(),
+    })
+
+    expect(response.status).toBe(502)
+    await expect(response.json()).resolves.toEqual({
+      error:
+        'Stripe Checkout status could not be confirmed. Check for an existing confirmation before trying again.',
+    })
+    expect(releaseInventoryAfterDefinitiveFailure).not.toHaveBeenCalled()
   })
 
   it('rejects client-supplied checkout fields alongside the signed quote', async () => {
-    const createCheckout = vi.fn(async () => 'https://checkout.stripe.com/c/pay_never')
+    const createCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.com/c/pay_never',
+      inventoryReservationId,
+      sessionId: 'cs_test_1234567890abcdef',
+    }))
 
     const response = await handleGiftCheckout(
       checkoutRequest(requiredToken(), { amountCents: 1_000 }),
@@ -138,7 +287,11 @@ describe('gift checkout handler', () => {
   })
 
   it('rejects a quote when its stable Session expiry has only the minimum lead remaining', async () => {
-    const createCheckout = vi.fn(async () => 'https://checkout.stripe.com/c/pay_never')
+    const createCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.com/c/pay_never',
+      inventoryReservationId,
+      sessionId: 'cs_test_1234567890abcdef',
+    }))
     const authorizeCheckout = vi.fn(async () => ({ allowed: true }) as const)
 
     const response = await handleGiftCheckout(checkoutRequest(requiredToken()), {
@@ -154,7 +307,11 @@ describe('gift checkout handler', () => {
   })
 
   it('fails closed when checkout admission throws', async () => {
-    const createCheckout = vi.fn(async () => 'https://checkout.stripe.com/c/pay_never')
+    const createCheckout = vi.fn(async () => ({
+      checkoutUrl: 'https://checkout.stripe.com/c/pay_never',
+      inventoryReservationId,
+      sessionId: 'cs_test_1234567890abcdef',
+    }))
     const response = await handleGiftCheckout(checkoutRequest(requiredToken()), {
       authorizeCheckout: async () => {
         throw new Error('redis unavailable')
@@ -170,12 +327,31 @@ describe('gift checkout handler', () => {
 })
 
 describe('Stripe gift checkout parameters', () => {
+  it('only classifies explicit non-retryable Stripe rejections as definitive', () => {
+    expect(
+      giftCheckoutProviderErrorCertainty({
+        statusCode: 400,
+        type: 'StripeIdempotencyError',
+      }),
+    ).toBe('ambiguous')
+    expect(
+      giftCheckoutProviderErrorCertainty({ statusCode: 400, type: 'UnknownStripeError' }),
+    ).toBe('ambiguous')
+    expect(
+      giftCheckoutProviderErrorCertainty({
+        statusCode: 400,
+        type: 'StripeInvalidRequestError',
+      }),
+    ).toBe('definitive')
+  })
+
   it('derives stable Stripe idempotency and integration identifiers from the signed quote', () => {
     const first = giftCheckoutIdentifiers('signed-quote-one')
     expect(giftCheckoutIdentifiers('signed-quote-one')).toEqual(first)
     expect(giftCheckoutIdentifiers('signed-quote-two')).not.toEqual(first)
     expect(first.idempotencyKey).toMatch(/^gift-draft-[a-f0-9]{64}$/)
     expect(first.integrationIdentifier).toMatch(/^saberistic_gift_draft_[a-z]{8}$/)
+    expect(first.inventoryReservationId).toMatch(/^gift-reservation-[a-f0-9]{64}$/)
   })
 
   it('uses the signed amount and current Checkout API conventions with clear disclosure', () => {
@@ -192,6 +368,7 @@ describe('Stripe gift checkout parameters', () => {
       publicOrigin,
       quoteSecret,
       integrationIdentifier,
+      inventoryReservationId,
       nowMs,
     )
     const delayedRetry = buildGiftCheckoutParams(
@@ -199,6 +376,7 @@ describe('Stripe gift checkout parameters', () => {
       publicOrigin,
       quoteSecret,
       integrationIdentifier,
+      inventoryReservationId,
       nowMs + 15 * 60 * 1_000,
     )
     const lineItem = params.line_items?.[0]
@@ -238,6 +416,7 @@ describe('Stripe gift checkout parameters', () => {
       gift_currency: quoteInput.currency,
       gift_draft_version: '1',
       gift_item_name: quoteInput.itemName,
+      gift_inventory_reservation_id: inventoryReservationId,
       gift_offer_id: quoteInput.offerId,
       gift_run_id: quoteInput.runId,
       reference_retailer: quoteInput.retailer,

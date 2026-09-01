@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { GiftDiscoveryGame } from '@/components/gifts/GiftDiscoveryGame'
@@ -9,14 +9,16 @@ import type { GiftRecommendationResponse } from '@/lib/gifts'
 function recommendationDeck(): GiftRecommendationResponse {
   return {
     disclaimer:
-      'Prices are recent observations. The Stripe amount is a fixed gift contribution to Saberistic.',
+      'Images, retailer links, prices, and availability are cached references that may change. The Stripe amount is a fixed gift contribution to Saberistic.',
     ideas: Array.from({ length: 9 }, (_, index) => ({
+      artworkUrl: `/api/gifts/artwork/offer_${String(index + 1).padStart(8, '0')}`,
       category: `Category ${index + 1}`,
       checkedAt: '2026-08-31T15:30:00.000Z',
       currency: 'usd' as const,
       id: `offer_${String(index + 1).padStart(8, '0')}`,
       name: `Thoughtful physical gift ${index + 1}`,
       observedPriceCents: 1_500 + index * 100,
+      productDescription: `A retailer-sourced description for thoughtful physical gift ${index + 1}.`,
       quoteToken: `gq1.${'a'.repeat(40 + index)}.${'b'.repeat(43)}`,
       retailer: `Retailer ${index + 1}`,
       sourceUrl: `https://www.adafruit.com/products/gift-${index + 1}`,
@@ -28,9 +30,18 @@ function recommendationDeck(): GiftRecommendationResponse {
 }
 
 function availabilityResponse(
-  overrides: Partial<{ checkoutEnabled: boolean; ideasEnabled: boolean }> = {},
+  overrides: Partial<{
+    checkoutEnabled: boolean
+    ideasEnabled: boolean
+    inventoryStatus: 'paused' | 'ready' | 'restocking'
+  }> = {},
 ) {
-  return Response.json({ checkoutEnabled: true, ideasEnabled: true, ...overrides })
+  return Response.json({
+    checkoutEnabled: true,
+    ideasEnabled: true,
+    inventoryStatus: 'ready',
+    ...overrides,
+  })
 }
 
 beforeEach(() => {
@@ -119,7 +130,35 @@ describe('Gift Draft game', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
-  it('deals three rounds and requires contribution acknowledgment before checkout', async () => {
+  it('deals from ready cache while discovery and validation refresh future games', async () => {
+    let finishDeck: (response: Response) => void = () => undefined
+    const pendingDeck = new Promise<Response>((resolve) => {
+      finishDeck = resolve
+    })
+    const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) =>
+      init?.method === 'GET' ? availabilityResponse() : pendingDeck,
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const view = render(<GiftDiscoveryGame />)
+
+    fireEvent.click(await view.findByRole('radio', { name: /Under \$30/ }))
+    fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
+    fireEvent.click(view.getByRole('button', { name: 'Deal the first round' }))
+
+    expect(
+      await view.findByRole('heading', { name: 'Assembling your cached product deck…' }),
+    ).toBeTruthy()
+    expect(view.getByText(/discovery and validation refresh future games/i)).toBeTruthy()
+
+    await act(async () => {
+      finishDeck(Response.json(recommendationDeck()))
+    })
+    expect(
+      await view.findByRole('heading', { name: 'Keep one. The other two leave the deck.' }),
+    ).toBeTruthy()
+  })
+
+  it('deals three rounds with cached product images and requires contribution acknowledgment', async () => {
     const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) =>
       init?.method === 'GET' ? availabilityResponse() : Response.json(recommendationDeck()),
     )
@@ -139,6 +178,13 @@ describe('Gift Draft game', () => {
     expect(
       await view.findByRole('heading', { name: 'Keep one. The other two leave the deck.' }),
     ).toBeTruthy()
+    expect(view.getAllByRole('img', { name: /product image/ })).toHaveLength(3)
+    expect(view.getAllByText('Cached product image')).toHaveLength(3)
+    expect(view.getAllByText(/Approx\. cached price/)).toHaveLength(3)
+    expect(view.getAllByText(/retailer-sourced description/i)).toHaveLength(3)
+    expect(view.getAllByText(/last checked/i)).toHaveLength(3)
+    expect(view.getAllByRole('link', { name: /View .+ at Retailer .+/ })).toHaveLength(3)
+    expect(view.getByText(/cached, validated inventory/i)).toBeTruthy()
 
     for (let round = 0; round < 3; round += 1) {
       const keepButtons = await view.findAllByRole('button', { name: 'Keep this one' })
@@ -156,12 +202,14 @@ describe('Gift Draft game', () => {
         name: 'You are sending a fixed gift contribution—not placing a retailer order.',
       }),
     ).toBeTruthy()
+    expect(view.getByText(/retailer link, cached price, and availability may change/i)).toBeTruthy()
+    expect(view.getAllByText(/a substitute, or any other gift/i).length).toBeGreaterThan(0)
     const checkout = view.getByRole('button', { name: 'Open Stripe Checkout — $15.00' })
     expect((checkout as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(
       view.getByRole('checkbox', {
-        name: /I understand this is a fixed gift contribution to Saberistic/,
+        name: /I understand this is a fixed gift contribution to Saberistic, not a purchase/,
       }),
     )
     expect((checkout as HTMLButtonElement).disabled).toBe(false)
@@ -179,7 +227,11 @@ describe('Gift Draft game', () => {
 
   it('shows an honest paused state without offering a dead draw', async () => {
     const fetchMock = vi.fn(async () =>
-      availabilityResponse({ checkoutEnabled: false, ideasEnabled: false }),
+      availabilityResponse({
+        checkoutEnabled: false,
+        ideasEnabled: false,
+        inventoryStatus: 'paused',
+      }),
     )
     vi.stubGlobal('fetch', fetchMock)
     const view = render(<GiftDiscoveryGame />)
@@ -187,11 +239,31 @@ describe('Gift Draft game', () => {
     fireEvent.click(await view.findByRole('radio', { name: /Under \$30/ }))
     fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
 
-    expect(view.getByText(/live gift scout is paused while its current listings/i)).toBeTruthy()
+    expect(view.getByText(/cached product inventory is paused right now/i)).toBeTruthy()
     expect(
-      (view.getByRole('button', { name: 'Gift Draft is paused' }) as HTMLButtonElement).disabled,
+      (view.getByRole('button', { name: 'Product inventory is paused' }) as HTMLButtonElement)
+        .disabled,
     ).toBe(true)
     expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('shows background restocking separately from a paused feature', async () => {
+    const fetchMock = vi.fn(async () =>
+      availabilityResponse({
+        checkoutEnabled: false,
+        ideasEnabled: false,
+        inventoryStatus: 'restocking',
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const view = render(<GiftDiscoveryGame />)
+
+    expect(await view.findByText(/real products are being checked and cached now/i)).toBeTruthy()
+    expect(
+      (view.getByRole('button', { name: 'Restocking real products…' }) as HTMLButtonElement)
+        .disabled,
+    ).toBe(true)
+    expect(view.queryByText(/inventory is paused right now/i)).toBeNull()
   })
 
   it('retries a failed availability check before enabling a live draw', async () => {
@@ -209,7 +281,7 @@ describe('Gift Draft game', () => {
     fireEvent.click(view.getByRole('button', { name: 'Try status again' }))
 
     await waitFor(() => {
-      expect(view.getByText(/Every new deal uses a fresh variation/i)).toBeTruthy()
+      expect(view.getByText(/instant from cached inventory/i)).toBeTruthy()
     })
     fireEvent.click(view.getByRole('radio', { name: /Under \$30/ }))
     fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
@@ -236,7 +308,11 @@ describe('Gift Draft game', () => {
       }),
     )
     const fetchMock = vi.fn(async () =>
-      availabilityResponse({ checkoutEnabled: false, ideasEnabled: false }),
+      availabilityResponse({
+        checkoutEnabled: false,
+        ideasEnabled: false,
+        inventoryStatus: 'paused',
+      }),
     )
     vi.stubGlobal('fetch', fetchMock)
 

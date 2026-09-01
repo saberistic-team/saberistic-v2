@@ -1,3 +1,4 @@
+import { isApprovedGiftProductHost } from './retailers'
 import {
   giftBudgetById,
   giftBudgetIds,
@@ -8,11 +9,17 @@ import {
   type GiftRecommendationResponse,
   type GiftThemeId,
 } from './types'
-import { isApprovedGiftProductHost } from './retailers'
 
 type ValidationResult<T> = { ok: true; value: T } | { error: string; ok: false }
 
-export type ModelGiftIdea = Omit<GiftIdea, 'checkedAt' | 'id' | 'quoteToken'>
+/**
+ * The model researches retailer products. The artwork URL, timestamps, inventory ID, and
+ * signed quote are produced only after the retailer page and image have been cached locally.
+ */
+export type ModelGiftIdea = Omit<
+  GiftIdea,
+  'artworkUrl' | 'checkedAt' | 'id' | 'productDescription' | 'quoteToken'
+>
 
 const tokenPattern = /^[A-Za-z0-9_-]{16,160}$/
 const modelTextPattern = /^[^\u0000-\u001f\u007f]+$/
@@ -32,9 +39,16 @@ const prohibitedGiftProductPatterns = [
   /\b(?:hand|body|face|facial|eye|skin|hair|beard|shaving|lip) (?:balm|cream|lotion|oil|wash|cleanser|serum|mask|scrub)s?\b/i,
   /\b(?:cannabis|marijuana|cbd|thc|hemp extract|cannabis edibles?|delta 8|delta 9|cannabinoids?)\b/i,
   /\b(?:adult (?:products?|toys?|content)|sex toys?|vibrators?|dildos?|bondage|fetish|erotic|condoms?)\b/i,
-  /\b(?:used|pre[ -]?owned|refurbished|open[ -]?box|pre[ -]?orders?|back[ -]?orders?)\b/i,
-  /\b(?:replacement|spare parts?|refills?|samples?|add[ -]?ons?)\b/i,
-  /\b(?:batter(?:y|ies)|breakout boards?|development boards?|microcontrollers?|single[ -]?board computers?|sensors?|electronic modules?|components?|bare pcbs?|printed circuit boards?|ribbon cables?|jumper wires?|pin headers?|solder paste|thermal paste|adhesive strips?)\b/i,
+  /\b(?:used (?:condition|items?|products?|copies|equipment)|pre[ -]?owned|refurbished|open[ -]?box|pre[ -]?orders?|back[ -]?orders?)\b/i,
+  /\b(?:replacement (?:parts?|pieces?|components?)|spare parts?|refills?|sample packs?|add[ -]?ons?)\b/i,
+  /\b(?:battery packs?|replacement batteries|loose batteries|breakout boards?|development boards?|microcontrollers?|single[ -]?board computers?|sensors?|electronic modules?|electronic components?|bare pcbs?|printed circuit boards?|ribbon cables?|jumper wires?|pin headers?|solder paste|thermal paste|adhesive strips?)\b/i,
+] as const
+
+const giftTrackingParameterPatterns = [
+  /^utm_/i,
+  /^(?:_ga|dclid|fbclid|gclid|gbraid|msclkid|ttclid|twclid|wbraid)$/i,
+  /^(?:aff|affid|affiliate|affiliate_id|irclickid|mc_cid|mc_eid)$/i,
+  /^(?:campaign|campaign_id|ref|ref_|referrer|source)$/i,
 ] as const
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -57,32 +71,51 @@ function boundedText(value: unknown, minimum: number, maximum: number): value is
   )
 }
 
-function isProhibitedGiftProduct(
-  name: string,
-  category: string,
-  whyItFits: string,
-  retailer: string,
-  sourceUrl: string,
-  citationTitle?: string,
-): boolean {
-  let decodedURL = sourceUrl
-  try {
-    const url = new URL(sourceUrl)
-    decodedURL = [decodeURIComponent(url.pathname), ...url.searchParams.values()].join(' ')
-  } catch {
-    return true
+function normalizedGiftPolicyPart(value: string): string {
+  let decoded = value
+  if (/^https?:\/\//i.test(value)) {
+    try {
+      const url = new URL(value)
+      decoded = [url.hostname, decodeURIComponent(url.pathname), ...url.searchParams.values()].join(
+        ' ',
+      )
+    } catch {
+      // Keep malformed URLs as text so they cannot bypass the policy scan.
+    }
+  } else {
+    try {
+      decoded = decodeURIComponent(value)
+    } catch {
+      // Keep malformed percent-encoding as text so it cannot bypass the policy scan.
+    }
   }
-
-  const productIdentity = [name, category, whyItFits, retailer, decodedURL, citationTitle ?? '']
-    .join('\n')
+  return decoded
     .normalize('NFKC')
     .replace(/\p{Cf}/gu, '')
     .replace(/[^\p{L}\p{N}]+/gu, ' ')
+    .trim()
     .toLowerCase()
+}
+
+export function normalizeGiftProductName(value: string): string {
+  return normalizedGiftPolicyPart(value).replace(/\s+/g, ' ')
+}
+
+/**
+ * One policy scanner for model metadata, retailer text, and decoded URL identity.
+ * Every caller must pass all available product clues rather than checking only a title.
+ */
+export function isProhibitedGiftProduct(
+  ...identityParts: Array<string | null | undefined>
+): boolean {
+  const productIdentity = identityParts
+    .filter((part): part is string => typeof part === 'string')
+    .map(normalizedGiftPolicyPart)
+    .join('\n')
   return prohibitedGiftProductPatterns.some((pattern) => pattern.test(productIdentity))
 }
 
-export function safeGiftSourceURL(value: unknown): string | null {
+export function normalizeGiftSourceURL(value: unknown): string | null {
   if (typeof value !== 'string' || value.length > 500) return null
 
   try {
@@ -105,10 +138,35 @@ export function safeGiftSourceURL(value: unknown): string | null {
     }
 
     url.hash = ''
+    for (const key of [...url.searchParams.keys()]) {
+      if (giftTrackingParameterPatterns.some((pattern) => pattern.test(key))) {
+        url.searchParams.delete(key)
+      }
+    }
+    url.searchParams.sort()
     return url.toString()
   } catch {
     return null
   }
+}
+
+export const safeGiftSourceURL = normalizeGiftSourceURL
+
+/** Stable source identity for deduplication without rewriting the URL used for retailer fetches. */
+export function giftSourceIdentityURL(value: unknown): string | null {
+  const normalized = normalizeGiftSourceURL(value)
+  if (!normalized) return null
+  const url = new URL(normalized)
+  url.hostname = url.hostname.replace(/^www\./, '')
+  url.pathname = url.pathname.replace(/\/+$/, '') || '/'
+  return url.toString()
+}
+
+export function safeGiftArtworkURL(value: unknown): string | null {
+  if (typeof value !== 'string' || value.length > 240) return null
+  if (/^\/api\/gifts\/artwork\/[A-Za-z0-9_-]{8,160}$/.test(value)) return value
+  if (/^\/media\/gifts\/[a-z0-9]+(?:-[a-z0-9]+)*\.webp$/.test(value)) return value
+  return null
 }
 
 function isGiftBudgetId(value: unknown): value is GiftBudgetId {
@@ -160,14 +218,10 @@ export function validateModelGiftIdea(
   if (!candidate) return null
 
   const range = giftBudgetById(budget)
-  if (
-    candidate.observedPriceCents < range.minimumCents ||
-    candidate.observedPriceCents > range.maximumCents
-  ) {
-    return null
-  }
-
-  return candidate
+  return candidate.observedPriceCents >= range.minimumCents &&
+    candidate.observedPriceCents <= range.maximumCents
+    ? candidate
+    : null
 }
 
 export function validateModelGiftResearchCandidate(
@@ -230,7 +284,6 @@ export function validateModelGiftResearchCandidate(
 export function validateModelGiftIdeas(
   value: unknown,
   budget: GiftBudgetId,
-  citedURLs: ReadonlySet<string>,
 ): ValidationResult<ModelGiftIdea[]> {
   if (!isRecord(value) || !hasExactKeys(value, ['ideas']) || !Array.isArray(value.ideas)) {
     return { error: 'The gift scout returned an invalid deck.', ok: false }
@@ -242,20 +295,10 @@ export function validateModelGiftIdeas(
   }
 
   const validIdeas = ideas as ModelGiftIdea[]
-  const normalizedCitations = new Set(
-    [...citedURLs]
-      .map((url) => safeGiftSourceURL(url))
-      .filter((url): url is string => Boolean(url)),
-  )
-  const names = new Set(validIdeas.map((idea) => idea.name.toLowerCase()))
+  const names = new Set(validIdeas.map((idea) => idea.name.toLocaleLowerCase('en-US')))
   const urls = new Set(validIdeas.map((idea) => idea.sourceUrl))
-
-  if (
-    names.size !== validIdeas.length ||
-    urls.size !== validIdeas.length ||
-    validIdeas.some((idea) => !normalizedCitations.has(idea.sourceUrl))
-  ) {
-    return { error: 'The gift scout could not verify every listing.', ok: false }
+  if (names.size !== validIdeas.length || urls.size !== validIdeas.length) {
+    return { error: 'The gift scout returned duplicate suggestions.', ok: false }
   }
 
   if (budget === 'mixed') {
@@ -266,8 +309,9 @@ export function validateModelGiftIdeas(
         return 'high'
       }),
     )
-    if (bands.size < 3)
+    if (bands.size < 3) {
       return { error: 'The mixed deck did not cover enough price ranges.', ok: false }
+    }
   }
 
   return { ok: true, value: validIdeas }
@@ -290,23 +334,29 @@ export function isGiftRecommendationResponse(value: unknown): value is GiftRecom
 
   const validIdeas = value.ideas.every((idea) => {
     if (!isRecord(idea)) return false
+    const sourceUrl = safeGiftSourceURL(idea.sourceUrl)
+
     return (
       hasExactKeys(idea, [
+        'artworkUrl',
         'category',
         'checkedAt',
         'currency',
         'id',
         'name',
         'observedPriceCents',
+        'productDescription',
         'quoteToken',
         'retailer',
         'sourceUrl',
         'whyItFits',
       ]) &&
+      safeGiftArtworkURL(idea.artworkUrl) !== null &&
       boundedText(idea.id, 8, 120) &&
       boundedText(idea.name, 3, 120) &&
       boundedText(idea.category, 2, 50) &&
       boundedText(idea.whyItFits, 20, 280) &&
+      boundedText(idea.productDescription, 20, 2_000) &&
       boundedText(idea.retailer, 2, 80) &&
       idea.currency === 'usd' &&
       Number.isSafeInteger(idea.observedPriceCents) &&
@@ -315,8 +365,8 @@ export function isGiftRecommendationResponse(value: unknown): value is GiftRecom
       typeof idea.checkedAt === 'string' &&
       !Number.isNaN(Date.parse(idea.checkedAt)) &&
       boundedText(idea.quoteToken, 32, 4_000) &&
-      safeGiftSourceURL(idea.sourceUrl) !== null &&
-      isApprovedGiftProductHost(new URL(String(idea.sourceUrl)).hostname)
+      sourceUrl !== null &&
+      isApprovedGiftProductHost(new URL(sourceUrl).hostname)
     )
   })
 
@@ -334,13 +384,13 @@ export function buildGiftModelResponseFormat(budget: GiftBudgetId) {
 
   return {
     json_schema: {
-      name: 'gift_draft_deck',
+      name: 'gift_inventory_research_batch',
       schema: {
         additionalProperties: false,
         properties: {
           ideas: {
             description:
-              'Exactly nine distinct, currently buyable physical gifts backed by the response URL citations.',
+              'Exactly nine distinct real physical products from the supplied retailer research. Product pages and media will be independently cached and revalidated later.',
             items: {
               additionalProperties: false,
               properties: {
@@ -356,31 +406,30 @@ export function buildGiftModelResponseFormat(budget: GiftBudgetId) {
                   type: 'string',
                 },
                 name: {
-                  description: 'The current product listing name.',
+                  description: 'The real product name used by the retailer.',
                   maxLength: 120,
                   minLength: 3,
                   type: 'string',
                 },
                 observedPriceCents: {
-                  description: `The observed single-item price in integer USD cents, between ${range.minimumCents} and ${range.maximumCents} inclusive. Never clamp or alter a listing price.`,
+                  description: `The researched single-item price in integer USD cents, between ${range.minimumCents} and ${range.maximumCents} inclusive. Never clamp an out-of-range price.`,
                   maximum: range.maximumCents,
                   minimum: range.minimumCents,
                   type: 'integer',
                 },
                 retailer: {
-                  description: 'The retailer or maker shown by the cited listing.',
+                  description: 'The actual retailer or maker for the product page.',
                   maxLength: 80,
                   minLength: 2,
                   type: 'string',
                 },
                 sourceUrl: {
-                  description:
-                    'The exact HTTPS product URL copied from one URL citation in the response.',
+                  description: 'A direct HTTPS product-detail URL from an approved retailer.',
                   maxLength: 500,
                   type: 'string',
                 },
                 whyItFits: {
-                  description: 'A concise, evidence-bounded explanation of why the gift fits.',
+                  description: 'A concise explanation of why this real product fits the recipient.',
                   maxLength: 280,
                   minLength: 20,
                   type: 'string',

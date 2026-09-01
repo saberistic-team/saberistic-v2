@@ -13,6 +13,16 @@ const stripeApiVersion = '2026-07-29.dahlia' as const
 export const giftCheckoutLifetimeSeconds = 60 * 60
 export const giftCheckoutMinimumLeadSeconds = 30 * 60
 
+export class GiftCheckoutProviderError extends Error {
+  constructor(
+    readonly certainty: 'ambiguous' | 'definitive',
+    cause?: unknown,
+  ) {
+    super('gift_checkout_provider_error', { cause })
+    this.name = 'GiftCheckoutProviderError'
+  }
+}
+
 export function giftCheckoutExpiresAt(claim: GiftQuoteClaim): number {
   return claim.issuedAt + giftCheckoutLifetimeSeconds
 }
@@ -20,6 +30,7 @@ export function giftCheckoutExpiresAt(claim: GiftQuoteClaim): number {
 export function giftCheckoutIdentifiers(quoteToken: string): {
   idempotencyKey: string
   integrationIdentifier: string
+  inventoryReservationId: string
 } {
   const digest = createHash('sha256').update(quoteToken).digest()
   const suffix = Array.from(digest.subarray(0, 8), (byte) =>
@@ -29,6 +40,7 @@ export function giftCheckoutIdentifiers(quoteToken: string): {
   return {
     idempotencyKey: `gift-draft-${digest.toString('hex')}`,
     integrationIdentifier: `saberistic_gift_draft_${suffix}`,
+    inventoryReservationId: `gift-reservation-${digest.toString('hex')}`,
   }
 }
 
@@ -41,11 +53,12 @@ export function buildGiftCheckoutParams(
   publicSiteOrigin: string,
   quoteSecret: string,
   integrationIdentifier: string,
+  inventoryReservationId: string,
   _nowMs: number = Date.now(),
 ): Stripe.Checkout.SessionCreateParams {
   const itemName = boundedMetadata(claim.itemName, 100)
   const sourceHost = new URL(claim.sourceUrl).hostname
-  const sharedMetadata = buildGiftSessionMetadata(claim, quoteSecret)
+  const sharedMetadata = buildGiftSessionMetadata(claim, inventoryReservationId, quoteSecret)
 
   return {
     billing_address_collection: 'auto',
@@ -108,30 +121,64 @@ export function createGiftStripeClient(apiKey: string): Stripe {
   })
 }
 
+export function giftCheckoutProviderErrorCertainty(
+  error: unknown,
+): GiftCheckoutProviderError['certainty'] {
+  if (!error || typeof error !== 'object') return 'ambiguous'
+  const candidate = error as { statusCode?: unknown; type?: unknown }
+  const statusCode = candidate.statusCode
+  const type = candidate.type
+
+  if (type === 'StripeAuthenticationError' || type === 'StripePermissionError') {
+    return 'definitive'
+  }
+  if (
+    type === 'StripeInvalidRequestError' &&
+    typeof statusCode === 'number' &&
+    statusCode >= 400 &&
+    statusCode < 500 &&
+    statusCode !== 409 &&
+    statusCode !== 429
+  ) {
+    return 'definitive'
+  }
+  return 'ambiguous'
+}
+
 export async function createGiftCheckoutSession(
   claim: GiftQuoteClaim,
   quoteToken: string,
   config: StripeGiftConfig,
   nowMs: number = Date.now(),
-): Promise<string> {
+): Promise<{ checkoutUrl: string; inventoryReservationId: string; sessionId: string }> {
   const stripe = createGiftStripeClient(config.apiKey)
   const identifiers = giftCheckoutIdentifiers(quoteToken)
-  const session = await stripe.checkout.sessions.create(
-    buildGiftCheckoutParams(
-      claim,
-      config.publicSiteOrigin,
-      config.quoteSecret,
-      identifiers.integrationIdentifier,
-      nowMs,
-    ),
-    { idempotencyKey: identifiers.idempotencyKey },
-  )
-
-  if (!session.url) throw new Error('stripe_checkout_url_missing')
-  const url = new URL(session.url)
-  if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com') {
-    throw new Error('stripe_checkout_url_invalid')
+  let session: Stripe.Checkout.Session
+  try {
+    session = await stripe.checkout.sessions.create(
+      buildGiftCheckoutParams(
+        claim,
+        config.publicSiteOrigin,
+        config.quoteSecret,
+        identifiers.integrationIdentifier,
+        identifiers.inventoryReservationId,
+        nowMs,
+      ),
+      { idempotencyKey: identifiers.idempotencyKey },
+    )
+  } catch (error) {
+    throw new GiftCheckoutProviderError(giftCheckoutProviderErrorCertainty(error), error)
   }
 
-  return url.toString()
+  if (!session.url) throw new GiftCheckoutProviderError('ambiguous')
+  const url = new URL(session.url)
+  if (url.protocol !== 'https:' || url.hostname !== 'checkout.stripe.com') {
+    throw new GiftCheckoutProviderError('ambiguous')
+  }
+
+  return {
+    checkoutUrl: url.toString(),
+    inventoryReservationId: identifiers.inventoryReservationId,
+    sessionId: session.id,
+  }
 }

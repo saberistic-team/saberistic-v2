@@ -19,13 +19,14 @@ The product direction, research record, content evidence rules, AI-readiness des
   deterministic fallback reports, and an optional bounded OpenRouter explanation
 - a consented Architecture Diagnostic handoff with private lead storage, Resend report delivery,
   fixed $200 hosted Stripe Checkout, verified payment fulfillment, and calendar-provider routing
-- Gift Draft: a three-round gift game for AmirSaber with OpenRouter discovery, server-verified
-  retailer listings, signed quotes, and Stripe-hosted one-time Checkout
+- Gift Draft: a quick three-round gift game for AmirSaber backed by durable inventory of real
+  retailer products, server-cached descriptions and images, signed contributions, and
+  Stripe-hosted one-time Checkout
 - Render Key Value-backed AI request, token, daily-call, and concurrency limits
 - multi-stage production images, GitHub Actions CI, and a Render Blueprint
 - CMS publication hooks plus a daily reconciliation build for the public static site
 
-Self-hosted Umami is live as disposable validation infrastructure. The owner has authorized temporary collection from the public site through `umami.saberistic.com` while the service still shares the expiring Free database; this is an explicit launch exception, not production-grade analytics acceptance. The readiness implementation keeps scores, levels, blocker IDs, and next-step routing in deterministic code. Its OpenRouter layer can only rewrite bounded explanations and reorder approved actions; the dedicated key, pinned models, Guardrail, ZDR route, budget controls, hosted smoke, and reviewed activation flag are live. Gift Draft's AI search and Stripe Checkout remain independently disabled by default until their separate search, limiter, listing-review, and fulfillment gates pass.
+Self-hosted Umami is live as disposable validation infrastructure. The owner has authorized temporary collection from the public site through `umami.saberistic.com` while the service still shares the expiring Free database; this is an explicit launch exception, not production-grade analytics acceptance. The readiness implementation keeps scores, levels, blocker IDs, and next-step routing in deterministic code. Its OpenRouter layer can only rewrite bounded explanations and reorder approved actions; the dedicated key, pinned models, Guardrail, ZDR route, budget controls, hosted smoke, and reviewed activation flag are live. Gift Draft's inventory discovery and Stripe Checkout have independent flags and acceptance gates, so the real-product game can be activated without accepting payments.
 
 ## Local development
 
@@ -65,38 +66,46 @@ Dashboard-only feature-flag change.
 Direct local development requests use a loopback-only abuse bucket when no trusted proxy header is
 present, so the optional local AI explanation does not require a fabricated client-IP header.
 
-Gift Draft has no invented offline deck. OpenRouter performs bounded web research, but its prose and
-product fields are not trusted. The app treats safe citation annotations only as discovery leads,
-fetches every cited page from the currently supported retailer families, and accepts a candidate
-only when the page exposes one unambiguous schema.org Product and Offer for that same URL, in USD,
-in stock, inside the chosen budget, and outside the code-owned product exclusions. The retailer
-page supplies the canonical product name and price. When the first research model leaves fewer than
-nine verified candidates, the second pinned model gets one bounded search attempt for different
-URLs under the same 60-second deadline. A separate strict no-tools call may select only nine IDs
-from the resulting verified ledger; it cannot write or alter product facts. The public page reads a
-no-store feature-status response and presents a paused state instead of offering a dead draw when
-either path is disabled.
-To try it locally, configure Redis/Valkey, `GIFTING_RATE_LIMIT_SECRET`, `GIFT_QUOTE_SECRET`, the two
-`OPENROUTER_GIFT_*_MODEL` values, and the existing `OPENROUTER_API_KEY`; then set
-`OPENROUTER_ACCOUNT_GATES_CONFIRMED` to the current policy version and `GIFTING_AI_ENABLED=1`.
-OpenRouter's web-search server tool is beta, so keep a hard key spend limit and leave the feature off
-if its contract or account privacy controls change. Before enabling it,
-run `pnpm test:gifts:openrouter:live`; this opt-in check performs a real search and consumes a small
-amount of OpenRouter credit.
+Gift Draft is intentionally a quick, easy game rather than a live retailer-search experience. A
+draw deals nine eligible records from durable PostgreSQL inventory and never waits for OpenRouter or
+a retailer page. Each inventory record represents a real product from an actual retailer and keeps
+the retailer URL, observed price, product description, and the retailer product image copied to
+Saberistic-owned storage. Serving the cached description and image keeps a temporary retailer or
+image-host failure from breaking the current game.
+
+Every draw also performs a best-effort minimum-stock check and queues background replenishment when
+inventory is low. The background discovery path uses OpenRouter-grounded product research, applies
+the deterministic schema, budget, hostname, prohibited-product, and uniqueness rules, and downloads
+the selected retailer description and image before making the product eligible. Separate periodic
+jobs revisit non-sold products to refresh availability, price, description, and image. A failed or
+ambiguous revalidation marks an item for later review without blocking a draw that already has a
+usable cached copy; a product confirmed unavailable or unsafe is retired from future deals.
+
+The durable queue is drained in a bounded, single-flight task after status and draw responses, using
+the existing web service so ordinary staging does not add a paid worker. While initial stock is being
+built, the page reports “restocking” and checks again automatically. The standalone
+`pnpm start:gifts:inventory-worker` command remains available for a supervised prefill or a future
+dedicated worker, but it is not provisioned by the staging Blueprint.
+
+To try the external path locally, configure PostgreSQL, Redis/Valkey,
+`GIFTING_RATE_LIMIT_SECRET`, `GIFT_QUOTE_SECRET`, the pinned `OPENROUTER_GIFT_*_MODEL`
+configuration, and the existing `OPENROUTER_API_KEY`; then set
+`OPENROUTER_ACCOUNT_GATES_CONFIRMED` to the current policy version and
+`GIFTING_AI_ENABLED=1`. Keep a hard OpenRouter key spend limit and leave the feature off if its
+research contract or account privacy controls change. Run `pnpm test:gifts:openrouter:live`; the
+opt-in test exercises the actual research, retailer page, image normalization, and cache-insert path
+and consumes a small amount of OpenRouter credit.
 
 Gift Draft is still intentionally paused in Render. The first hosted AI canary returned nine cards,
-but manual source-page review rejected five: one item was out of stock and four cards disagreed with
-the retailer's displayed price. The canary was rolled back, and `GIFTING_AI_ENABLED=0` was confirmed
-by the status endpoint and the disabled `503` ideas response. The hardened citation-first pipeline
-has since passed real OpenRouter runs in both model orders and for both an under-$30 and mixed-price
-deck. The final production-order under-$30 run verified 13 of 36 checked listings and selected nine
-in 25.77 seconds for $0.054866; direct browser review then confirmed the nine visible prices and
-purchase availability. The reverse-order run verified 13 candidates in 35.79 seconds for
-$0.0689972. The mixed-price run verified ten of 25 listings and produced a valid low/middle/high
-deck in 17.56 seconds for $0.054312. That is useful correction evidence, not permission to turn the
-public flag on. The exact hardened commit still needs hosted checks, a hosted canary, the same-token
-Redis limit test, and an enable-to-disable rollback drill. Checkout remains independently off until
-its Stripe acceptance gates pass.
+but review found one item out of stock and four price disagreements, so it was rolled back. A later
+request-time retailer verifier passed local samples but failed twice when hosted: the under-$30 draw
+checked 21 pages and verified only four (`load: 8`, `budget_above: 6`), while the mixed draw checked
+46 and verified only six (`load: 26`). Those failures established the current boundary: retailer
+research and validation belong in the background, while the player path deals cached inventory.
+The replacement still needs an exact hosted inventory migration, request-tail discovery and
+revalidation drain, fast nine-item cached draw, minimum-stock replenishment, same-token Redis limit acceptance,
+bounded-log review, and enable-to-disable rollback drill. Checkout remains independently off until
+its Stripe and inventory-lifecycle acceptance gates pass.
 
 Checkout additionally requires a least-privilege `STRIPE_RESTRICTED_KEY` and an independent
 `STRIPE_GIFT_WEBHOOK_SECRET`. Run the committed Payload migrations, register
@@ -104,11 +113,14 @@ Checkout additionally requires a least-privilege `STRIPE_RESTRICTED_KEY` and an 
 webhook, private `gift-payments` queue, and verified return-status path in Stripe test mode before
 setting `GIFTING_CHECKOUT_ENABLED=1`. The API uses Stripe SDK 22.4.0 and API version
 `2026-07-29.dahlia`, creates a one-time hosted Checkout Session, and never accepts a
-browser-supplied price. The displayed retailer is reference evidence only: Stripe sends a fixed gift
-contribution to Saberistic, and AmirSaber uses it toward the selected item, related costs, or a
-similar gift if the listing changes. Define the availability, substitution, and refund process before
-enabling live mode. Keep every OpenRouter, Stripe, quote-signing, and rate-limit secret server-side
-and out of committed `.env` files.
+browser-supplied price. Checkout atomically reserves the selected inventory item. A confirmed paid
+contribution retires it from inventory; a definitively failed or expired Checkout releases it for a
+future draw. The displayed retailer, product, and price remain purchase inspiration: Stripe sends a
+fixed gift contribution to Saberistic rather than placing an order with the retailer, and AmirSaber
+may use it toward the suggested gift, related costs, or a similar gift if the listing differs or
+changes. Define the availability, substitution, and refund process before enabling live mode. Keep
+every OpenRouter, Stripe, quote-signing, and rate-limit secret server-side and out of committed
+`.env` files.
 
 The Gift Draft Stripe event destination must deliver `checkout.session.completed`,
 `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`,
@@ -199,7 +211,8 @@ Umami custom host: <https://umami.saberistic.com> (DNS verified, certificate iss
   explanation;
 - `/api/diagnostics/requests` for the rate-limited, consented lead/report/Checkout handoff and
   `/api/stripe/diagnostic-webhook` for signature-verified paid fulfillment;
-- `/api/gifts/ideas` for rate-limited, citation-checked OpenRouter product search,
+- `/api/gifts/ideas` for a rate-limited deal from cached retailer-product inventory plus a
+  best-effort background replenishment signal,
   `/api/gifts/checkout` for signed-quote Stripe Checkout creation, `/api/gifts/webhook` for
   signature-verified payment fulfillment, and `/api/gifts/payment-status` for the verified return
   screen.

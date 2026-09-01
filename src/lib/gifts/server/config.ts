@@ -80,6 +80,16 @@ export type StripeGiftWebhookConfig = StripeGiftConfig & {
   webhookSecret: string
 }
 
+export function isGiftInventoryEnabled(environment: NodeJS.ProcessEnv = process.env): boolean {
+  const databaseURL = environment.DATABASE_URL?.trim()
+  return Boolean(
+    environment.GIFTING_AI_ENABLED === '1' &&
+    configuredQuoteSecret(environment) &&
+    databaseURL &&
+    /^postgres(?:ql)?:\/\//i.test(databaseURL),
+  )
+}
+
 function stripeGiftBaseConfig(environment: NodeJS.ProcessEnv): StripeGiftConfig | null {
   const apiKey = environment.STRIPE_RESTRICTED_KEY?.trim()
   const publicSiteOrigin = configuredSiteOrigin(environment)

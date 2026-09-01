@@ -105,9 +105,9 @@ for (const [relativePath, canonical] of [
 
 const giftsPage = await readOutput('gifts/index.html')
 assert.match(giftsPage, /Pick one\. Pass two\. Make my day\./)
-assert.match(giftsPage, /gift for AmirSaber/)
-assert.match(giftsPage, /AmirSaber—not Stripe—makes the retailer purchase manually afterward/)
-assert.match(giftsPage, /Checking Gift Draft/)
+assert.match(giftsPage, /fixed gift contribution/)
+assert.match(giftsPage, /does not place a retailer order/)
+assert.match(giftsPage, /Checking inventory/)
 assert.doesNotMatch(giftsPage, /OPENROUTER_API_KEY|STRIPE_SECRET_KEY|GIFT_QUOTE_SECRET/)
 
 const readinessPage = await readOutput('readiness/index.html')

@@ -13,6 +13,7 @@ const metadataKeys = [
   'gift_currency',
   'gift_draft_version',
   'gift_item_name',
+  'gift_inventory_reservation_id',
   'gift_metadata_signature',
   'gift_offer_id',
   'gift_run_id',
@@ -31,6 +32,7 @@ export type ValidatedGiftSession = {
   checkoutStatus: 'complete' | 'expired' | 'open'
   currency: 'usd'
   giftNote?: string
+  inventoryReservationId: string
   giftOfferId: string
   giftRunId: string
   itemName: string
@@ -57,6 +59,7 @@ function signaturePayload(value: SignedGiftMetadata): string {
     currency: value.currency,
     giftOfferId: value.giftOfferId,
     giftRunId: value.giftRunId,
+    inventoryReservationId: value.inventoryReservationId,
     itemName: value.itemName,
     referenceRetailer: value.referenceRetailer,
     referenceSource: value.referenceSource,
@@ -108,9 +111,13 @@ function giftNote(session: Stripe.Checkout.Session): string | undefined {
 
 export function buildGiftSessionMetadata(
   claim: GiftQuoteClaim,
+  inventoryReservationId: string,
   quoteSecret: string,
 ): Record<string, string> {
   if (claim.sourceUrl.length > 500) throw new Error('gift_reference_source_too_long')
+  if (!/^gift-reservation-[a-f0-9]{64}$/.test(inventoryReservationId)) {
+    throw new Error('gift_inventory_reservation_id_invalid')
+  }
 
   const signed: SignedGiftMetadata = {
     amountCents: claim.amountCents,
@@ -118,6 +125,7 @@ export function buildGiftSessionMetadata(
     currency: claim.currency,
     giftOfferId: claim.offerId,
     giftRunId: claim.runId,
+    inventoryReservationId,
     itemName: claim.itemName,
     referenceRetailer: claim.retailer,
     referenceSource: claim.sourceUrl,
@@ -129,6 +137,7 @@ export function buildGiftSessionMetadata(
     gift_currency: signed.currency,
     gift_draft_version: '1',
     gift_item_name: signed.itemName,
+    gift_inventory_reservation_id: signed.inventoryReservationId,
     gift_metadata_signature: signMetadata(signed, quoteSecret),
     gift_offer_id: signed.giftOfferId,
     gift_run_id: signed.giftRunId,
@@ -171,6 +180,7 @@ export function validateGiftCheckoutSession(
     !/^[A-Za-z0-9_-]{16,160}$/.test(metadata.gift_run_id) ||
     !boundedSafeText(metadata.gift_item_name, 3, 120) ||
     !boundedSafeText(metadata.gift_category, 2, 50) ||
+    !/^gift-reservation-[a-f0-9]{64}$/.test(metadata.gift_inventory_reservation_id) ||
     !boundedSafeText(metadata.reference_retailer, 2, 80) ||
     !referenceSource ||
     referenceSource !== metadata.reference_source ||
@@ -185,6 +195,7 @@ export function validateGiftCheckoutSession(
     currency: 'usd',
     giftOfferId: metadata.gift_offer_id,
     giftRunId: metadata.gift_run_id,
+    inventoryReservationId: metadata.gift_inventory_reservation_id,
     itemName: metadata.gift_item_name,
     referenceRetailer: metadata.reference_retailer,
     referenceSource,

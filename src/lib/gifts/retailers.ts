@@ -73,6 +73,35 @@ const underThirtyGiftProductHosts: ReadonlySet<string> = new Set([
 
 const approvedGiftProductHostSet: ReadonlySet<string> = new Set(approvedGiftProductHosts)
 
+const retailerNameByHost: Readonly<Record<string, string>> = {
+  'adafruit.com': 'Adafruit',
+  'aeropress.com': 'AeroPress',
+  'barnesandnoble.com': 'Barnes & Noble',
+  'bellroy.com': 'Bellroy',
+  'bhphotovideo.com': 'B&H Photo Video',
+  'fieldnotesbrand.com': 'Field Notes',
+  'fellowproducts.com': 'Fellow',
+  'grovemade.com': 'Grovemade',
+  'ifixit.com': 'iFixit',
+  'jetpens.com': 'JetPens',
+  'keychron.com': 'Keychron',
+  'leevalley.com': 'Lee Valley',
+  'logitech.com': 'Logitech',
+  'muji.us': 'MUJI',
+  'nostarch.com': 'No Starch Press',
+  'orbitkey.com': 'Orbitkey',
+  'peakdesign.com': 'Peak Design',
+  'phaidon.com': 'Phaidon',
+  'rei.com': 'REI',
+  'simplehuman.com': 'simplehuman',
+  'sparkfun.com': 'SparkFun',
+  'store.moma.org': 'MoMA Design Store',
+  'taschen.com': 'TASCHEN',
+  'theyamazakihome.com': 'Yamazaki Home',
+  'ugmonk.com': 'Ugmonk',
+  'uncommongoods.com': 'Uncommon Goods',
+}
+
 export const verifiableGiftProductHosts = [
   'adafruit.com',
   'ifixit.com',
@@ -89,6 +118,14 @@ export function isApprovedGiftProductHost(hostname: string): boolean {
   return approvedGiftProductHostSet.has(hostname.toLowerCase())
 }
 
+/** The display name is controlled by the approved host, never by model-authored metadata. */
+export function giftProductRetailerName(hostname: string): string | null {
+  const normalized = hostname.toLowerCase()
+  if (!isApprovedGiftProductHost(normalized)) return null
+  const host = normalized.startsWith('www.') ? normalized.slice(4) : normalized
+  return retailerNameByHost[host] ?? null
+}
+
 export function isVerifiableGiftProductHost(hostname: string): boolean {
   return verifiableGiftProductHostSet.has(hostname.toLowerCase())
 }
@@ -100,7 +137,7 @@ export function giftProductHostFamily(hostname: string): string | null {
 }
 
 export function giftSearchProductHosts(budget: string): readonly string[] {
-  return verifiableGiftProductHosts.filter(
+  return approvedGiftProductHosts.filter(
     (host) => budget !== 'under_30' || underThirtyGiftProductHosts.has(host),
   )
 }

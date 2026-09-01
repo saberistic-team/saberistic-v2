@@ -5,6 +5,7 @@ vi.mock('server-only', () => ({}))
 
 import type { GiftQuoteClaim } from '@/lib/gifts'
 import { handleGiftPaymentStatus } from '@/lib/gifts/server/payment-status-handler'
+import type { GiftInventoryDatabase } from '@/lib/gifts/server/inventory'
 import {
   giftPaymentFromCheckoutEvent,
   giftPaymentFromRefundEvent,
@@ -22,6 +23,12 @@ const quoteSecret = 'gift-payment-test-secret-that-is-longer-than-32-characters'
 const sessionId = 'cs_test_1234567890abcdef'
 const paymentIntentId = 'pi_1234567890abcdef'
 const nowSeconds = 1_800_000_000
+const inventoryReservationId = `gift-reservation-${'a'.repeat(64)}`
+const inventoryDatabase = {} as GiftInventoryDatabase
+
+function successfulInventoryTransition() {
+  return vi.fn(async () => 'sold' as const)
+}
 
 const claim: GiftQuoteClaim = {
   amountCents: 12_345,
@@ -59,7 +66,7 @@ function checkoutSession(
     id: sessionId,
     integration_identifier: 'saberistic_gift_draft_abcdefgh',
     livemode: false,
-    metadata: buildGiftSessionMetadata(claim, quoteSecret),
+    metadata: buildGiftSessionMetadata(claim, inventoryReservationId, quoteSecret),
     mode: 'payment',
     object: 'checkout.session',
     payment_intent: paymentIntentId,
@@ -182,6 +189,7 @@ describe('signed Gift Draft Stripe metadata', () => {
     expect(() =>
       buildGiftSessionMetadata(
         { ...claim, sourceUrl: `https://maker.example/${'a'.repeat(500)}` },
+        inventoryReservationId,
         quoteSecret,
       ),
     ).toThrow('gift_reference_source_too_long')
@@ -478,7 +486,12 @@ describe('Gift Draft Stripe webhook', () => {
         },
         method: 'POST',
       }),
-      { environment: environment(), store: memoryStore().store },
+      {
+        environment: environment(),
+        inventoryDatabase,
+        store: memoryStore().store,
+        transitionInventory: successfulInventoryTransition(),
+      },
     )
     expect(validResponse.status).toBe(200)
 
@@ -509,6 +522,7 @@ describe('Gift Draft Stripe webhook', () => {
     const raw = '{"event":"exact-✓"}'
     const event = stripeEvent('checkout.session.completed', checkoutSession())
     const memory = memoryStore()
+    const transitionInventory = successfulInventoryTransition()
     const constructEvent = vi.fn((body: Buffer) => {
       expect(body.equals(Buffer.from(raw))).toBe(true)
       return event
@@ -525,7 +539,9 @@ describe('Gift Draft Stripe webhook', () => {
     const response = await handleGiftWebhook(request, {
       constructEvent,
       environment: environment(),
+      inventoryDatabase,
       store: memory.store,
+      transitionInventory,
     })
 
     expect(response.status).toBe(200)
@@ -535,6 +551,11 @@ describe('Gift Draft Stripe webhook', () => {
       received: true,
     })
     expect(constructEvent).toHaveBeenCalledOnce()
+    expect(transitionInventory).toHaveBeenCalledWith(inventoryDatabase, {
+      offerId: claim.offerId,
+      paymentStatus: 'paid',
+      reservationId: inventoryReservationId,
+    })
   })
 
   it('rejects an oversized body before signature verification', async () => {
@@ -569,7 +590,9 @@ describe('Gift Draft Stripe webhook', () => {
       constructEvent: () => event,
       environment: environment(),
       findRefundSession,
+      inventoryDatabase,
       store: memory.store,
+      transitionInventory: successfulInventoryTransition(),
     })
 
     expect(response.status).toBe(200)
@@ -586,6 +609,59 @@ describe('Gift Draft Stripe webhook', () => {
       paymentStatus: 'partially_refunded',
       refundedAmountCents: 2_000,
       stripeChargeId: 'ch_1234567890abcdef',
+    })
+  })
+
+  it('retries the inventory transition when Stripe redelivers a duplicate event', async () => {
+    const event = stripeEvent('checkout.session.completed', checkoutSession())
+    const memory = memoryStore()
+    const transitionInventory = successfulInventoryTransition()
+    const dependencies = {
+      constructEvent: () => event,
+      environment: environment(),
+      inventoryDatabase,
+      store: memory.store,
+      transitionInventory,
+    }
+
+    const first = await handleGiftWebhook(webhookRequest(), dependencies)
+    const duplicate = await handleGiftWebhook(webhookRequest(), dependencies)
+
+    expect(first.status).toBe(200)
+    expect(duplicate.status).toBe(200)
+    await expect(duplicate.json()).resolves.toMatchObject({ duplicate: true, handled: true })
+    expect(transitionInventory).toHaveBeenCalledTimes(2)
+  })
+
+  it('returns an error so Stripe retries when the inventory transition fails', async () => {
+    const response = await handleGiftWebhook(webhookRequest(), {
+      constructEvent: () => stripeEvent('checkout.session.completed', checkoutSession()),
+      environment: environment(),
+      inventoryDatabase,
+      store: memoryStore().store,
+      transitionInventory: async () => {
+        throw new Error('inventory unavailable')
+      },
+    })
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Gift payment processing failed.',
+    })
+  })
+
+  it('returns an error so Stripe retries when no inventory row can transition', async () => {
+    const response = await handleGiftWebhook(webhookRequest(), {
+      constructEvent: () => stripeEvent('checkout.session.completed', checkoutSession()),
+      environment: environment(),
+      inventoryDatabase,
+      store: memoryStore().store,
+      transitionInventory: async () => 'unchanged',
+    })
+
+    expect(response.status).toBe(500)
+    await expect(response.json()).resolves.toEqual({
+      error: 'Gift payment processing failed.',
     })
   })
 

@@ -220,6 +220,7 @@ function samePayment(existing: GiftPaymentRecord, incoming: GiftPaymentProviderD
     existing.stripeCheckoutSessionId === incoming.stripeCheckoutSessionId &&
     existing.giftOfferId === incoming.giftOfferId &&
     existing.giftRunId === incoming.giftRunId &&
+    existing.inventoryReservationId === incoming.inventoryReservationId &&
     existing.itemName === incoming.itemName &&
     existing.category === incoming.category &&
     existing.referenceRetailer === incoming.referenceRetailer &&
