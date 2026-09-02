@@ -79,6 +79,7 @@ describe('Render Static Site Blueprint', () => {
     expect(payloadService).toMatch(/- key: GIFTING_AI_ENABLED\n\s+value: '0'/)
     expect(payloadService).toMatch(/- key: GIFTING_CHECKOUT_ENABLED\n\s+value: '0'/)
     expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_TIMEOUT_MS\n\s+value: '20000'/)
+    expect(payloadService).toMatch(/- key: GIFT_INVENTORY_JOB_TIMEOUT_MS\n\s+value: '75000'/)
     expect(payloadService).toMatch(/- key: GIFTING_TOKEN_LIMIT\n\s+value: '4'/)
     expect(payloadService).toMatch(/- key: GIFTING_DAILY_LIMIT\n\s+value: '500'/)
     expect(payloadService).toMatch(/- key: GIFTING_CONCURRENCY_LIMIT\n\s+value: '2'/)

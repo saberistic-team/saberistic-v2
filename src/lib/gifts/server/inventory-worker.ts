@@ -51,7 +51,7 @@ const maximumRetailerPageBytes = 2 * 1024 * 1024
 const maximumSourceImageBytes = 12 * 1024 * 1024
 const maximumSourceURLLength = 500
 const maximumImageURLLength = 1_000
-const maximumImagePixels = 40_000_000
+const maximumImagePixels = 12_000_000
 const maximumRedirects = 3
 const pendingValidationSeconds = 24 * 60 * 60
 const validValidationSeconds = 7 * 24 * 60 * 60
@@ -100,6 +100,7 @@ export type GiftRemoteFetchTransport = {
 export type GiftInventoryWorkerConfig = {
   apiKey: string
   databaseURL: string
+  jobTimeoutMilliseconds: number
   pollMilliseconds: number
   researchModel: string
   siteOrigin?: string
@@ -116,6 +117,12 @@ export type GiftInventoryJob = {
   maxAttempts: number
   productId: string | null
   theme: GiftThemeId | null
+}
+
+export type GiftInventoryJobLease = {
+  attempts: number
+  jobId: string
+  workerId: string
 }
 
 export type GiftDiscoveryMetadata = {
@@ -174,6 +181,10 @@ export class GiftInventoryWorkerError extends Error {
     super(code)
     this.name = 'GiftInventoryWorkerError'
   }
+}
+
+function throwIfGiftInventoryJobAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new GiftInventoryWorkerError('worker_job_timeout')
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -247,6 +258,12 @@ export function readGiftInventoryWorkerConfig(
   return {
     apiKey,
     databaseURL,
+    jobTimeoutMilliseconds: boundedInteger(
+      environment.GIFT_INVENTORY_JOB_TIMEOUT_MS,
+      75_000,
+      30_000,
+      180_000,
+    ),
     pollMilliseconds: boundedInteger(environment.GIFT_INVENTORY_POLL_MS, 5_000, 1_000, 60_000),
     researchModel,
     siteOrigin: normalizedOrigin(environment.SITE_URL || environment.RENDER_EXTERNAL_URL),
@@ -860,7 +877,9 @@ export function extractRetailerProductPage(
 export async function normalizeRetailerImage(
   bytes: Buffer,
   contentType: string,
+  signal?: AbortSignal,
 ): Promise<CachedRetailerImage> {
+  throwIfGiftInventoryJobAborted(signal)
   if (!['image/avif', 'image/jpeg', 'image/png', 'image/webp'].includes(contentType)) {
     throw new GiftInventoryWorkerError('retailer_image_type_invalid', 'invalid')
   }
@@ -872,6 +891,7 @@ export async function normalizeRetailerImage(
       limitInputPixels: maximumImagePixels,
     })
     const metadata = await pipeline.metadata()
+    throwIfGiftInventoryJobAborted(signal)
     if (
       !metadata.width ||
       !metadata.height ||
@@ -893,6 +913,7 @@ export async function normalizeRetailerImage(
     .resize({ fit: 'inside', height: 640, width: 640, withoutEnlargement: true })
     .webp({ effort: 4, quality: 82 })
     .toBuffer()
+  throwIfGiftInventoryJobAborted(signal)
   if (output.byteLength > giftInventoryLimits.maximumArtworkBytes || !isWebP(output)) {
     throw new GiftInventoryWorkerError('retailer_image_output_invalid', 'invalid')
   }
@@ -1318,7 +1339,9 @@ async function fetchRetailerProduct(
   metadata: GiftDiscoveryMetadata,
   fetchImpl: WorkerFetch,
   timeoutMilliseconds: number,
+  signal?: AbortSignal,
 ): Promise<{ image: CachedRetailerImage; snapshot: RetailerProductSnapshot }> {
+  throwIfGiftInventoryJobAborted(signal)
   const page = await fetchRemote(metadata.sourceUrl, {
     accept: 'text/html,application/xhtml+xml;q=0.9',
     approvedRetailerOnly: true,
@@ -1326,6 +1349,7 @@ async function fetchRetailerProduct(
     maximumBytes: maximumRetailerPageBytes,
     timeoutMilliseconds,
   })
+  throwIfGiftInventoryJobAborted(signal)
   if (!['text/html', 'application/xhtml+xml'].includes(page.contentType)) {
     throw new GiftInventoryWorkerError('retailer_page_type_invalid', 'invalid')
   }
@@ -1351,18 +1375,24 @@ async function fetchRetailerProduct(
     maximumBytes: maximumSourceImageBytes,
     timeoutMilliseconds,
   })
-  const image = await normalizeRetailerImage(imageResponse.bytes, imageResponse.contentType)
+  throwIfGiftInventoryJobAborted(signal)
+  const image = await normalizeRetailerImage(imageResponse.bytes, imageResponse.contentType, signal)
+  throwIfGiftInventoryJobAborted(signal)
   return { image, snapshot: { ...snapshot, imageUrl: imageResponse.finalURL } }
 }
 
 async function inWorkerTransaction<T>(
   database: GiftInventoryDatabase,
   operation: (connection: GiftInventoryConnection) => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<T> {
   const connection = await database.connect()
   try {
+    throwIfGiftInventoryJobAborted(signal)
     await connection.query('BEGIN')
+    throwIfGiftInventoryJobAborted(signal)
     const result = await operation(connection)
+    throwIfGiftInventoryJobAborted(signal)
     await connection.query('COMMIT')
     return result
   } catch (error) {
@@ -1371,6 +1401,43 @@ async function inWorkerTransaction<T>(
   } finally {
     connection.release()
   }
+}
+
+async function assertGiftInventoryJobLease(
+  connection: GiftInventoryConnection,
+  lease: GiftInventoryJobLease,
+  signal?: AbortSignal,
+): Promise<void> {
+  throwIfGiftInventoryJobAborted(signal)
+  const result = await connection.query(
+    `SELECT id FROM gift_inventory_jobs
+     WHERE id = $1 AND status = 'running' AND locked_by = $2 AND attempts = $3
+     FOR UPDATE`,
+    [lease.jobId, lease.workerId, lease.attempts],
+  )
+  throwIfGiftInventoryJobAborted(signal)
+  if ((result.rowCount ?? 0) !== 1) {
+    throw new GiftInventoryWorkerError('worker_job_lease_lost')
+  }
+}
+
+async function inWorkerMutationTransaction<T>(
+  database: GiftInventoryDatabase,
+  lease: GiftInventoryJobLease | undefined,
+  signal: AbortSignal | undefined,
+  operation: (connection: GiftInventoryConnection) => Promise<T>,
+): Promise<T> {
+  return inWorkerTransaction(
+    database,
+    async (connection) => {
+      if (lease) await assertGiftInventoryJobLease(connection, lease, signal)
+      throwIfGiftInventoryJobAborted(signal)
+      const result = await operation(connection)
+      throwIfGiftInventoryJobAborted(signal)
+      return result
+    },
+    signal,
+  )
 }
 
 type JobRow = QueryResultRow & {
@@ -1491,8 +1558,8 @@ export async function completeGiftInventoryJob(
     `UPDATE gift_inventory_jobs
      SET status = 'completed', completed_at = now(), locked_at = NULL, locked_by = NULL,
          last_error_code = NULL, updated_at = now()
-     WHERE id = $1 AND status = 'running' AND locked_by = $2`,
-    [job.id, workerId],
+     WHERE id = $1 AND status = 'running' AND locked_by = $2 AND attempts = $3`,
+    [job.id, workerId, job.attempts],
   )
   return (result.rowCount ?? 0) > 0
 }
@@ -1522,8 +1589,8 @@ export async function failGiftInventoryJob(
            locked_at = NULL, locked_by = NULL, last_error_code = $5,
            completed_at = CASE WHEN $3 = 'failed' THEN now() ELSE NULL END,
            updated_at = now()
-       WHERE id = $1 AND status = 'running' AND locked_by = $2`,
-      [job.id, workerId, failNow ? 'failed' : 'queued', delaySeconds, code],
+       WHERE id = $1 AND status = 'running' AND locked_by = $2 AND attempts = $6`,
+      [job.id, workerId, failNow ? 'failed' : 'queued', delaySeconds, code, job.attempts],
     )
     if ((result.rowCount ?? 0) === 0) return failNow ? 'failed' : 'retry'
     if (job.kind === 'validate' && job.productId) {
@@ -1549,7 +1616,10 @@ async function storePendingGiftProduct(
   metadata: GiftDiscoveryMetadata,
   snapshot: RetailerProductSnapshot,
   image: CachedRetailerImage,
+  signal?: AbortSignal,
+  lease?: GiftInventoryJobLease,
 ): Promise<{ id: string; inserted: boolean }> {
+  throwIfGiftInventoryJobAborted(signal)
   if (
     snapshot.observedPriceCents < minimumInventoryPriceCents ||
     snapshot.observedPriceCents > maximumInventoryPriceCents
@@ -1578,25 +1648,33 @@ async function storePendingGiftProduct(
   const fingerprint = discoveryFingerprint(snapshot.sourceUrl)
   const id = `gift-${fingerprint.slice(0, 32)}`
 
-  const inserted = await inWorkerTransaction(database, async (connection) => {
-    await connection.query(
-      "SELECT pg_advisory_xact_lock(hashtext('saberistic-gift-inventory-insert'))",
-    )
-    const count = await connection.query<QueryResultRow & { count: number | string }>(
-      `SELECT count(DISTINCT normalized_name)::integer AS count FROM gift_inventory
+  const inserted = await inWorkerMutationTransaction(
+    database,
+    lease,
+    signal,
+    async (connection) => {
+      throwIfGiftInventoryJobAborted(signal)
+      await connection.query(
+        "SELECT pg_advisory_xact_lock(hashtext('saberistic-gift-inventory-insert'))",
+      )
+      throwIfGiftInventoryJobAborted(signal)
+      const count = await connection.query<QueryResultRow & { count: number | string }>(
+        `SELECT count(DISTINCT normalized_name)::integer AS count FROM gift_inventory
        WHERE status IN ('available', 'reserved')
          AND cached_image_webp IS NOT NULL
          AND (validation_status = 'valid'
            OR (validation_status = 'pending' AND validation_expires_at > now())
            OR (validation_status = 'stale'
              AND checked_at > now() - interval '30 days'))`,
-    )
-    if (Number(count.rows[0]?.count ?? 0) >= giftInventoryLimits.maximumAvailableInventory) {
-      return false
-    }
+      )
+      throwIfGiftInventoryJobAborted(signal)
+      if (Number(count.rows[0]?.count ?? 0) >= giftInventoryLimits.maximumAvailableInventory) {
+        return false
+      }
 
-    const result = await connection.query(
-      `INSERT INTO gift_inventory (
+      throwIfGiftInventoryJobAborted(signal)
+      const result = await connection.query(
+        `INSERT INTO gift_inventory (
          id, name, normalized_name, category, why_it_fits, product_description, retailer, source_url,
          original_image_url, observed_price_cents, currency, theme_ids,
          cached_image_webp, cached_image_mime, cached_image_sha256,
@@ -1608,37 +1686,42 @@ async function storePendingGiftProduct(
          now() + ($13 * interval '1 second'), $14, now(), now(), $15
        )
        ON CONFLICT DO NOTHING`,
-      [
-        id,
-        snapshot.name,
-        metadata.category,
-        metadata.whyItFits,
-        snapshot.description,
-        retailer,
-        snapshot.sourceUrl,
-        snapshot.imageUrl,
-        snapshot.observedPriceCents,
-        metadata.themes,
-        image.bytes,
-        image.sha256,
-        pendingValidationSeconds,
-        fingerprint,
-        snapshot.availability === 'unknown' ? 'retailer_availability_unknown' : null,
-        normalizedName,
-      ],
-    )
-    if ((result.rowCount ?? 0) > 0) {
-      await connection.query(
-        `INSERT INTO gift_inventory_jobs
+        [
+          id,
+          snapshot.name,
+          metadata.category,
+          metadata.whyItFits,
+          snapshot.description,
+          retailer,
+          snapshot.sourceUrl,
+          snapshot.imageUrl,
+          snapshot.observedPriceCents,
+          metadata.themes,
+          image.bytes,
+          image.sha256,
+          pendingValidationSeconds,
+          fingerprint,
+          snapshot.availability === 'unknown' ? 'retailer_availability_unknown' : null,
+          normalizedName,
+        ],
+      )
+      throwIfGiftInventoryJobAborted(signal)
+      if ((result.rowCount ?? 0) > 0) {
+        throwIfGiftInventoryJobAborted(signal)
+        await connection.query(
+          `INSERT INTO gift_inventory_jobs
            (job_key, kind, product_id, status, max_attempts, run_after)
          VALUES ($1, 'validate', $2, 'queued', 4, now() + interval '5 minutes')
          ON CONFLICT (job_key) DO NOTHING`,
-        [`gift-validate-${randomUUID()}`, id],
-      )
-      return true
-    }
-    return false
-  })
+          [`gift-validate-${randomUUID()}`, id],
+        )
+        throwIfGiftInventoryJobAborted(signal)
+        return true
+      }
+      return false
+    },
+  )
+  throwIfGiftInventoryJobAborted(signal)
   return { id, inserted }
 }
 
@@ -1667,28 +1750,39 @@ async function markProductInvalid(
   database: GiftInventoryDatabase,
   productId: string,
   errorCode: string,
+  signal?: AbortSignal,
+  lease?: GiftInventoryJobLease,
 ): Promise<void> {
-  await database.query(
-    `UPDATE gift_inventory
-     SET validation_status = 'invalid', validation_expires_at = now(),
-         last_validation_attempt_at = now(), last_validation_error_code = $2,
-         updated_at = now()
-     WHERE id = $1`,
-    [productId, errorCode],
-  )
+  throwIfGiftInventoryJobAborted(signal)
+  await inWorkerMutationTransaction(database, lease, signal, async (connection) => {
+    await connection.query(
+      `UPDATE gift_inventory
+       SET validation_status = 'invalid', validation_expires_at = now(),
+           last_validation_attempt_at = now(), last_validation_error_code = $2,
+           updated_at = now()
+       WHERE id = $1`,
+      [productId, errorCode],
+    )
+  })
+  throwIfGiftInventoryJobAborted(signal)
 }
 
 async function noteValidationAttempt(
   database: GiftInventoryDatabase,
   productId: string,
+  signal?: AbortSignal,
+  lease?: GiftInventoryJobLease,
 ): Promise<void> {
-  await database.query(
-    `UPDATE gift_inventory
-     SET last_validation_attempt_at = now(), last_validation_error_code = NULL,
-         updated_at = now()
-     WHERE id = $1 AND status <> 'sold'`,
-    [productId],
-  )
+  await inWorkerMutationTransaction(database, lease, signal, async (connection) => {
+    await connection.query(
+      `UPDATE gift_inventory
+       SET last_validation_attempt_at = now(), last_validation_error_code = NULL,
+           updated_at = now()
+       WHERE id = $1 AND status <> 'sold'`,
+      [productId],
+    )
+  })
+  throwIfGiftInventoryJobAborted(signal)
 }
 
 function isNormalizedNameConflict(error: unknown): boolean {
@@ -1707,7 +1801,10 @@ export async function refreshGiftProduct(
   productId: string,
   snapshot: RetailerProductSnapshot,
   image: CachedRetailerImage,
+  signal?: AbortSignal,
+  lease?: GiftInventoryJobLease,
 ): Promise<boolean> {
+  throwIfGiftInventoryJobAborted(signal)
   const normalizedName = normalizeGiftProductName(snapshot.name)
   if (!normalizedName || normalizedName.length > 512) {
     throw new GiftInventoryWorkerError('retailer_product_name_invalid', 'invalid')
@@ -1716,34 +1813,40 @@ export async function refreshGiftProduct(
   const expirationSeconds =
     snapshot.availability === 'available' ? validValidationSeconds : pendingValidationSeconds
   try {
-    await database.query(
-      `UPDATE gift_inventory
-       SET name = $2, normalized_name = $3, product_description = $4, original_image_url = $5,
-           observed_price_cents = $6, cached_image_webp = $7,
-           cached_image_mime = 'image/webp', cached_image_sha256 = $8,
-           validation_status = $9,
-           validation_expires_at = now() + ($10 * interval '1 second'),
-           checked_at = now(), last_validation_attempt_at = now(),
-           last_validation_error_code = $11, updated_at = now()
-       WHERE id = $1 AND status <> 'sold'`,
-      [
-        productId,
-        snapshot.name,
-        normalizedName,
-        snapshot.description,
-        snapshot.imageUrl,
-        snapshot.observedPriceCents,
-        image.bytes,
-        image.sha256,
-        validationStatus,
-        expirationSeconds,
-        snapshot.availability === 'unknown' ? 'retailer_availability_unknown' : null,
-      ],
-    )
+    throwIfGiftInventoryJobAborted(signal)
+    await inWorkerMutationTransaction(database, lease, signal, async (connection) => {
+      await connection.query(
+        `UPDATE gift_inventory
+         SET name = $2, normalized_name = $3, product_description = $4, original_image_url = $5,
+             observed_price_cents = $6, cached_image_webp = $7,
+             cached_image_mime = 'image/webp', cached_image_sha256 = $8,
+             validation_status = $9,
+             validation_expires_at = now() + ($10 * interval '1 second'),
+             checked_at = now(), last_validation_attempt_at = now(),
+             last_validation_error_code = $11, updated_at = now()
+         WHERE id = $1 AND status <> 'sold'`,
+        [
+          productId,
+          snapshot.name,
+          normalizedName,
+          snapshot.description,
+          snapshot.imageUrl,
+          snapshot.observedPriceCents,
+          image.bytes,
+          image.sha256,
+          validationStatus,
+          expirationSeconds,
+          snapshot.availability === 'unknown' ? 'retailer_availability_unknown' : null,
+        ],
+      )
+    })
+    throwIfGiftInventoryJobAborted(signal)
     return true
   } catch (error) {
+    throwIfGiftInventoryJobAborted(signal)
     if (!isNormalizedNameConflict(error)) throw error
-    await markProductInvalid(database, productId, 'retailer_product_name_conflict')
+    await markProductInvalid(database, productId, 'retailer_product_name_conflict', signal, lease)
+    throwIfGiftInventoryJobAborted(signal)
     return false
   }
 }
@@ -1753,21 +1856,30 @@ export async function processGiftInventoryJob(
   config: GiftInventoryWorkerConfig,
   job: GiftInventoryJob,
   fetchImpl: WorkerFetch = globalThis.fetch,
+  signal?: AbortSignal,
+  lease?: GiftInventoryJobLease,
 ): Promise<{ inserted?: boolean; outcome: 'discovered' | 'invalid' | 'validated' }> {
+  throwIfGiftInventoryJobAborted(signal)
   if (job.kind === 'discover') {
     const research = await researchRetailerProducts(config, fetchImpl, job)
+    throwIfGiftInventoryJobAborted(signal)
     const metadata = await synthesizeDiscoveryMetadata(config, fetchImpl, job, research)
+    throwIfGiftInventoryJobAborted(signal)
     const { image, snapshot } = await fetchRetailerProduct(
       metadata,
       fetchImpl,
       config.timeoutMilliseconds,
+      signal,
     )
-    const stored = await storePendingGiftProduct(database, metadata, snapshot, image)
+    throwIfGiftInventoryJobAborted(signal)
+    const stored = await storePendingGiftProduct(database, metadata, snapshot, image, signal, lease)
+    throwIfGiftInventoryJobAborted(signal)
     return { inserted: stored.inserted, outcome: 'discovered' }
   }
 
   if (!job.productId) throw new GiftInventoryWorkerError('job_product_missing', 'invalid')
   const product = await validationProduct(database, job.productId)
+  throwIfGiftInventoryJobAborted(signal)
   if (!product) return { outcome: 'invalid' }
   const themes = product.theme_ids.filter((isTheme) =>
     concreteThemes.includes(isTheme as GiftInventoryTheme),
@@ -1779,18 +1891,24 @@ export async function processGiftInventoryJob(
     themes,
     whyItFits: product.why_it_fits,
   }
-  await noteValidationAttempt(database, product.id)
+  await noteValidationAttempt(database, product.id, signal, lease)
+  throwIfGiftInventoryJobAborted(signal)
   try {
     const { image, snapshot } = await fetchRetailerProduct(
       metadata,
       fetchImpl,
       config.timeoutMilliseconds,
+      signal,
     )
-    const refreshed = await refreshGiftProduct(database, product.id, snapshot, image)
+    throwIfGiftInventoryJobAborted(signal)
+    const refreshed = await refreshGiftProduct(database, product.id, snapshot, image, signal, lease)
+    throwIfGiftInventoryJobAborted(signal)
     return { outcome: refreshed ? 'validated' : 'invalid' }
   } catch (error) {
+    throwIfGiftInventoryJobAborted(signal)
     if (error instanceof GiftInventoryWorkerError && error.disposition === 'invalid') {
-      await markProductInvalid(database, product.id, safeErrorCode(error))
+      await markProductInvalid(database, product.id, safeErrorCode(error), signal, lease)
+      throwIfGiftInventoryJobAborted(signal)
       return { outcome: 'invalid' }
     }
     throw error
@@ -1808,6 +1926,58 @@ type WorkerLogEvent = {
 
 function defaultWorkerLogger(event: WorkerLogEvent): void {
   process.stdout.write(`${JSON.stringify({ component: 'gift_inventory_worker', ...event })}\n`)
+}
+
+function safeWorkerLog(logger: (event: WorkerLogEvent) => void, event: WorkerLogEvent): void {
+  try {
+    logger(event)
+  } catch {
+    // Telemetry must never strand or alter a claimed durable job.
+  }
+}
+
+type GiftInventoryJobProcessor = typeof processGiftInventoryJob
+
+function awaitGiftInventoryJobDeadline<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(new GiftInventoryWorkerError('worker_job_timeout'))
+  return new Promise<T>((resolve, reject) => {
+    let settled = false
+    const finish = (callback: () => void) => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', abort)
+      callback()
+    }
+    const abort = () => finish(() => reject(new GiftInventoryWorkerError('worker_job_timeout')))
+    signal.addEventListener('abort', abort, { once: true })
+    operation.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    )
+  })
+}
+
+async function processGiftInventoryJobWithDeadline(
+  database: GiftInventoryDatabase,
+  config: GiftInventoryWorkerConfig,
+  job: GiftInventoryJob,
+  workerId: string,
+  fetchImpl: WorkerFetch,
+  processJob: GiftInventoryJobProcessor = processGiftInventoryJob,
+): ReturnType<GiftInventoryJobProcessor> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), config.jobTimeoutMilliseconds)
+  try {
+    const operation = processJob(database, config, job, fetchImpl, controller.signal, {
+      attempts: job.attempts,
+      jobId: job.id,
+      workerId,
+    })
+    return await awaitGiftInventoryJobDeadline(operation, controller.signal)
+  } finally {
+    clearTimeout(timeout)
+    controller.abort()
+  }
 }
 
 function sleep(milliseconds: number): Promise<void> {
@@ -1879,6 +2049,7 @@ async function performGiftInventoryDrain(options: {
   fetchImpl?: WorkerFetch
   logger?: (event: WorkerLogEvent) => void
   maximumJobs?: number
+  processJobImpl?: GiftInventoryJobProcessor
 }): Promise<GiftInventoryDrainResult> {
   let config: GiftInventoryWorkerConfig
   try {
@@ -1908,10 +2079,23 @@ async function performGiftInventoryDrain(options: {
       const job = await claimGiftInventoryJob(database, workerId)
       if (!job) break
       processed += 1
+      safeWorkerLog(logger, {
+        attempts: job.attempts,
+        event: 'started',
+        jobId: job.id,
+        kind: job.kind,
+      })
       try {
-        const result = await processGiftInventoryJob(database, config, job, fetchImpl)
+        const result = await processGiftInventoryJobWithDeadline(
+          database,
+          config,
+          job,
+          workerId,
+          fetchImpl,
+          options.processJobImpl,
+        )
         await completeGiftInventoryJob(database, job, workerId)
-        logger({
+        safeWorkerLog(logger, {
           attempts: job.attempts,
           event: 'completed',
           jobId: job.id,
@@ -1920,7 +2104,7 @@ async function performGiftInventoryDrain(options: {
         })
       } catch (error) {
         const outcome = await failGiftInventoryJob(database, job, workerId, error)
-        logger({
+        safeWorkerLog(logger, {
           attempts: job.attempts,
           code: safeErrorCode(error),
           event: outcome,
@@ -1993,7 +2177,7 @@ export async function runGiftInventoryWorker(
     await bootstrapGiftInventory(database)
     await enqueueBaselineInventory(database)
     await enqueueDueGiftInventoryRevalidation(database)
-    logger({ event: 'started' })
+    safeWorkerLog(logger, { event: 'started' })
 
     while (shouldContinue()) {
       maintenanceCounter += 1
@@ -2014,10 +2198,22 @@ export async function runGiftInventoryWorker(
         continue
       }
 
+      safeWorkerLog(logger, {
+        attempts: job.attempts,
+        event: 'started',
+        jobId: job.id,
+        kind: job.kind,
+      })
       try {
-        const result = await processGiftInventoryJob(database, config, job, fetchImpl)
+        const result = await processGiftInventoryJobWithDeadline(
+          database,
+          config,
+          job,
+          workerId,
+          fetchImpl,
+        )
         await completeGiftInventoryJob(database, job, workerId)
-        logger({
+        safeWorkerLog(logger, {
           attempts: job.attempts,
           event: 'completed',
           jobId: job.id,
@@ -2033,7 +2229,7 @@ export async function runGiftInventoryWorker(
         }
       } catch (error) {
         const outcome = await failGiftInventoryJob(database, job, workerId, error)
-        logger({
+        safeWorkerLog(logger, {
           attempts: job.attempts,
           code: safeErrorCode(error),
           event: outcome,
@@ -2044,7 +2240,7 @@ export async function runGiftInventoryWorker(
     }
   } finally {
     if (ownsDatabase) await database.end()
-    logger({ event: 'stopped' })
+    safeWorkerLog(logger, { event: 'stopped' })
   }
 }
 

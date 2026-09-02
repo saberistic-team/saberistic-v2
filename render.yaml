@@ -117,6 +117,8 @@ projects:
                 value: '3600'
               - key: OPENROUTER_GIFT_TIMEOUT_MS
                 value: '20000'
+              - key: GIFT_INVENTORY_JOB_TIMEOUT_MS
+                value: '75000'
               - key: OPENROUTER_GIFT_MAX_COMPLETION_TOKENS
                 value: '3000'
               - key: GIFTING_IP_LIMIT

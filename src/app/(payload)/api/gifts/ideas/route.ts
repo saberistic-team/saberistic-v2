@@ -22,21 +22,40 @@ export const runtime = 'nodejs'
 
 const concreteBudgets = giftBudgetIds.filter((budget) => budget !== 'mixed')
 
+function logGiftInventoryDrainResult(result: { processed: number; status: string }): void {
+  try {
+    console.info(
+      JSON.stringify({
+        component: 'gift_inventory_request_tail',
+        event: 'drain_result',
+        processed: result.processed,
+        status: result.status,
+      }),
+    )
+  } catch {
+    // Request-tail telemetry is best effort.
+  }
+}
+
 async function drainAndLogGiftInventoryJobs(
   database: GiftInventoryDatabase,
   maximumJobs: number,
 ): Promise<void> {
-  await drainGiftInventoryJobs({
+  const result = await drainGiftInventoryJobs({
     database,
     logger: (event) => {
       console.info(JSON.stringify({ component: 'gift_inventory_request_tail', ...event }))
     },
     maximumJobs,
   })
+  logGiftInventoryDrainResult(result)
 }
 
 async function maintainBaselineInventory(): Promise<void> {
-  if (!isGiftInventoryEnabled()) return
+  if (!isGiftInventoryEnabled()) {
+    logGiftInventoryDrainResult({ processed: 0, status: 'disabled' })
+    return
+  }
 
   const database = getGiftInventoryDatabase()
   for (const budget of concreteBudgets) {

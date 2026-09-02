@@ -46,6 +46,7 @@ import {
   retailerProductMatchesMetadata,
   type GiftInventoryWorkerConfig,
   type GiftInventoryJob,
+  type GiftInventoryJobLease,
 } from '@/lib/gifts/server/inventory-worker'
 
 function inventoryRow(overrides: Record<string, unknown> = {}) {
@@ -92,6 +93,7 @@ function mockDatabase(
 const workerConfig: GiftInventoryWorkerConfig = {
   apiKey: 'secret',
   databaseURL: 'postgres://example.test/inventory',
+  jobTimeoutMilliseconds: 75_000,
   pollMilliseconds: 5_000,
   researchModel: 'openai/gpt-4.1-mini',
   synthesisModel: 'openai/gpt-4.1-mini',
@@ -356,7 +358,7 @@ describe('gift inventory worker boundaries', () => {
       code: '23505',
       constraint: 'gift_inventory_normalized_name_idx',
     })
-    const { database, query } = mockDatabase(async (text) => {
+    const { connectionQuery, database } = mockDatabase(async (text) => {
       if (text.includes('SET name = $2, normalized_name = $3')) throw uniqueConflict
       return { rowCount: 1, rows: [] }
     })
@@ -381,9 +383,14 @@ describe('gift inventory worker boundaries', () => {
       ),
     ).resolves.toBe(false)
 
-    expect(query.mock.calls[0][1]?.[2]).toBe('real product')
-    expect(query.mock.calls[1][0]).toContain("validation_status = 'invalid'")
-    expect(query.mock.calls[1][1]).toEqual(['gift-12345678', 'retailer_product_name_conflict'])
+    const refresh = connectionQuery.mock.calls.find(([text]) =>
+      String(text).includes('SET name = $2, normalized_name = $3'),
+    )
+    const invalidation = connectionQuery.mock.calls.find(([text]) =>
+      String(text).includes("validation_status = 'invalid'"),
+    )
+    expect(refresh?.[1]?.[2]).toBe('real product')
+    expect(invalidation?.[1]).toEqual(['gift-12345678', 'retailer_product_name_conflict'])
   })
 
   it('requires the feature gate, exact policy version, and pinned worker models', () => {
@@ -425,8 +432,8 @@ describe('gift inventory worker boundaries', () => {
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: readinessPolicyVersion,
         OPENROUTER_API_KEY: 'secret',
         OPENROUTER_GIFT_PRIMARY_MODEL: 'openai/gpt-4.1-mini',
-      }).researchModel,
-    ).toBe('openai/gpt-4.1-mini')
+      }),
+    ).toMatchObject({ jobTimeoutMilliseconds: 75_000, researchModel: 'openai/gpt-4.1-mini' })
   })
 
   it('augments annotations with approved retailer URLs found in bounded research text', () => {
@@ -1062,6 +1069,18 @@ describe('gift inventory worker boundaries', () => {
     expect(image.sha256).toMatch(/^[a-f0-9]{64}$/)
   })
 
+  it('rejects source images above the twelve-million-pixel boundary', async () => {
+    const oversized = await sharp({
+      create: { background: '#dde6f0', channels: 3, height: 3_001, width: 4_000 },
+    })
+      .png()
+      .toBuffer()
+
+    await expect(normalizeRetailerImage(oversized, 'image/png')).rejects.toThrow(
+      'retailer_image_invalid',
+    )
+  })
+
   it('finalizes a stale running job whose last allowed attempt was abandoned', async () => {
     const { connectionQuery, database } = mockDatabase(async (text) => {
       if (
@@ -1087,7 +1106,7 @@ describe('gift inventory worker boundaries', () => {
     ).toBe(true)
   })
 
-  it('drains no more than three durable jobs in a request-tail pass', async () => {
+  it('drains no more than three durable jobs even when best-effort telemetry throws', async () => {
     let claimed = 0
     const { database } = mockDatabase(async (text) => {
       if (text.includes("to_regclass('public.gift_inventory')")) {
@@ -1117,9 +1136,133 @@ describe('gift inventory worker boundaries', () => {
     })
 
     await expect(
-      drainGiftInventoryJobs({ config: workerConfig, database, maximumJobs: 99 }),
+      drainGiftInventoryJobs({
+        config: workerConfig,
+        database,
+        logger: () => {
+          throw new Error('telemetry unavailable')
+        },
+        maximumJobs: 99,
+      }),
     ).resolves.toEqual({ processed: 3, status: 'processed' })
     expect(claimed).toBe(3)
+  })
+
+  it('requeues a timed-out lease before a concurrent late mutation can cross its fence', async () => {
+    vi.useFakeTimers()
+    try {
+      let claimed = false
+      let releaseNormalization!: () => void
+      const normalization = new Promise<void>((resolve) => {
+        releaseNormalization = resolve
+      })
+      const logger = vi.fn()
+      const store = vi.fn()
+      let jobRunning = true
+      const { database } = mockDatabase(async (text, values) => {
+        if (text.includes("to_regclass('public.gift_inventory')")) {
+          return { rowCount: 1, rows: [{ ready: true }] }
+        }
+        if (text.includes('RETURNING job.id')) {
+          if (claimed) return { rowCount: 0, rows: [] }
+          claimed = true
+          return {
+            rowCount: 1,
+            rows: [
+              {
+                attempts: 1,
+                budget_id: 'under_30',
+                id: 91,
+                job_key: 'gift-discover-job-timeout',
+                kind: 'discover',
+                max_attempts: 4,
+                product_id: null,
+                theme_id: 'books_ideas',
+              },
+            ],
+          }
+        }
+        if (text.includes('SET status = $3')) {
+          expect(values[4]).toBe('worker_job_timeout')
+          expect(values[5]).toBe(1)
+          jobRunning = false
+          return { rowCount: 1, rows: [] }
+        }
+        if (text.includes('SELECT id FROM gift_inventory_jobs')) {
+          return { rowCount: jobRunning ? 1 : 0, rows: jobRunning ? [{ id: 91 }] : [] }
+        }
+        if (text.includes('SET name = $2, normalized_name = $3')) store()
+        return { rowCount: 0, rows: [] }
+      })
+      const processJobImpl = vi.fn(
+        async (
+          _database: GiftInventoryDatabase,
+          _config: GiftInventoryWorkerConfig,
+          _job: GiftInventoryJob,
+          _fetchImpl?: unknown,
+          _signal?: AbortSignal,
+          lease?: GiftInventoryJobLease,
+        ) => {
+          await normalization
+          await refreshGiftProduct(
+            database,
+            'gift-12345678',
+            {
+              availability: 'available',
+              description: 'A canonical description extracted from the retailer product page.',
+              imageUrl: 'https://store.moma.org/cdn/real-product.jpg',
+              name: 'Real Product',
+              observedPriceCents: 4_999,
+              sourceUrl: 'https://store.moma.org/products/real-product',
+            },
+            {
+              bytes: Buffer.from('cached-webp'),
+              mime: 'image/webp',
+              sha256: 'a'.repeat(64),
+            },
+            undefined,
+            lease,
+          )
+          return { inserted: true, outcome: 'discovered' as const }
+        },
+      )
+
+      const drain = drainGiftInventoryJobs({
+        config: workerConfig,
+        database,
+        logger,
+        processJobImpl,
+      })
+      await vi.advanceTimersByTimeAsync(0)
+      for (let step = 0; step < 12 && logger.mock.calls.length === 0; step += 1) {
+        await Promise.resolve()
+      }
+      expect(logger).toHaveBeenCalledWith({
+        attempts: 1,
+        event: 'started',
+        jobId: '91',
+        kind: 'discover',
+      })
+
+      await vi.advanceTimersByTimeAsync(75_000)
+      await expect(drain).resolves.toEqual({ processed: 1, status: 'processed' })
+      expect(logger).toHaveBeenCalledWith({
+        attempts: 1,
+        code: 'worker_job_timeout',
+        event: 'retry',
+        jobId: '91',
+        kind: 'discover',
+      })
+
+      const lateOperation = processJobImpl.mock.results[0]?.value
+      expect(lateOperation).toBeInstanceOf(Promise)
+      releaseNormalization()
+      await expect(lateOperation).rejects.toThrow('worker_job_lease_lost')
+      expect(store).not.toHaveBeenCalled()
+    } finally {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
   })
 
   it('returns immediately when a process-local drain is already active', async () => {
