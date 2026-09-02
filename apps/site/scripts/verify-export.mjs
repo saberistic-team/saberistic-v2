@@ -131,6 +131,7 @@ const buildNoteSlugs = [
 ]
 
 assert.ok(buildNoteSlugs.length > 0)
+assert.ok(buildNoteSlugs.includes('harness-first-real-model-ollama'))
 for (const slug of buildNoteSlugs) {
   const canonical = `https://saberistic.com/build-notes/${slug}/`
   const html = await readOutput(`build-notes/${slug}/index.html`)
@@ -142,6 +143,23 @@ for (const slug of buildNoteSlugs) {
   assert.match(html, /"@type":"BreadcrumbList"/)
   assert.match(html, /<time dateTime="\d{4}-\d{2}-\d{2}"/)
 }
+
+const harnessFirstRealModel = await readOutput(
+  'build-notes/harness-first-real-model-ollama/index.html',
+)
+assert.match(
+  harnessFirstRealModel,
+  /Harness Platform field note: what the first real model exposed/,
+)
+assert.match(harnessFirstRealModel, /Baseline commit/)
+assert.match(harnessFirstRealModel, /LOCAL FIELD NOTE — NOT M9 OR A RELEASE/)
+assert.match(harnessFirstRealModel, /18,014/)
+assert.match(harnessFirstRealModel, /594 \+ 6,488 \+ 7,080 =/)
+assert.match(harnessFirstRealModel, /14,162 cumulative/)
+assert.match(
+  harnessFirstRealModel,
+  /no commit, remote branch, or hosted check exists for this snapshot/,
+)
 
 const cryptopal = await readOutput('build-notes/cryptopal-wallet-email-wallet/index.html')
 assert.match(cryptopal, /<video[^>]*aria-label="CryptoPal local private-transfer walkthrough"/)

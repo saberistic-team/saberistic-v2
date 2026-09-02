@@ -12,6 +12,7 @@ import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramD
 import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControlPlane'
 import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
+import { HarnessFirstRealModelArticle } from '@/content/build-notes/HarnessFirstRealModel'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
@@ -37,6 +38,7 @@ const articleBySlug = {
   'harness-durable-control-plane-m4': HarnessControlPlaneArticle,
   'harness-deterministic-session-loop-m7': HarnessDeterministicSessionLoopArticle,
   'harness-eval-credibility-m2': HarnessEvalCredibilityArticle,
+  'harness-first-real-model-ollama': HarnessFirstRealModelArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
   'harness-permissioned-agent-services-m3': HarnessPermissionedServicesArticle,
@@ -276,7 +278,10 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
                 <dd>{note.readingMinutes} minutes</dd>
               </div>
               <div>
-                <dt>{note.repositories.length === 1 ? 'Verified commit' : 'Verified sources'}</dt>
+                <dt>
+                  {note.sourceLabel ??
+                    (note.repositories.length === 1 ? 'Verified commit' : 'Verified sources')}
+                </dt>
                 <dd>
                   {note.repositories.length === 1 ? (
                     <code>{note.repositories[0].commit.slice(0, 7)}</code>

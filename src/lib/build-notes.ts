@@ -13,12 +13,57 @@ export type BuildNote = {
   sections: readonly (readonly [id: string, label: string])[]
   seoTitle: string
   slug: string
+  sourceLabel?: string
   summary: string
   tags: readonly string[]
   title: string
 }
 
 export const buildNotes = [
+  {
+    eyebrow: 'FIELD NOTE / FIRST REAL MODEL',
+    footerSummary:
+      'The public link is the M8 baseline. The guarded-array, timeout, task, and live-run evidence described here remain an uncommitted local experiment until they pass review and hosted checks.',
+    footerTitle:
+      'Inspect the public baseline—and the exact work still needed to ship the field test.',
+    modifiedAt: '2026-09-02',
+    publishedAt: '2026-09-02',
+    readingMinutes: 29,
+    repositories: [
+      {
+        commit: 'd14fc13e299a6718d9e8a98ba9e028b320cd5f53',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Field test'],
+      ['topology', 'Two communication planes'],
+      ['smoke', 'Inference before agency'],
+      ['task-contract', 'Task contract'],
+      ['guarded-arrays', 'Guarded-array failure'],
+      ['timeout', 'Provider timeout'],
+      ['first-loop', 'First complete tool loop'],
+      ['policy-budget', 'Policy and budget pressure'],
+      ['final-run', 'Final observed result'],
+      ['sandbox', 'Sandbox boundary'],
+      ['durable-evidence', 'Durable record'],
+      ['performance', 'Performance observation'],
+      ['verification', 'Local verification'],
+      ['delivery', 'Delivery truth'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness: what the first real model exposed',
+    slug: 'harness-first-real-model-ollama',
+    sourceLabel: 'Baseline commit',
+    summary:
+      'How a local Qwen model crossed the Harness tool loop—and exposed guarded-array, timeout, policy, token-budget, sandbox, and evidence boundaries before the work became a release.',
+    tags: ['Local AI', 'Agent runtime', 'Ollama', 'Docker sandbox'],
+    title: 'Harness Platform field note: what the first real model exposed',
+  },
   {
     eyebrow: 'STAGE 1 / MILESTONE 8',
     footerSummary:

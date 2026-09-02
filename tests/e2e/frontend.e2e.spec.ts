@@ -13,6 +13,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-durable-control-plane-m4',
     '/build-notes/harness-deterministic-session-loop-m7',
     '/build-notes/harness-eval-credibility-m2',
+    '/build-notes/harness-first-real-model-ollama',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/harness-permissioned-agent-services-m3',
@@ -231,6 +232,35 @@ test.describe('Public site smoke', () => {
     for (let index = 0; index < 4; index += 1) {
       await expect(diagramCanvases.nth(index)).toHaveAttribute('tabindex', '0')
     }
+  })
+
+  test('Harness first real-model field note keeps local evidence separate from the M8 baseline', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 844, width: 390 })
+    const response = await page.goto('/build-notes/harness-first-real-model-ollama')
+    expect(response?.ok()).toBe(true)
+
+    await expect(page.getByRole('heading', { level: 1, name: /first real model/i })).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('d14fc13')
+    await expect(page.getByText('Baseline commit', { exact: true })).toBeVisible()
+    await expect(page.getByText(/uncommitted local experiment/i).first()).toBeVisible()
+    await expect(page.getByText('LOCAL FIELD NOTE — NOT M9 OR A RELEASE')).toBeVisible()
+    await expect(page.getByText('18,014', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('7,080', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('14,162', { exact: true }).first()).toBeVisible()
+    await expect(
+      page.getByText(/no commit, remote branch, or hosted check exists for this snapshot/i),
+    ).toBeVisible()
+
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth)
+
+    await expect(page.locator('.article-diagram__canvas--scrollable')).toHaveCount(4)
+    await expect(page.locator('[role="region"][tabindex="0"]')).toHaveCount(6)
   })
 
   test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({

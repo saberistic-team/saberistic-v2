@@ -8,6 +8,7 @@ import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramD
 import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControlPlane'
 import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
+import { HarnessFirstRealModelArticle } from '@/content/build-notes/HarnessFirstRealModel'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
@@ -22,7 +23,7 @@ import { createBuildNotesRSS } from '@/lib/build-notes-feed'
 
 describe('Git-authored build notes', () => {
   it('publishes an explicit, unique, newest-first manifest', () => {
-    expect(buildNotes.length).toBeGreaterThan(0)
+    expect(buildNotes).toHaveLength(16)
 
     const slugs = buildNotes.map((note) => note.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
@@ -48,7 +49,11 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-workspace-capability-boundary-m8')
+    expect(buildNotes[0]?.slug).toBe('harness-first-real-model-ollama')
+    expect(getBuildNote('harness-first-real-model-ollama')?.repositories[0]?.commit).toBe(
+      'd14fc13e299a6718d9e8a98ba9e028b320cd5f53',
+    )
+    expect(getBuildNote('harness-first-real-model-ollama')?.sourceLabel).toBe('Baseline commit')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -235,6 +240,21 @@ describe('Git-authored build notes', () => {
     expect(html.match(/role="region"/g)?.length).toBe(5)
     expect(html).toContain('tabindex="0"')
     expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('renders the first real-model field note with corrected local evidence boundaries', () => {
+    const html = renderToStaticMarkup(createElement(HarnessFirstRealModelArticle))
+
+    expect(html).toContain('uncommitted local experiment')
+    expect(html).toContain('LOCAL FIELD NOTE — NOT M9 OR A RELEASE')
+    expect(html).toContain('18,014')
+    expect(html).toContain('7,080')
+    expect(html).toContain('14,162')
+    expect(html).toContain('no commit, remote branch, or hosted check exists for this snapshot')
+    expect(html).toContain('d14fc13')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(6)
+    expect(html.match(/role="region" tabindex="0"/g)?.length).toBe(6)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {

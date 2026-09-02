@@ -65,6 +65,7 @@ The product promise is:
 | [29 — Harness Platform M6 Runtime Contracts](./29-harness-runtime-contracts-m6-build-note.md)                         | One-request runtime, streaming compatibility, append-before-yield events, lifecycle controls, checks, and self-hosting limits.     |
 | [30 — Harness Platform M7 Deterministic Session Loop](./30-harness-deterministic-session-loop-m7-build-note.md)       | Multi-round pure-tool loop, immutable context, policy-before-effect ordering, hard budgets, cancellation, evidence, and limits.    |
 | [31 — Harness Platform M8 Workspace Capability Boundary](./31-harness-workspace-capability-boundary-m8-build-note.md) | Injected workspace authority, strict dispatch, least-privilege tool views, host-import enforcement, release evidence, and limits.  |
+| [32 — Harness first real-model field note](./32-harness-first-real-model-field-note.md)                               | Local Ollama/Qwen loop, guarded-array and timeout fixes, denied commands, sandbox evidence, and limits.                            |
 
 ## Recommended first release
 
@@ -252,6 +253,13 @@ review hardening suggestions. Website commit `049770c` passed CI run `3365050310
 structured-data, index, feed, sitemap, CDN-cache, responsive-overflow, and security-header
 acceptance. Publication details and the production record are maintained in
 [31](./31-harness-workspace-capability-boundary-m8-build-note.md).
+Build Note 016 documents an uncommitted local field test based on Harness M8 merge
+`d14fc13`. It records the first completed Ollama/Qwen repository-reading loop, the guarded-array and
+provider-timeout failures that preceded it, six policy-denied model commands, a later completed
+30,000-token-budget session, and a local 669-test gate. It is explicitly not M9, a Harness release,
+a reviewed pull request, GitHub-CI evidence, a load test, or production proof. The implementation
+and publication plan is maintained in
+[32](./32-harness-first-real-model-field-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
