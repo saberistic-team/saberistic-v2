@@ -1043,6 +1043,8 @@ describe('gift inventory worker boundaries', () => {
       ),
     ).resolves.toBe('retry')
 
+    expect(connectionQuery.mock.calls[1][0]).toContain('SET status = $3::varchar')
+    expect(connectionQuery.mock.calls[1][0]).toContain("CASE WHEN $3::varchar = 'queued'")
     expect(connectionQuery.mock.calls[1][1]?.[2]).toBe('queued')
     expect(connectionQuery.mock.calls[2][0]).toContain(
       "WHEN validation_status <> 'invalid' THEN 'stale'",

@@ -1584,10 +1584,10 @@ export async function failGiftInventoryJob(
   return inWorkerTransaction(database, async (connection) => {
     const result = await connection.query(
       `UPDATE gift_inventory_jobs
-       SET status = $3, run_after = CASE WHEN $3 = 'queued'
+       SET status = $3::varchar, run_after = CASE WHEN $3::varchar = 'queued'
              THEN now() + ($4 * interval '1 second') ELSE run_after END,
            locked_at = NULL, locked_by = NULL, last_error_code = $5,
-           completed_at = CASE WHEN $3 = 'failed' THEN now() ELSE NULL END,
+           completed_at = CASE WHEN $3::varchar = 'failed' THEN now() ELSE NULL END,
            updated_at = now()
        WHERE id = $1 AND status = 'running' AND locked_by = $2 AND attempts = $6`,
       [job.id, workerId, failNow ? 'failed' : 'queued', delaySeconds, code, job.attempts],
