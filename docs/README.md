@@ -237,7 +237,7 @@ into a load-test claim. Website commit `6fe6bf9` passed CI run `33635448493` and
 structured-data, index, feed, sitemap, CDN-cache, responsive-overflow, and security-header
 acceptance. Publication details and the production record are maintained in
 [30](./30-harness-deterministic-session-loop-m7-build-note.md).
-Build Note 015 is prepared from Harness Platform M8 merge `d14fc13`. It documents the canonical
+Build Note 015 is live from Harness Platform M8 merge `d14fc13`. It documents the canonical
 seven-operation Workspace contract; descriptor-safe request and result validation; frozen method
 binding and one-operation capability views; workspace-aware runtime, legacy, and Agent Server
 admission; and the TypeScript-AST host-import guard. Final PR-head checks passed 658 offline tests
@@ -246,8 +246,12 @@ violations before merge; exact-merge CI and CodeQL then passed independently. A 
 checkout reproduced 658/658 tests, strict types, and 1/1 golden scenario. The note keeps
 `LocalWorkspace`, `DockerWorkspace`, path/link/race enforcement, five canonical development tools,
 and any load or production-adapter claim explicitly open, and records two unresolved automated
-review hardening suggestions. Publication details and the eventual production record are maintained
-in [31](./31-harness-workspace-capability-boundary-m8-build-note.md).
+review hardening suggestions. Website commit `049770c` passed CI run `33650503109` and CodeQL run
+`33650502476`; checks-gated Static Site deploy `dep-dac4a8mq1p3s73a0dde0` generated 34 pages with
+15 Build Notes and five Payload prototype routes, then passed custom-domain article,
+structured-data, index, feed, sitemap, CDN-cache, responsive-overflow, and security-header
+acceptance. Publication details and the production record are maintained in
+[31](./31-harness-workspace-capability-boundary-m8-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See

@@ -326,15 +326,46 @@ measurements.
 - Keep the unresolved automated-review suggestions visible.
 - Keep the shared development conversation out of the public evidence ledger.
 
+## Production evidence
+
+The first publication landed in website commit
+`049770cf58a99a246283a5176d8c9373aa23509b`. GitHub CI run `33650503109` passed
+both TypeScript checks, ESLint, the full unit suite, the production build, and the reviewed-fixture
+static export. CodeQL run `33650502476` passed both its Actions and JavaScript/TypeScript jobs.
+
+The checks-gated Render Static Site deployed that exact commit as
+`dep-dac4a8mq1p3s73a0dde0`. Render prepared public content revision `2e8da5a6f350` with five
+prototypes, generated 34 of 34 static pages, and verified 15 Build Notes plus five prototype routes
+before the deploy became live at `2026-09-02T15:48:40Z`.
+
+Production acceptance on the custom domain verified:
+
+- HTTP 200 for
+  `https://saberistic.com/build-notes/harness-workspace-capability-boundary-m8/`;
+- the expected title, H1, short commit `d14fc13`, canonical URL, BreadcrumbList, and BlogPosting
+  structured data;
+- four accessible diagram images, four labeled keyboard-scrollable diagram regions, and the
+  keyboard-scrollable current-truth table;
+- no document-width overflow at the 390-by-844 acceptance viewport;
+- M8 as the newest entry on the Build Notes index and in `/build-notes/feed.xml`;
+- the canonical M8 route in `sitemap.xml`;
+- a Cloudflare CDN cache hit with a five-minute shared-cache window; and
+- the deployed CSP, Permissions Policy, Referrer Policy, `X-Content-Type-Options`, and
+  `X-Frame-Options` headers.
+
+The focused production Playwright acceptance passed one of one tests. These website checks verify
+publication, discoverability, and responsive behavior; they do not change the M8 runtime evidence
+boundary or create host-adapter, provider, load, capacity, isolation, or production-security proof.
+
 ## Definition of done
 
-- [ ] Build Note 015 is registered first and pinned to full merge SHA `d14fc13…`.
-- [ ] Every table-of-contents label maps to an article section ID.
-- [ ] Four diagrams expose an image role and keyboard-scrollable region with meaningful labels.
-- [ ] Current-truth table is keyboard-scrollable and distinguishes proof from open work.
-- [ ] Unit, type, lint, static export, and focused mobile browser checks pass.
-- [ ] GitHub CI and CodeQL pass for the website commit.
-- [ ] Render publishes the checks-gated Static Site build.
-- [ ] The live custom-domain article, JSON-LD, feed, sitemap, caching, headers, and responsive layout
+- [x] Build Note 015 is registered first and pinned to full merge SHA `d14fc13…`.
+- [x] Every table-of-contents label maps to an article section ID.
+- [x] Four diagrams expose an image role and keyboard-scrollable region with meaningful labels.
+- [x] Current-truth table is keyboard-scrollable and distinguishes proof from open work.
+- [x] Unit, type, lint, static export, and focused mobile browser checks pass.
+- [x] GitHub CI and CodeQL pass for the website commit.
+- [x] Render publishes the checks-gated Static Site build.
+- [x] The live custom-domain article, JSON-LD, feed, sitemap, caching, headers, and responsive layout
       pass acceptance.
-- [ ] This record is updated with final website and deployment evidence.
+- [x] This record is updated with final website and deployment evidence.
