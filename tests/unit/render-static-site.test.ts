@@ -78,7 +78,7 @@ describe('Render Static Site Blueprint', () => {
       expect(staticService).not.toContain(key)
     }
 
-    expect(payloadService).toMatch(/- key: GIFTING_AI_ENABLED\n\s+value: '0'/)
+    expect(payloadService).toMatch(/- key: GIFTING_AI_ENABLED\n\s+value: '1'/)
     expect(payloadService).toMatch(/- key: GIFTING_CHECKOUT_ENABLED\n\s+value: '0'/)
     expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_TIMEOUT_MS\n\s+value: '20000'/)
     expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_IMAGE_TIMEOUT_MS\n\s+value: '60000'/)

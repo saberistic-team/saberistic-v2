@@ -96,7 +96,7 @@ projects:
               - key: AI_ENHANCEMENT_ENABLED
                 value: '1'
               - key: GIFTING_AI_ENABLED
-                value: '0'
+                value: '1'
               - key: GIFTING_CHECKOUT_ENABLED
                 value: '0'
               - key: DIAGNOSTIC_ENABLED
