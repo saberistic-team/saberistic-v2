@@ -40,6 +40,7 @@ import {
   isPublicNetworkAddress,
   normalizeRetailerImage,
   parseGiftDiscoveryMetadata,
+  processGiftInventoryJob,
   readBoundedBytes,
   readGiftInventoryWorkerConfig,
   refreshGiftProduct,
@@ -460,6 +461,45 @@ describe('gift inventory worker boundaries', () => {
     ])
   })
 
+  it('drops generic non-product citations while preserving nested product-detail routes', () => {
+    expect(
+      extractGiftResearchCitations({
+        annotations: [
+          'https://store.moma.org/',
+          'https://store.moma.org/home',
+          'https://store.moma.org/search?q=desk',
+          'https://store.moma.org/categories/desk',
+          'https://store.moma.org/collections/desk',
+          'https://store.moma.org/products',
+          'https://store.moma.org/en-us',
+          'https://store.moma.org/en-us/search?q=desk',
+          'https://store.moma.org/en-us/categories/desk',
+          'https://store.moma.org/search.html?q=desk',
+          'https://store.moma.org/account/sign-in',
+          'https://store.moma.org/blogs/gift-guide',
+          'https://store.moma.org/editorial/gift-guide',
+          'https://store.moma.org/challenge',
+          'https://store.moma.org/captcha',
+          'https://store.moma.org/collections/desk/products/real-product',
+          'https://store.moma.org/en-us/collections/desk/products/locale-product',
+        ].map((url) => ({
+          type: 'url_citation',
+          url_citation: { title: 'Candidate', url },
+        })),
+        content: '',
+      }),
+    ).toEqual([
+      {
+        title: 'Candidate',
+        url: 'https://store.moma.org/collections/desk/products/real-product',
+      },
+      {
+        title: 'Candidate',
+        url: 'https://store.moma.org/en-us/collections/desk/products/locale-product',
+      },
+    ])
+  })
+
   it('puts only the curated public recipient and selected theme into both model phases', () => {
     const job: GiftInventoryJob = {
       attempts: 1,
@@ -497,6 +537,106 @@ describe('gift inventory worker boundaries', () => {
     const serialized = JSON.stringify(messages)
     expect(serialized).not.toContain(job.jobKey)
     expect(serialized).not.toMatch(/anonymousToken|email|visitor/i)
+
+    const firstResearchPayload = JSON.parse(
+      buildGiftInventoryResearchMessages(job)[1].content,
+    ) as Record<string, unknown>
+    const retryResearchPayload = JSON.parse(
+      buildGiftInventoryResearchMessages({ ...job, attempts: 2 })[1].content,
+    ) as Record<string, unknown>
+    expect(firstResearchPayload.variation).toMatch(/^[a-f0-9]{20}$/)
+    expect(retryResearchPayload.variation).toMatch(/^[a-f0-9]{20}$/)
+    expect(retryResearchPayload.variation).not.toBe(firstResearchPayload.variation)
+    expect(buildGiftInventoryResearchMessages(job)[0].content).toContain(
+      'retry must choose different eligible leads',
+    )
+    expect(
+      buildGiftInventorySynthesisMessages(job, {
+        citations: [{ title: 'Product', url: 'https://store.moma.org/products/product' }],
+        notes: 'Bounded research notes.',
+      })[0].content,
+    ).toContain('server-readable HTML')
+  })
+
+  it('keeps the OpenRouter pseudonym stable while retry variation and theme schema stay exact', async () => {
+    const job: GiftInventoryJob = {
+      attempts: 1,
+      budget: 'under_30',
+      id: '1',
+      jobKey: 'gift-discover-private-stable-job-key',
+      kind: 'discover',
+      maxAttempts: 4,
+      productId: null,
+      theme: 'books_ideas',
+    }
+    const payloads: Array<Record<string, unknown>> = []
+    const citationURL = 'https://store.moma.org/products/citation-bound-product'
+    const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+      const payload = JSON.parse(String(init?.body)) as Record<string, unknown>
+      payloads.push(payload)
+      const researchPhase = !('response_format' in payload)
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              finish_reason: 'stop',
+              message: researchPhase
+                ? {
+                    annotations: [
+                      {
+                        type: 'url_citation',
+                        url_citation: { title: 'Product', url: citationURL },
+                      },
+                    ],
+                    content: 'Several distinct, direct product-detail candidates were reviewed.',
+                  }
+                : { content: '{}' },
+            },
+          ],
+          model: payload.model,
+        }),
+        { headers: { 'Content-Type': 'application/json' } },
+      )
+    })
+    const { database } = mockDatabase(async () => ({ rowCount: 0, rows: [] }))
+
+    for (const attempts of [1, 2]) {
+      await expect(
+        processGiftInventoryJob(database, workerConfig, { ...job, attempts }, fetchImpl),
+      ).rejects.toThrow('openrouter_metadata_invalid')
+    }
+
+    expect(payloads).toHaveLength(4)
+    const expectedUser = createHash('sha256')
+      .update(`gift-worker:${job.jobKey}`)
+      .digest('base64url')
+    expect(payloads.map((payload) => payload.user)).toEqual(Array(4).fill(expectedUser))
+    expect(JSON.stringify(payloads)).not.toContain(job.jobKey)
+
+    const researchPayloads = payloads.filter((payload) => !('response_format' in payload))
+    const variations = researchPayloads.map((payload) => {
+      const messages = payload.messages as Array<{ content: string; role: string }>
+      return (JSON.parse(messages[1].content) as Record<string, unknown>).variation
+    })
+    expect(new Set(variations).size).toBe(2)
+
+    for (const payload of payloads.filter((candidate) => 'response_format' in candidate)) {
+      const format = payload.response_format as {
+        json_schema: {
+          schema: {
+            properties: {
+              themes: { items: { enum: string[] }; maxItems: number; minItems: number }
+            }
+          }
+        }
+      }
+      expect(format.json_schema.schema.properties.themes).toEqual({
+        items: { enum: ['books_ideas'], type: 'string' },
+        maxItems: 1,
+        minItems: 1,
+        type: 'array',
+      })
+    }
   })
 
   it('blocks private, loopback, link-local, and documentation network addresses', () => {
@@ -832,6 +972,144 @@ describe('gift inventory worker boundaries', () => {
     })
   })
 
+  it('selects a later source-matching Product, USD offer, and safe image from bounded JSON-LD arrays', () => {
+    const sourceUrl = 'https://store.moma.org/products/canonical-retailer-product'
+    const snapshot = extractRetailerProductPage(
+      `<script type="application/ld+json">${JSON.stringify({
+        '@context': 'https://schema.org',
+        '@graph': [
+          {
+            '@type': 'https://schema.org/Product',
+            description: 'An unrelated recommendation embedded before the canonical product.',
+            image: '/cdn/unrelated.jpg',
+            name: 'Unrelated Product',
+            offers: { price: '39.99', priceCurrency: 'USD' },
+            url: 'https://store.moma.org/products/unrelated-product',
+          },
+          {
+            '@id': ['#product'],
+            '@type': ['Thing', 'https://schema.org/Product'],
+            description:
+              'The later canonical retailer description is long enough to persist safely.',
+            image: [
+              'data:image/png;base64,not-remote',
+              { url: 'http://store.moma.org/cdn/not-https.jpg' },
+              { contentUrl: '/cdn/canonical-safe.jpg' },
+            ],
+            name: 'Canonical Retailer Product',
+            offers: [
+              { availability: 'https://schema.org/InStock', price: '49.99', priceCurrency: 'EUR' },
+              { availability: 'https://schema.org/InStock', price: '8.00', priceCurrency: 'USD' },
+              {
+                availability: 'https://schema.org/InStock',
+                lowPrice: '59.99',
+                priceCurrency: 'USD',
+              },
+            ],
+            url: [{ '@id': `${sourceUrl}#product` }],
+          },
+        ],
+      })}</script>`,
+      sourceUrl,
+    )
+
+    expect(snapshot).toEqual({
+      availability: 'available',
+      description: expect.stringContaining('later canonical retailer description'),
+      imageUrl: 'https://store.moma.org/cdn/canonical-safe.jpg',
+      name: 'Canonical Retailer Product',
+      observedPriceCents: 5_999,
+      sourceUrl,
+    })
+  })
+
+  it('falls back to canonical page pricing when JSON-LD offers have no valid USD price', () => {
+    const sourceUrl = 'https://store.moma.org/products/canonical-retailer-product'
+    const snapshot = extractRetailerProductPage(
+      `<link rel="canonical" href="${sourceUrl}">
+       <meta property="product:price:amount" content="64.99">
+       <meta property="product:price:currency" content="USD">
+       <meta property="product:availability" content="https://schema.org/InStock">
+       <script type="application/ld+json">${JSON.stringify({
+         '@context': 'https://schema.org',
+         '@type': 'Product',
+         description: 'A canonical retailer description long enough for the local product cache.',
+         image: '/cdn/canonical-safe.jpg',
+         name: 'Canonical Retailer Product',
+         offers: [{ '@id': '#offer' }, {}, { price: '64.99', priceCurrency: 'EUR' }],
+         url: sourceUrl,
+       })}</script>`,
+      sourceUrl,
+    )
+
+    expect(snapshot).toMatchObject({
+      availability: 'available',
+      observedPriceCents: 6_499,
+    })
+  })
+
+  it('preserves explicit unavailability when JSON-LD pricing falls back to page metadata', () => {
+    const sourceUrl = 'https://store.moma.org/products/canonical-retailer-product'
+    const snapshot = extractRetailerProductPage(
+      `<link rel="canonical" href="${sourceUrl}">
+       <meta property="product:price:amount" content="49.99">
+       <meta property="product:price:currency" content="USD">
+       <script type="application/ld+json">${JSON.stringify({
+         '@context': 'https://schema.org',
+         '@type': 'Product',
+         description: 'A canonical retailer description long enough for the local product cache.',
+         image: '/cdn/canonical-safe.jpg',
+         name: 'Canonical Retailer Product',
+         offers: {
+           availability: 'https://schema.org/OutOfStock',
+           price: '9.99',
+           priceCurrency: 'USD',
+         },
+         url: sourceUrl,
+       })}</script>`,
+      sourceUrl,
+    )
+
+    expect(snapshot).toMatchObject({
+      availability: 'unavailable',
+      observedPriceCents: 4_999,
+    })
+  })
+
+  it('uses a URL-less main Product only when explicit page identity matches the source', () => {
+    const sourceUrl = 'https://store.moma.org/products/canonical-retailer-product'
+    const mainProduct = {
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      description: 'A URL-less canonical Product with enough retailer-authored description.',
+      image: '/cdn/canonical-safe.jpg',
+      name: 'Canonical Retailer Product',
+      offers: { price: '74.99', priceCurrency: 'USD' },
+    }
+    const unrelatedProduct = {
+      ...mainProduct,
+      name: 'Unrelated Product',
+      url: 'https://store.moma.org/products/unrelated-product',
+    }
+
+    expect(
+      extractRetailerProductPage(
+        `<link rel="canonical" href="${sourceUrl}"><script type="application/ld+json">${JSON.stringify(
+          { '@graph': [mainProduct, unrelatedProduct] },
+        )}</script>`,
+        sourceUrl,
+      ),
+    ).toMatchObject({ name: 'Canonical Retailer Product', observedPriceCents: 7_499 })
+    expect(
+      extractRetailerProductPage(
+        `<script type="application/ld+json">${JSON.stringify({
+          '@graph': [mainProduct, unrelatedProduct],
+        })}</script>`,
+        sourceUrl,
+      ),
+    ).toBeNull()
+  })
+
   it('treats absent availability as unknown and rejects explicit unavailability', () => {
     const product = (availability?: string) =>
       `<script type="application/ld+json">${JSON.stringify({
@@ -920,6 +1198,13 @@ describe('gift inventory worker boundaries', () => {
     ).toBeNull()
     expect(
       parseGiftDiscoveryMetadata(
+        { ...metadata, themes: ['not_a_theme'] },
+        [sourceUrl],
+        'desk_life',
+      ),
+    ).toBeNull()
+    expect(
+      parseGiftDiscoveryMetadata(
         { ...metadata, sourceUrl: 'https://store.moma.org/products/gift-card' },
         ['https://store.moma.org/products/gift-card'],
         'desk_life',
@@ -933,6 +1218,31 @@ describe('gift inventory worker boundaries', () => {
         'desk_life',
       ),
     ).toBeNull()
+    for (const genericPage of [
+      'https://store.moma.org/',
+      'https://store.moma.org/home',
+      'https://store.moma.org/search?q=desk',
+      'https://store.moma.org/categories/desk',
+      'https://store.moma.org/collections/desk',
+      'https://store.moma.org/products',
+      'https://store.moma.org/en-us',
+      'https://store.moma.org/en-us/search?q=desk',
+      'https://store.moma.org/en-us/categories/desk',
+      'https://store.moma.org/search.html?q=desk',
+      'https://store.moma.org/account/sign-in',
+      'https://store.moma.org/blogs/gift-guide',
+      'https://store.moma.org/editorial/gift-guide',
+      'https://store.moma.org/challenge',
+      'https://store.moma.org/captcha',
+    ]) {
+      expect(
+        parseGiftDiscoveryMetadata(
+          { ...metadata, sourceUrl: genericPage },
+          [genericPage],
+          'desk_life',
+        ),
+      ).toBeNull()
+    }
     expect(giftProductRetailerName('www.barnesandnoble.com')).toBe('Barnes & Noble')
     expect(giftProductRetailerName('unapproved.example')).toBeNull()
   })
