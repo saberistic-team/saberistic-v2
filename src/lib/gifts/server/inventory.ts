@@ -20,6 +20,7 @@ const minimumAvailableInventory = 18
 const maximumReplenishJobsPerPass = 18
 const maximumDiscoveryJobsPerDay = 48
 const maximumDiscoveryJobsPerTargetPerDay = 18
+const generatedDiscoveryJobPrefix = 'gift-concept-'
 const minimumReservationTtlSeconds = 60
 const maximumReservationTtlSeconds = 7_200
 const pendingPaymentReservationTtlSeconds = 7 * 24 * 60 * 60
@@ -661,6 +662,7 @@ export async function enqueueGiftInventoryReplenishment(
     const jobs = await connection.query<CountRow>(
       `SELECT count(*)::integer AS count FROM gift_inventory_jobs
        WHERE kind = 'discover' AND status IN ('queued', 'running')
+         AND job_key LIKE 'gift-concept-%'
          AND budget_id = $1 AND theme_id = $2`,
       [options.budget, options.theme],
     )
@@ -675,14 +677,17 @@ export async function enqueueGiftInventoryReplenishment(
     )
     const globalJobs = await connection.query<CountRow>(
       `SELECT count(*)::integer AS count FROM gift_inventory_jobs
-       WHERE kind = 'discover' AND status IN ('queued', 'running')`,
+       WHERE kind = 'discover' AND status IN ('queued', 'running')
+         AND job_key LIKE 'gift-concept-%'`,
     )
     const recentDiscoveries = await connection.query<DiscoveryWindowRow>(
       `SELECT
          count(*)::integer AS global_count,
          count(*) FILTER (WHERE budget_id = $1 AND theme_id = $2)::integer AS target_count
        FROM gift_inventory_jobs
-       WHERE kind = 'discover' AND created_at >= now() - interval '24 hours'`,
+       WHERE kind = 'discover'
+         AND job_key LIKE 'gift-concept-%'
+         AND created_at >= now() - interval '24 hours'`,
       [options.budget, options.theme],
     )
     const eligible = Math.min(safeCount(inventory.rows[0]?.count), maximumAvailable)
@@ -702,9 +707,12 @@ export async function enqueueGiftInventoryReplenishment(
       ),
     )
 
-    const jobKeys = Array.from({ length: toQueue }, () => `gift-discover-${createId()}`)
+    const jobKeys = Array.from(
+      { length: toQueue },
+      () => `${generatedDiscoveryJobPrefix}${createId()}`,
+    )
     for (const jobKey of jobKeys) {
-      if (!/^gift-discover-[A-Za-z0-9_-]{8,160}$/.test(jobKey)) {
+      if (!/^gift-concept-[A-Za-z0-9_-]{8,160}$/.test(jobKey)) {
         throw new Error('gift_inventory_job_key_invalid')
       }
     }

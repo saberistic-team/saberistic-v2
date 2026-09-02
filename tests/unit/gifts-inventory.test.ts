@@ -352,7 +352,19 @@ describe('gift inventory', () => {
     )
     expect(inserts).toHaveLength(1)
     expect(inserts[0][1]?.[0]).toHaveLength(9)
+    expect(
+      (inserts[0][1]?.[0] as string[]).every((jobKey) => jobKey.startsWith('gift-concept-')),
+    ).toBe(true)
     expect(inserts[0][1]?.slice(1)).toEqual(['under_30', 'desk_life'])
+    const discoveryCountQueries = connectionQuery.mock.calls.filter(([text]) =>
+      String(text).includes('FROM gift_inventory_jobs'),
+    )
+    expect(discoveryCountQueries).toHaveLength(3)
+    expect(
+      discoveryCountQueries.every(([text]) =>
+        String(text).includes("job_key LIKE 'gift-concept-%'"),
+      ),
+    ).toBe(true)
   })
 
   it('serves only bounded WebP whose stored hash matches its bytes', async () => {
