@@ -408,4 +408,29 @@ docs/README.md
 
 ## Production evidence
 
-Pending website commit, GitHub workflows, Render deploy, and custom-domain acceptance.
+The first publication landed in website commit
+`6fe6bf9533fc510e65492a7f452fa03f4a862bc2`. GitHub CI run `33635448493` passed
+both TypeScript checks, ESLint, the full unit suite, the production build, and the reviewed-fixture
+static export. CodeQL run `33635448085` passed both its Actions and JavaScript/TypeScript jobs.
+
+The checks-gated Render Static Site deployed that exact commit as
+`dep-dac27tmq1p3s739te88g`. Render prepared public content revision `2e8da5a6f350`, generated 33
+static pages, and its export verifier found 14 Build Notes and five prototype routes before the
+deploy became live on September 2, 2026.
+
+Production acceptance on the custom domain verified:
+
+- HTTP 200 for
+  `https://saberistic.com/build-notes/harness-deterministic-session-loop-m7/`;
+- the expected H1, short commit `41af384`, canonical URL, and BlogPosting structured data;
+- four accessible diagram canvases and five keyboard-scrollable regions;
+- no document-width overflow at the 390-by-844 acceptance viewport;
+- M7 as the newest entry on the Build Notes index and in the RSS feed;
+- the canonical M7 route in `sitemap.xml`;
+- a Cloudflare CDN cache hit; and
+- the deployed CSP, Permissions Policy, Referrer Policy, `X-Content-Type-Options`, and
+  `X-Frame-Options` headers.
+
+The focused production Playwright acceptance passed one of one tests. These website checks verify
+publication and responsive behavior; they do not change the M7 runtime evidence boundary or create
+performance, capacity, live-provider, sandbox, or exactly-once-effect proof.

@@ -221,6 +221,21 @@ routes, then passed custom-domain article, structured-data, index, feed, sitemap
 responsive-overflow, and security-header acceptance. Publication details and the production record
 are maintained in
 [29](./29-harness-runtime-contracts-m6-build-note.md).
+Build Note 014 is live from Harness Platform M7 merge `41af384`. It documents the single-turn,
+multi-round model/pure-tool loop; versioned immutable message context; strict model-stream and
+tool-argument admission; durable policy-before-effect ordering; optional permission resolution;
+hard step, token, and requested-tool-call budgets; and cooperative cancellation and model
+deadlines. The public PR-head gate passed 623 offline tests across 40 files, strict TypeScript, one
+golden scenario, and a 15-path pre/post check with zero violations. Exact-merge CI and CodeQL then
+passed after the PR had already merged, so the runtime release is described as subsequently
+verified rather than checks-gated or peer-reviewed. A later Copilot review identified event-catalog
+documentation mismatches that remain visible, and the published note does not turn suite timing
+into a load-test claim. Website commit `6fe6bf9` passed CI run `33635448493` and CodeQL run
+`33635448085`; checks-gated Static Site deploy `dep-dac27tmq1p3s739te88g` generated 33 pages with
+14 Build Notes and five Payload prototype routes, then passed custom-domain article,
+structured-data, index, feed, sitemap, CDN-cache, responsive-overflow, and security-header
+acceptance. Publication details and the production record are maintained in
+[30](./30-harness-deterministic-session-loop-m7-build-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
