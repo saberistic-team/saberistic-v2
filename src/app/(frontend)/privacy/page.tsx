@@ -170,33 +170,33 @@ export default function PrivacyPage() {
 
           <section aria-labelledby="gift-processing-heading">
             <p className="eyebrow">07 / GIFT DRAFT PROCESSING</p>
-            <h2 id="gift-processing-heading">Cached product inventory, not a personal dossier</h2>
+            <h2 id="gift-processing-heading">
+              Cached AI concept inventory, not a personal dossier
+            </h2>
             <p className="long-copy">
               Gift Draft sends the chosen price range, theme, a random variation seed, and an
               anonymous browser token to Saberistic&apos;s application server. It does not ask for a
               visitor&apos;s name, relationship, interests, address, or recipient profile. The
-              server deals from durable inventory of real products previously found at actual
-              retailers, so a draw does not wait for OpenRouter or a retailer page. The selected
-              controls and anonymous token are used for the draw and abuse limits; they are not
-              stored as a visitor profile.
+              server deals from durable inventory of AI-created gift concepts and locally cached
+              generated artwork, so a draw does not wait for OpenRouter. The selected controls and
+              anonymous token are used for the draw and abuse limits; they are not stored as a
+              visitor profile.
             </p>
             <p className="long-copy">
               Each draw performs a best-effort minimum-stock check. When replenishment is needed, a
               background job combines bounded gift criteria with AmirSaber&apos;s curated public
-              gift profile and asks OpenRouter to research real retailer products. OpenRouter, an
-              eligible model provider, the selected search provider, and the researched retailer
-              pages may process that product-only request in transit. The job applies product,
-              budget, URL, retailer, and duplicate checks before a record becomes eligible.
+              gift profile and asks OpenRouter for one structured, unbranded concept and a generated
+              product-style image. OpenRouter and eligible text and image model providers may
+              process that concept-only request in transit. The request contains no visitor token,
+              picks, contact details, or retailer data. The job applies product-safety, exact
+              budget, theme, image, and duplicate checks before a record becomes eligible.
             </p>
             <p className="long-copy">
-              Saberistic stores the retailer product URL, retailer name, observed price, copied
-              product description, copied product image, suitability note, and validation timing and
-              status in its own PostgreSQL-backed inventory. The copied description and image let an
-              existing draw remain usable when a retailer or image host is temporarily unavailable.
-              Periodic background jobs revisit non-sold items to refresh availability, price,
-              description, and image. A temporary or ambiguous validation failure does not block a
-              draw that has a usable cached record; a product confirmed unavailable or unsafe is
-              retired from future draws.
+              Saberistic stores the concept name, model-suggested contribution amount, description,
+              suitability note, theme, and normalized generated WebP artwork in its own
+              PostgreSQL-backed inventory. It does not fetch retailer pages, descriptions, prices,
+              availability, or images. A confirmed contribution retires the selected concept from
+              future draws, while minimum-stock checks generate additional concepts for later games.
             </p>
             <p className="long-copy">
               The current deck and game choices can be kept in your browser&apos;s local storage so
@@ -217,10 +217,10 @@ export default function PrivacyPage() {
               expired Checkout releases it. A refund does not automatically put the item back into
               inventory. The record receives a deletion review date 90 days after the Stripe event;
               a later payment or refund event can move that review date forward. The payment is a
-              contribution to Saberistic; it does not pay the displayed retailer or place a retailer
-              order automatically. AmirSaber decides what to buy after confirmed payment and may
-              choose the suggested product, related costs, or a similar gift. Stripe&apos;s own
-              processing is described in its{' '}
+              contribution to Saberistic; the depicted concept is not a product being sold, ordered,
+              or shipped. AmirSaber decides how to use a confirmed contribution and may choose an
+              item inspired by the concept, related costs, a substitute, or another gift.
+              Stripe&apos;s own processing is described in its{' '}
               <a href="https://stripe.com/privacy">privacy policy.</a>
             </p>
           </section>

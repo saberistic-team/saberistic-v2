@@ -56,7 +56,7 @@ const currencyFormatter = new Intl.NumberFormat('en-US', {
   style: 'currency',
 })
 
-const checkedAtFormatter = new Intl.DateTimeFormat('en-US', {
+const generatedAtFormatter = new Intl.DateTimeFormat('en-US', {
   day: 'numeric',
   hour: 'numeric',
   minute: '2-digit',
@@ -111,8 +111,8 @@ function formatPrice(cents: number) {
   return currencyFormatter.format(cents / 100)
 }
 
-function formatCheckedAt(value: string) {
-  return checkedAtFormatter.format(new Date(value))
+function formatGeneratedAt(value: string) {
+  return generatedAtFormatter.format(new Date(value))
 }
 
 async function readJSON(response: Response, maximumBytes: number): Promise<unknown> {
@@ -198,19 +198,19 @@ function paymentReturnCopy(status: PaymentVerification) {
   switch (status) {
     case 'checking':
       return {
-        body: 'No retailer order is placed automatically. This page is checking Stripe before it reports a payment result.',
+        body: 'This page is checking Stripe before it reports a payment result. The selected concept is inspiration; Saberistic does not sell, order, or ship the depicted item.',
         eyebrow: 'VERIFYING WITH STRIPE',
         title: 'Checking the gift contribution…',
       }
     case 'paid':
       return {
-        body: 'Stripe confirmed the gift contribution. No retailer order was placed automatically; AmirSaber may use the contribution toward the selected product or another gift.',
+        body: 'Stripe confirmed the gift contribution. The pictured concept is inspiration, and AmirSaber may use the contribution toward any gift. No item was ordered or shipped automatically.',
         eyebrow: 'PAYMENT CONFIRMED',
         title: 'The gift contribution is in.',
       }
     case 'pending':
       return {
-        body: 'Stripe has not confirmed the funds yet. No retailer order will be placed automatically while the contribution is pending.',
+        body: 'Stripe has not confirmed the funds yet. No item is sold, ordered, or shipped while the contribution is pending.',
         eyebrow: 'PAYMENT PENDING',
         title: 'Stripe is still processing this contribution.',
       }
@@ -228,7 +228,7 @@ function paymentReturnCopy(status: PaymentVerification) {
       }
     case 'failed':
       return {
-        body: 'Stripe did not confirm the funds, so no gift contribution was completed and no retailer order was placed.',
+        body: 'Stripe did not confirm the funds, so no gift contribution was completed and no item was ordered or shipped.',
         eyebrow: 'PAYMENT NOT CONFIRMED',
         title: 'The contribution did not complete.',
       }
@@ -240,7 +240,7 @@ function paymentReturnCopy(status: PaymentVerification) {
       }
     default:
       return {
-        body: 'This browser could not verify a Stripe payment. No retailer order is placed automatically; try checking the status again.',
+        body: 'This browser could not verify a Stripe payment. No item is sold, ordered, or shipped automatically; try checking the status again.',
         eyebrow: 'STATUS NOT VERIFIED',
         title: 'The Stripe return needs another check.',
       }
@@ -342,12 +342,12 @@ function GiftIdeaCard({
     <article className={selected ? 'gift-card gift-card--selected' : 'gift-card'}>
       <figure className="gift-card__product-image">
         <Image
-          alt={`${idea.name} product image`}
+          alt={`AI-generated concept artwork: ${idea.artworkAlt}`}
           fill
           sizes="(max-width: 52rem) 100vw, 33vw"
           src={idea.artworkUrl}
         />
-        <figcaption>Cached product image</figcaption>
+        <figcaption>AI-generated concept artwork · cached by Saberistic</figcaption>
       </figure>
       <div className="gift-card__meta">
         <span>{String(displayIndex).padStart(2, '0')}</span>
@@ -355,23 +355,12 @@ function GiftIdeaCard({
       </div>
       <h3 id={titleId}>{idea.name}</h3>
       <p className="gift-card__reason">{idea.whyItFits}</p>
-      <p className="gift-card__description">{idea.productDescription}</p>
+      <p className="gift-card__description">{idea.conceptDescription}</p>
       <div className="gift-card__price" id={detailId}>
-        <strong>Approx. cached price {formatPrice(idea.observedPriceCents)}</strong>
-        <span>
-          {idea.retailer} · last checked {formatCheckedAt(idea.checkedAt)}
-        </span>
+        <strong>Suggested gift contribution {formatPrice(idea.suggestedContributionCents)}</strong>
+        <span>AI-created concept · generated {formatGeneratedAt(idea.generatedAt)}</span>
       </div>
       <div className="gift-card__actions">
-        <a
-          aria-label={`View ${idea.name} at ${idea.retailer} (opens in a new tab)`}
-          className="text-link"
-          href={idea.sourceUrl}
-          rel="noopener noreferrer"
-          target="_blank"
-        >
-          View retailer <span aria-hidden="true">↗</span>
-        </a>
         <button
           aria-describedby={`${titleId} ${detailId}`}
           aria-pressed={actionLabel === 'Keep this one' ? undefined : selected}
@@ -415,8 +404,8 @@ function GiftSetup({
           Choose the shape of the surprise.
         </h2>
         <p>
-          Pick a spending range and a theme. Each quick round draws three real products from the
-          ready inventory while background discovery refreshes future games.
+          Pick a contribution range and a theme. Each quick round draws three AI-created gift
+          concepts from ready inventory while background generation creates future games.
         </p>
       </div>
 
@@ -467,12 +456,12 @@ function GiftSetup({
           {availabilityCheckFailed
             ? 'The page could not check the live Gift Draft status. No draw will start until that check succeeds.'
             : availability === null
-              ? 'Checking whether the cached product inventory is ready…'
+              ? 'Checking whether the cached concept inventory is ready…'
               : availability.ideasEnabled
-                ? 'Each deal is instant from cached inventory; background discovery refreshes later games.'
+                ? 'Each deal is instant from cached concepts; background generation creates later games.'
                 : availability.inventoryStatus === 'restocking'
-                  ? 'Real products are being checked and cached now. This page will retry automatically.'
-                  : 'The cached product inventory is paused right now. Try again later.'}
+                  ? 'New AI gift concepts and artwork are being generated now. This page will retry automatically.'
+                  : 'The cached gift-concept inventory is paused right now. Try again later.'}
         </p>
         <button
           className="button"
@@ -489,8 +478,8 @@ function GiftSetup({
               : availability.ideasEnabled
                 ? 'Deal the first round'
                 : availability.inventoryStatus === 'restocking'
-                  ? 'Restocking real products…'
-                  : 'Product inventory is paused'}
+                  ? 'Generating new concepts…'
+                  : 'Gift-concept inventory is paused'}
         </button>
       </div>
     </div>
@@ -500,11 +489,9 @@ function GiftSetup({
 function GiftLoading({ message }: { message: string }) {
   return (
     <div aria-live="polite" className="gift-loading" role="status">
-      <p className="eyebrow">DEALING FROM CACHED INVENTORY</p>
+      <p className="eyebrow">DEALING FROM CACHED CONCEPTS</p>
       <h2>{message}</h2>
-      <p>
-        Ready products keep this draw quick while discovery and validation refresh future games.
-      </p>
+      <p>Ready concepts keep this draw quick while background generation creates future games.</p>
       <div aria-hidden="true" className="gift-loading__cards">
         <span />
         <span />
@@ -533,7 +520,7 @@ export function GiftDiscoveryGame({
   const [isCheckingOut, setIsCheckingOut] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [liveMessage, setLiveMessage] = useState('')
-  const [loadingMessage, setLoadingMessage] = useState('Assembling your cached product deck…')
+  const [loadingMessage, setLoadingMessage] = useState('Assembling your cached concept deck…')
   const [picks, setPicks] = useState<string[]>([])
   const [paymentVerification, setPaymentVerification] = useState<PaymentVerification>(null)
   const [paymentVerificationTick, setPaymentVerificationTick] = useState(0)
@@ -800,14 +787,14 @@ export function GiftDiscoveryGame({
     setHasAcknowledgedContribution(false)
     setIsLoading(true)
     setLiveMessage('')
-    setLoadingMessage('Assembling your cached product deck…')
+    setLoadingMessage('Assembling your cached concept deck…')
     setPaymentVerification(null)
     clearCheckoutQuery()
 
     const controller = new AbortController()
     const progressTimers = [
-      window.setTimeout(() => setLoadingMessage('Opening the ready inventory…'), 2_200),
-      window.setTimeout(() => setLoadingMessage('Checking the nine-product mix…'), 5_000),
+      window.setTimeout(() => setLoadingMessage('Opening the ready concept inventory…'), 2_200),
+      window.setTimeout(() => setLoadingMessage('Checking the nine-concept mix…'), 5_000),
     ]
     const timeout = window.setTimeout(() => controller.abort(), 70_000)
 
@@ -837,7 +824,7 @@ export function GiftDiscoveryGame({
         setError(
           safeAPIMessage(
             data,
-            'The cached inventory could not assemble a usable deck. Review the settings and try again.',
+            'The cached concept inventory could not assemble a usable deck. Review the settings and try again.',
           ),
         )
         return
@@ -850,13 +837,13 @@ export function GiftDiscoveryGame({
       setFinalId(null)
       setPicks([])
       setResponse(data)
-      setLiveMessage('Nine gift ideas are ready. Round 1 of 3.')
+      setLiveMessage('Nine AI-created gift concepts are ready. Round 1 of 3.')
       requestFocus('round')
     } catch {
       setError(
         controller.signal.aborted
-          ? 'The cached inventory took too long to answer. Try dealing another deck.'
-          : 'The cached inventory could not be reached. No checkout was started; please try again.',
+          ? 'The cached concept inventory took too long to answer. Try dealing another deck.'
+          : 'The cached concept inventory could not be reached. No checkout was started; please try again.',
       )
     } finally {
       progressTimers.forEach((timer) => window.clearTimeout(timer))
@@ -963,13 +950,13 @@ export function GiftDiscoveryGame({
         <p className="eyebrow">SABERISTIC / GIFT DRAFT</p>
         <h1>Pick one. Pass two. Make my day.</h1>
         <p className="page-hero__lede">
-          Keep one of three real retailer products in each round. The deck loads instantly from a
-          cached inventory while background discovery refreshes later games.
+          Keep one of three AI-created gift concepts in each round. The deck loads instantly from
+          cached inventory while background generation creates concepts for later games.
         </p>
         <p className="safety-line safety-line--large">
-          <span aria-hidden="true">◇</span> Cached images, links, prices, and availability can
-          change. Choosing a product sends a fixed gift contribution; it does not place a retailer
-          order, and AmirSaber may use the contribution toward any gift.
+          <span aria-hidden="true">◇</span> Concepts, descriptions, and artwork are AI-generated.
+          Suggested amounts are gift contributions, not retail prices. Saberistic does not sell,
+          order, or ship the depicted items, and AmirSaber may use a contribution toward any gift.
         </p>
       </header>
 
@@ -1084,8 +1071,9 @@ export function GiftDiscoveryGame({
                       Keep one. The other two leave the deck.
                     </h2>
                     <p>
-                      These real products came from the cached, validated inventory. Retailer links,
-                      prices, and availability can change without blocking your gift contribution.
+                      These AI-created concepts came from cached inventory. The artwork depicts an
+                      idea, not an item offered for sale, and the suggested amount is a gift
+                      contribution rather than a retail price.
                     </p>
                   </div>
                   <div className="gift-card-grid">
@@ -1112,11 +1100,11 @@ export function GiftDiscoveryGame({
                   <div className="gift-stage-heading">
                     <p className="eyebrow">FINAL / THREE PICKS</p>
                     <h2 ref={finalHeading} tabIndex={-1}>
-                      One gift gets the checkout button.
+                      Choose your final gift concept.
                     </h2>
                     <p>
-                      Choose the product that best captures your intention, then review exactly who
-                      receives the fixed contribution and what the retailer link does not do.
+                      Choose the concept that best captures your intention, then review exactly who
+                      receives the fixed contribution and what the generated concept represents.
                     </p>
                   </div>
 
@@ -1150,19 +1138,20 @@ export function GiftDiscoveryGame({
                       <div>
                         <p className="eyebrow">BEFORE STRIPE</p>
                         <h3 id="gift-checkout-heading" ref={checkoutHeading} tabIndex={-1}>
-                          You are sending a fixed gift contribution—not placing a retailer order.
+                          You are funding a gift idea—not buying the depicted item.
                         </h3>
                         <p>
-                          The cached listing suggested a{' '}
-                          {formatPrice(selectedIdea.observedPriceCents)} contribution for{' '}
+                          The model suggested a{' '}
+                          {formatPrice(selectedIdea.suggestedContributionCents)} contribution for{' '}
                           {selectedIdea.name}. Stripe would send that fixed amount to Saberistic,
-                          not to {selectedIdea.retailer}. Nothing is ordered or shipped to you
-                          automatically.
+                          not to a seller. Saberistic does not sell, order, or ship the depicted
+                          item.
                         </p>
                         <p>
-                          The retailer link, cached price, and availability may change. That does
-                          not block the gift contribution: AmirSaber may use it toward the selected
-                          product, related costs, a substitute, or any other gift.
+                          The AI-created concept and generated artwork are inspiration, not a
+                          promise that an exact item exists or will be purchased. AmirSaber may use
+                          the contribution toward this idea, a substitute, related costs, or any
+                          other gift.
                         </p>
                       </div>
 
@@ -1177,18 +1166,16 @@ export function GiftDiscoveryGame({
                             <dd>Saberistic</dd>
                           </div>
                           <div>
-                            <dt>Reference retailer</dt>
-                            <dd>{selectedIdea.retailer} — not paid automatically</dd>
+                            <dt>Selected concept</dt>
+                            <dd>{selectedIdea.name} — AI-created inspiration</dd>
                           </div>
                           <div>
-                            <dt>Fixed contribution at Stripe</dt>
-                            <dd>{formatPrice(selectedIdea.observedPriceCents)}</dd>
+                            <dt>Model-suggested contribution at Stripe</dt>
+                            <dd>{formatPrice(selectedIdea.suggestedContributionCents)}</dd>
                           </div>
                           <div>
                             <dt>How it is used</dt>
-                            <dd>
-                              Selected product, related costs, a substitute, or any other gift
-                            </dd>
+                            <dd>This concept, related costs, a substitute, or any other gift</dd>
                           </div>
                         </dl>
                         <p className="gift-checkout-disclaimer">{response.disclaimer}</p>
@@ -1216,8 +1203,8 @@ export function GiftDiscoveryGame({
                           <div className="gift-checkout-complete" role="note">
                             <strong>Gift contribution checkout is currently paused.</strong>
                             <span>
-                              You can still finish the game and review the cached listing. No Stripe
-                              Checkout can open until the payment path finishes acceptance.
+                              You can still finish the game and review the AI-created concept. No
+                              payment can be taken until the Stripe path finishes acceptance.
                             </span>
                           </div>
                         ) : completed ? (
@@ -1240,7 +1227,7 @@ export function GiftDiscoveryGame({
                               />
                               <span>
                                 I understand this is a fixed gift contribution to Saberistic, not a
-                                purchase from the reference retailer.
+                                purchase or order of the depicted item.
                               </span>
                             </label>
                             <button
@@ -1251,7 +1238,7 @@ export function GiftDiscoveryGame({
                             >
                               {isCheckingOut
                                 ? 'Opening Stripe Checkout…'
-                                : `Open Stripe Checkout — ${formatPrice(selectedIdea.observedPriceCents)}`}
+                                : `Open Stripe Checkout — ${formatPrice(selectedIdea.suggestedContributionCents)}`}
                             </button>
                           </>
                         )}
@@ -1268,9 +1255,9 @@ export function GiftDiscoveryGame({
                         : availability === null
                           ? 'Checking whether a new Gift Draft can start…'
                           : availability.ideasEnabled
-                            ? 'Want a different set? Deal instantly from cached inventory while discovery refreshes future games.'
+                            ? 'Want a different set? Deal instantly from cached concepts while background generation creates future games.'
                             : availability.inventoryStatus === 'restocking'
-                              ? 'Real products are being checked and cached for the next game.'
+                              ? 'New AI gift concepts and artwork are being generated for the next game.'
                               : 'New Gift Drafts are paused right now. Try again later.'}
                     </p>
                     <button
@@ -1290,7 +1277,7 @@ export function GiftDiscoveryGame({
                           : availability.ideasEnabled
                             ? 'Deal a new deck'
                             : availability.inventoryStatus === 'restocking'
-                              ? 'Restocking real products…'
+                              ? 'Generating new concepts…'
                               : 'Gift Draft is paused'}
                     </button>
                   </div>
@@ -1310,7 +1297,7 @@ export function GiftDiscoveryGame({
               <span aria-hidden="true">01</span>
               <h3>Appropriate by design</h3>
               <p>
-                Real products are matched to AmirSaber’s published interests: useful, durable,
+                AI-created concepts are matched to AmirSaber’s published interests: useful, durable,
                 design-conscious tools, books, desk objects, and reasons to step away from a screen.
               </p>
             </section>
@@ -1318,17 +1305,17 @@ export function GiftDiscoveryGame({
               <span aria-hidden="true">02</span>
               <h3>Different every game</h3>
               <p>
-                Each game deals from a ready product cache. Background discovery and validation
-                refresh that rolling inventory for later games without slowing this draw.
+                Each game deals from a ready concept cache. Background generation adds concepts and
+                artwork to that rolling inventory for later games without slowing this draw.
               </p>
             </section>
             <section>
               <span aria-hidden="true">03</span>
-              <h3>Cached price, fixed contribution</h3>
+              <h3>Suggested amount, fixed contribution</h3>
               <p>
-                The approximate observed price and retailer link are references that may change.
-                Stripe would collect a clearly disclosed gift contribution for Saberistic; no
-                retailer order is placed automatically.
+                The model-suggested amount is not a retail price, and generated artwork represents
+                an idea rather than an item for sale. Stripe would collect a clearly disclosed gift
+                contribution for Saberistic; no item is ordered or shipped automatically.
               </p>
             </section>
           </div>

@@ -8,6 +8,7 @@ import * as migration_20260831_205708_gift_payments from './20260831_205708_gift
 import * as migration_20260831_210012_diagnostic_report_one_time_key from './20260831_210012_diagnostic_report_one_time_key'
 import * as migration_20260901_022500_gift_inventory from './20260901_022500_gift_inventory'
 import * as migration_20260901_232312_gift_inventory_schema_snapshot from './20260901_232312_gift_inventory_schema_snapshot'
+import * as migration_20260901_235500_generated_gift_inventory_cutover from './20260901_235500_generated_gift_inventory_cutover'
 
 export const migrations = [
   {
@@ -59,5 +60,10 @@ export const migrations = [
     up: migration_20260901_232312_gift_inventory_schema_snapshot.up,
     down: migration_20260901_232312_gift_inventory_schema_snapshot.down,
     name: '20260901_232312_gift_inventory_schema_snapshot',
+  },
+  {
+    up: migration_20260901_235500_generated_gift_inventory_cutover.up,
+    down: migration_20260901_235500_generated_gift_inventory_cutover.down,
+    name: '20260901_235500_generated_gift_inventory_cutover',
   },
 ]

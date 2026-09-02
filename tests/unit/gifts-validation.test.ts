@@ -31,15 +31,20 @@ function giftIdeas(prices: readonly number[]): ModelGiftIdea[] {
 
 function recommendationResponse() {
   return {
-    disclaimer: 'Prices are approximate and the contribution is fixed.',
+    disclaimer: 'These are AI-created concepts and the suggested contribution is fixed.',
     ideas: giftIdeas([1_500, 2_500, 4_999, 5_000, 9_000, 14_999, 15_000, 22_000, 30_000]).map(
       (idea, index) => ({
-        ...idea,
+        artworkAlt: `AI-generated concept artwork for ${idea.name}`,
         artworkUrl: `/api/gifts/artwork/inventory_${String(index + 1).padStart(8, '0')}`,
-        checkedAt: '2026-08-31T15:30:00.000Z',
+        category: idea.category,
+        conceptDescription: `An AI-created description for gift concept ${index + 1}.`,
+        currency: idea.currency,
+        generatedAt: '2026-08-31T15:30:00.000Z',
         id: `offer_${String(index + 1).padStart(8, '0')}`,
-        productDescription: `A canonical retailer description for verified gift idea ${index + 1}.`,
+        name: idea.name,
         quoteToken: `gq1.${'a'.repeat(40 + index)}.${'b'.repeat(43)}`,
+        suggestedContributionCents: idea.observedPriceCents,
+        whyItFits: idea.whyItFits,
       }),
     ),
     runId: 'run_1234567890123456',
@@ -236,26 +241,28 @@ describe('gift browser response validation', () => {
     expect(isGiftRecommendationResponse({ ...response, runId: 1234567890123456 })).toBe(false)
   })
 
-  it('rejects duplicate offer IDs and listing URLs', () => {
+  it('rejects duplicate offer IDs and concept names', () => {
     const response = recommendationResponse()
     const duplicateId = response.ideas.map((idea, index) =>
       index === 1 ? { ...idea, id: response.ideas[0]!.id } : idea,
     )
-    const duplicateURL = response.ideas.map((idea, index) =>
-      index === 1 ? { ...idea, sourceUrl: response.ideas[0]!.sourceUrl } : idea,
+    const duplicateName = response.ideas.map((idea, index) =>
+      index === 1 ? { ...idea, name: response.ideas[0]!.name } : idea,
     )
 
     expect(isGiftRecommendationResponse({ ...response, ideas: duplicateId })).toBe(false)
-    expect(isGiftRecommendationResponse({ ...response, ideas: duplicateURL })).toBe(false)
+    expect(isGiftRecommendationResponse({ ...response, ideas: duplicateName })).toBe(false)
   })
 
-  it('requires locally cached product artwork and the searchedAt response timestamp', () => {
+  it('requires locally cached concept artwork and the searchedAt response timestamp', () => {
     const response = recommendationResponse()
     const remoteArtwork = response.ideas.map((idea, index) =>
       index === 0 ? { ...idea, artworkUrl: 'https://retailer.example/product.jpg' } : idea,
     )
 
     expect(isGiftRecommendationResponse({ ...response, ideas: remoteArtwork })).toBe(false)
+    expect(response.ideas[0]).not.toHaveProperty('retailer')
+    expect(response.ideas[0]).not.toHaveProperty('sourceUrl')
     expect(
       isGiftRecommendationResponse({
         ...response,

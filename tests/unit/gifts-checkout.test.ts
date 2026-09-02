@@ -385,8 +385,8 @@ describe('Stripe gift checkout parameters', () => {
     expect(lineItem.price_data).toMatchObject({
       currency: 'usd',
       product_data: {
-        description: expect.stringContaining('No retailer order is placed automatically'),
-        name: `Gift Draft contribution — ${quoteInput.itemName}`,
+        description: expect.stringContaining('No product is sold, ordered, or shipped'),
+        name: `Gift contribution — ${quoteInput.itemName}`,
       },
       unit_amount: quoteInput.amountCents,
     })
@@ -408,8 +408,9 @@ describe('Stripe gift checkout parameters', () => {
     const afterSubmitMessage =
       afterSubmitText && typeof afterSubmitText === 'object' ? afterSubmitText.message : undefined
 
-    expect(submitMessage).toContain('The reference retailer does not receive this payment.')
-    expect(afterSubmitMessage).toContain('AmirSaber handles the gift manually.')
+    expect(submitMessage).toContain('inspired by an AI-created concept and generated artwork')
+    expect(submitMessage).toContain('not a product purchase')
+    expect(afterSubmitMessage).toContain('does not create a product order or shipment')
     expect(params.metadata).toMatchObject({
       gift_amount_cents: String(quoteInput.amountCents),
       gift_category: quoteInput.category,

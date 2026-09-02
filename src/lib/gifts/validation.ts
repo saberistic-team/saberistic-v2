@@ -4,7 +4,6 @@ import {
   giftBudgetIds,
   giftThemeIds,
   type GiftBudgetId,
-  type GiftIdea,
   type GiftRecommendationRequest,
   type GiftRecommendationResponse,
   type GiftThemeId,
@@ -12,14 +11,16 @@ import {
 
 type ValidationResult<T> = { ok: true; value: T } | { error: string; ok: false }
 
-/**
- * The model researches retailer products. The artwork URL, timestamps, inventory ID, and
- * signed quote are produced only after the retailer page and image have been cached locally.
- */
-export type ModelGiftIdea = Omit<
-  GiftIdea,
-  'artworkUrl' | 'checkedAt' | 'id' | 'productDescription' | 'quoteToken'
->
+/** Legacy research result retained for the isolated, inactive research helper. */
+export type ModelGiftIdea = {
+  category: string
+  currency: 'usd'
+  name: string
+  observedPriceCents: number
+  retailer: string
+  sourceUrl: string
+  whyItFits: string
+}
 
 const tokenPattern = /^[A-Za-z0-9_-]{16,160}$/
 const modelTextPattern = /^[^\u0000-\u001f\u007f]+$/
@@ -334,39 +335,34 @@ export function isGiftRecommendationResponse(value: unknown): value is GiftRecom
 
   const validIdeas = value.ideas.every((idea) => {
     if (!isRecord(idea)) return false
-    const sourceUrl = safeGiftSourceURL(idea.sourceUrl)
-
     return (
       hasExactKeys(idea, [
+        'artworkAlt',
         'artworkUrl',
         'category',
-        'checkedAt',
+        'conceptDescription',
         'currency',
+        'generatedAt',
         'id',
         'name',
-        'observedPriceCents',
-        'productDescription',
         'quoteToken',
-        'retailer',
-        'sourceUrl',
+        'suggestedContributionCents',
         'whyItFits',
       ]) &&
+      boundedText(idea.artworkAlt, 3, 200) &&
       safeGiftArtworkURL(idea.artworkUrl) !== null &&
       boundedText(idea.id, 8, 120) &&
       boundedText(idea.name, 3, 120) &&
       boundedText(idea.category, 2, 50) &&
       boundedText(idea.whyItFits, 20, 280) &&
-      boundedText(idea.productDescription, 20, 2_000) &&
-      boundedText(idea.retailer, 2, 80) &&
+      boundedText(idea.conceptDescription, 20, 2_000) &&
       idea.currency === 'usd' &&
-      Number.isSafeInteger(idea.observedPriceCents) &&
-      Number(idea.observedPriceCents) >= 1_000 &&
-      Number(idea.observedPriceCents) <= 30_000 &&
-      typeof idea.checkedAt === 'string' &&
-      !Number.isNaN(Date.parse(idea.checkedAt)) &&
-      boundedText(idea.quoteToken, 32, 4_000) &&
-      sourceUrl !== null &&
-      isApprovedGiftProductHost(new URL(sourceUrl).hostname)
+      Number.isSafeInteger(idea.suggestedContributionCents) &&
+      Number(idea.suggestedContributionCents) >= 1_000 &&
+      Number(idea.suggestedContributionCents) <= 30_000 &&
+      typeof idea.generatedAt === 'string' &&
+      !Number.isNaN(Date.parse(idea.generatedAt)) &&
+      boundedText(idea.quoteToken, 32, 4_000)
     )
   })
 
@@ -375,7 +371,7 @@ export function isGiftRecommendationResponse(value: unknown): value is GiftRecom
   const ideas = value.ideas as Array<Record<string, unknown>>
   return (
     new Set(ideas.map((idea) => idea.id)).size === ideas.length &&
-    new Set(ideas.map((idea) => safeGiftSourceURL(idea.sourceUrl))).size === ideas.length
+    new Set(ideas.map((idea) => normalizeGiftProductName(String(idea.name)))).size === ideas.length
   )
 }
 

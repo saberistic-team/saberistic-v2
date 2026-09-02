@@ -6,7 +6,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
-import { giftProductRetailerName } from '@/lib/gifts/retailers'
 import { readinessPolicyVersion } from '@/lib/readiness/types'
 import type { GiftInventoryDatabase } from '@/lib/gifts/server/inventory'
 import {
@@ -23,7 +22,9 @@ import {
 } from '@/lib/gifts/types'
 
 const openRouterChatURL = 'https://openrouter.ai/api/v1/chat/completions'
+const openRouterImagesURL = 'https://openrouter.ai/api/v1/images'
 const pinnedModel = 'openai/gpt-4.1-mini'
+const pinnedImageModel = 'google/gemini-3.1-flash-lite-image'
 const liveTest = process.env.RUN_GIFT_OPENROUTER_LIVE === '1' ? it : it.skip
 
 type StoredProduct = {
@@ -31,13 +32,12 @@ type StoredProduct = {
   cachedImageWebp: Buffer
   category: string
   id: string
-  imageUrl: string
+  artworkUrl: string
   name: string
   normalizedName: string
-  observedPriceCents: number
-  productDescription: string
-  retailer: string
+  conceptDescription: string
   sourceUrl: string
+  suggestedPriceCents: number
   themes: string[]
   whyItFits: string
 }
@@ -78,17 +78,16 @@ function liveInventoryDatabase() {
         storedProduct = {
           cachedImageSha256: String(values[11]),
           cachedImageWebp: Buffer.from(values[10] as Uint8Array),
-          category: String(values[2]),
+          category: String(values[3]),
           id: String(values[0]),
-          imageUrl: String(values[7]),
+          artworkUrl: String(values[7]),
           name: String(values[1]),
-          normalizedName: String(values[15]),
-          observedPriceCents: Number(values[8]),
-          productDescription: String(values[4]),
-          retailer: String(values[5]),
+          normalizedName: String(values[2]),
+          conceptDescription: String(values[5]),
           sourceUrl: String(values[6]),
+          suggestedPriceCents: Number(values[8]),
           themes: Array.isArray(values[9]) ? values[9].map(String) : [],
-          whyItFits: String(values[3]),
+          whyItFits: String(values[4]),
         }
         return { rowCount: 1, rows: [] }
       }
@@ -123,7 +122,7 @@ function requestURL(input: RequestInfo | URL): URL {
 
 describe('OpenRouter Gift Inventory live smoke', () => {
   liveTest(
-    'discovers, fetches, normalizes, and stores one real retailer product',
+    'generates, normalizes, and stores one concept without contacting a retailer',
     async () => {
       loadEnvironment({ path: '.env' })
       const apiKey = process.env.OPENROUTER_API_KEY?.trim()
@@ -137,11 +136,14 @@ describe('OpenRouter Gift Inventory live smoke', () => {
         GIFTING_AI_ENABLED: '1',
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: readinessPolicyVersion,
         OPENROUTER_API_KEY: apiKey,
+        OPENROUTER_GIFT_IMAGE_MODEL: pinnedImageModel,
+        OPENROUTER_GIFT_IMAGE_PROVIDER: 'google-vertex/global',
+        OPENROUTER_GIFT_IMAGE_TIMEOUT_MS: '120000',
         OPENROUTER_GIFT_INVENTORY_MODEL: pinnedModel,
         OPENROUTER_GIFT_PRIMARY_MODEL: pinnedModel,
-        OPENROUTER_GIFT_RESEARCH_MODEL: pinnedModel,
         OPENROUTER_GIFT_TIMEOUT_MS: '120000',
-        SITE_URL: 'https://saberistic.com',
+        PUBLIC_SITE_URL: 'https://saberistic.com',
+        SITE_URL: 'https://saberistic-web-staging.onrender.com',
       })
       const job: GiftInventoryJob = {
         attempts: 1,
@@ -154,17 +156,18 @@ describe('OpenRouter Gift Inventory live smoke', () => {
         theme,
       }
       const { database, getStoredProduct, query, release } = liveInventoryDatabase()
+      const openRouterCostsUsd: number[] = []
       const openRouterModels: string[] = []
       const openRouterDiagnostics: unknown[] = []
-      let retailerPageRequests = 0
-      let retailerImageRequests = 0
+      const outboundURLs: string[] = []
 
       let result
       try {
         result = await processGiftInventoryJob(database, config, job, async (input, init) => {
           const url = requestURL(input)
+          outboundURLs.push(url.toString())
           const response = await fetch(input, init)
-          if (url.toString() === openRouterChatURL) {
+          if (url.toString() === openRouterChatURL || url.toString() === openRouterImagesURL) {
             const body: unknown = typeof init?.body === 'string' ? JSON.parse(init.body) : null
             if (
               typeof body !== 'object' ||
@@ -175,36 +178,44 @@ describe('OpenRouter Gift Inventory live smoke', () => {
               throw new Error('live_openrouter_request_body_invalid')
             }
             openRouterModels.push(body.model)
-            const payload = (await response
-              .clone()
-              .json()
-              .catch(() => null)) as Record<string, unknown> | null
-            const choice = Array.isArray(payload?.choices)
-              ? (payload.choices[0] as Record<string, unknown> | undefined)
-              : undefined
-            const message =
-              choice?.message && typeof choice.message === 'object'
-                ? (choice.message as Record<string, unknown>)
-                : undefined
+            const errorPayload = !response.ok
+              ? ((await response
+                  .clone()
+                  .json()
+                  .catch(() => null)) as Record<string, unknown> | null)
+              : null
+            const providerError =
+              errorPayload?.error && typeof errorPayload.error === 'object'
+                ? (errorPayload.error as Record<string, unknown>)
+                : null
+            const successPayload = response.ok
+              ? ((await response
+                  .clone()
+                  .json()
+                  .catch(() => null)) as Record<string, unknown> | null)
+              : null
+            const usage =
+              successPayload?.usage && typeof successPayload.usage === 'object'
+                ? (successPayload.usage as Record<string, unknown>)
+                : null
+            const costUsd =
+              typeof usage?.cost === 'number' &&
+              Number.isFinite(usage.cost) &&
+              usage.cost >= 0 &&
+              usage.cost <= 10
+                ? usage.cost
+                : null
+            if (costUsd !== null) openRouterCostsUsd.push(costUsd)
             openRouterDiagnostics.push({
-              annotations: Array.isArray(message?.annotations) ? message.annotations.length : 0,
-              contentBytes:
-                typeof message?.content === 'string'
-                  ? new TextEncoder().encode(message.content).byteLength
+              costUsd,
+              endpoint: url.pathname,
+              errorCode:
+                typeof providerError?.code === 'number' || typeof providerError?.code === 'string'
+                  ? providerError.code
                   : null,
-              contentSha256:
-                typeof message?.content === 'string'
-                  ? createHash('sha256').update(message.content).digest('hex')
-                  : null,
-              providerError: payload?.error !== undefined && payload.error !== null,
-              finishReason: choice?.finish_reason ?? null,
-              model: payload?.model ?? null,
+              model: body.model,
               status: response.status,
             })
-          } else {
-            const accept = new Headers(init?.headers).get('accept') ?? ''
-            if (accept.includes('text/html')) retailerPageRequests += 1
-            if (accept.includes('image/')) retailerImageRequests += 1
           }
           return response
         })
@@ -223,30 +234,25 @@ describe('OpenRouter Gift Inventory live smoke', () => {
         category: expect.stringMatching(/^.{2,50}$/),
         id: expect.stringMatching(/^gift-[a-f0-9]{32}$/),
         name: expect.stringMatching(/^.{3,120}$/),
-        observedPriceCents: expect.any(Number),
-        productDescription: expect.stringMatching(/^.{20,2000}$/),
-        retailer: expect.any(String),
-        sourceUrl: expect.stringMatching(/^https:\/\//),
+        suggestedPriceCents: expect.any(Number),
+        conceptDescription: expect.stringMatching(/^.{20,800}$/),
+        sourceUrl: expect.stringMatching(
+          /^https:\/\/saberistic\.com\/gifts\/\?concept=gift-[a-f0-9]{32}$/,
+        ),
         themes: expect.arrayContaining([theme]),
         whyItFits: expect.stringMatching(/^.{20,280}$/),
       })
-      expect(stored.observedPriceCents).toBeGreaterThanOrEqual(
-        giftBudgetById('under_30').minimumCents,
-      )
-      expect(stored.observedPriceCents).toBeLessThanOrEqual(
-        giftBudgetById('150_to_300').maximumCents,
-      )
-      expect(stored.imageUrl).toMatch(/^https:\/\//)
-      expect(stored.retailer).toBe(giftProductRetailerName(new URL(stored.sourceUrl).hostname))
+      expect(stored.suggestedPriceCents).toBeGreaterThanOrEqual(giftBudgetById(budget).minimumCents)
+      expect(stored.suggestedPriceCents).toBeLessThanOrEqual(giftBudgetById(budget).maximumCents)
+      expect(stored.artworkUrl).toBe(`https://saberistic.com/api/gifts/artwork/${stored.id}`)
       expect(stored.cachedImageWebp.byteLength).toBeGreaterThan(0)
       expect(stored.cachedImageWebp.subarray(0, 4).toString('ascii')).toBe('RIFF')
       expect(stored.cachedImageWebp.subarray(8, 12).toString('ascii')).toBe('WEBP')
       expect(stored.cachedImageSha256).toBe(
         createHash('sha256').update(stored.cachedImageWebp).digest('hex'),
       )
-      expect(openRouterModels).toEqual([pinnedModel, pinnedModel])
-      expect(retailerPageRequests).toBeGreaterThanOrEqual(1)
-      expect(retailerImageRequests).toBeGreaterThanOrEqual(1)
+      expect(openRouterModels).toEqual([pinnedModel, pinnedImageModel])
+      expect(outboundURLs).toEqual([openRouterChatURL, openRouterImagesURL])
       expect(query).toHaveBeenCalledWith('COMMIT')
       expect(release).toHaveBeenCalledOnce()
 
@@ -256,10 +262,10 @@ describe('OpenRouter Gift Inventory live smoke', () => {
           cachedImageBytes: stored.cachedImageWebp.byteLength,
           event: 'gift_inventory_openrouter_live_smoke_succeeded',
           openRouterCalls: openRouterModels.length,
-          observedPriceCents: stored.observedPriceCents,
-          retailer: stored.retailer,
-          retailerImageRequests,
-          retailerPageRequests,
+          providerCostUsd: Number(
+            openRouterCostsUsd.reduce((sum, cost) => sum + cost, 0).toFixed(6),
+          ),
+          suggestedPriceCents: stored.suggestedPriceCents,
           theme,
         })}\n`,
       )

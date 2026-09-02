@@ -64,6 +64,8 @@ describe('Render Static Site Blueprint', () => {
     for (const key of [
       'OPENROUTER_GIFT_PRIMARY_MODEL',
       'OPENROUTER_GIFT_FALLBACK_MODEL',
+      'OPENROUTER_GIFT_INVENTORY_MODEL',
+      'OPENROUTER_GIFT_IMAGE_MODEL',
       'STRIPE_RESTRICTED_KEY',
       'STRIPE_GIFT_WEBHOOK_SECRET',
     ]) {
@@ -79,7 +81,11 @@ describe('Render Static Site Blueprint', () => {
     expect(payloadService).toMatch(/- key: GIFTING_AI_ENABLED\n\s+value: '0'/)
     expect(payloadService).toMatch(/- key: GIFTING_CHECKOUT_ENABLED\n\s+value: '0'/)
     expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_TIMEOUT_MS\n\s+value: '20000'/)
-    expect(payloadService).toMatch(/- key: GIFT_INVENTORY_JOB_TIMEOUT_MS\n\s+value: '75000'/)
+    expect(payloadService).toMatch(/- key: OPENROUTER_GIFT_IMAGE_TIMEOUT_MS\n\s+value: '60000'/)
+    expect(payloadService).toMatch(
+      /- key: OPENROUTER_GIFT_IMAGE_PROVIDER\n\s+value: google-vertex\/global/,
+    )
+    expect(payloadService).toMatch(/- key: GIFT_INVENTORY_JOB_TIMEOUT_MS\n\s+value: '120000'/)
     expect(payloadService).toMatch(/- key: GIFTING_TOKEN_LIMIT\n\s+value: '4'/)
     expect(payloadService).toMatch(/- key: GIFTING_DAILY_LIMIT\n\s+value: '500'/)
     expect(payloadService).toMatch(/- key: GIFTING_CONCURRENCY_LIMIT\n\s+value: '2'/)

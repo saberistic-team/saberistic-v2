@@ -16,7 +16,6 @@ import {
 import {
   dealAvailableGiftItems,
   enqueueBestEffortReplenishRequest,
-  enqueueDueGiftInventoryRevalidation,
   getGiftInventoryDatabase,
   isGiftInventoryReady,
   type GiftInventoryDatabase,
@@ -36,7 +35,6 @@ type IdeasHandlerDependencies = {
   deal?: typeof dealAvailableGiftItems
   environment?: NodeJS.ProcessEnv
   enqueueReplenish?: typeof enqueueBestEffortReplenishRequest
-  enqueueRevalidation?: typeof enqueueDueGiftInventoryRevalidation
   log?: (record: SafeLogRecord) => void
   now?: () => number
   randomUUID?: () => string
@@ -88,17 +86,16 @@ function ideaWithQuote(
   if (!quoteToken) return null
 
   return {
+    artworkAlt: `AI-generated concept artwork for ${item.name}`,
     artworkUrl: item.artworkUrl,
     category: item.category,
-    checkedAt: item.checkedAt,
+    conceptDescription: item.productDescription,
     currency: item.currency,
+    generatedAt: item.createdAt,
     id: item.id,
     name: item.name,
-    observedPriceCents: item.observedPriceCents,
-    productDescription: item.productDescription,
     quoteToken,
-    retailer: item.retailer,
-    sourceUrl: item.sourceUrl,
+    suggestedContributionCents: item.observedPriceCents,
     whyItFits: item.whyItFits,
   }
 }
@@ -250,13 +247,10 @@ export async function handleGiftIdeas(
     const ideas = inventory.map((item) => ideaWithQuote(item, runId, environment, quoteTime))
 
     const maintenance = async () => {
-      await Promise.allSettled([
-        (dependencies.enqueueReplenish ?? enqueueBestEffortReplenishRequest)(
-          { budget: validation.value.budget, theme: validation.value.theme },
-          database,
-        ),
-        (dependencies.enqueueRevalidation ?? enqueueDueGiftInventoryRevalidation)(database),
-      ])
+      await (dependencies.enqueueReplenish ?? enqueueBestEffortReplenishRequest)(
+        { budget: validation.value.budget, theme: validation.value.theme },
+        database,
+      )
     }
     try {
       if (dependencies.scheduleMaintenance) dependencies.scheduleMaintenance(maintenance)
@@ -276,7 +270,7 @@ export async function handleGiftIdeas(
       })
       return giftJSONResponse(
         origin,
-        { error: 'That product lane is restocking. Try another range or theme shortly.' },
+        { error: 'That concept lane is restocking. Try another range or theme shortly.' },
         503,
       )
     }
@@ -291,7 +285,7 @@ export async function handleGiftIdeas(
 
     return giftJSONResponse(origin, {
       disclaimer:
-        'Real product images, descriptions, retailer links, prices, and availability are cached references that may change. Any Stripe charge is a fixed gift contribution to Saberistic, not a retailer order; AmirSaber may use it toward the selected product, related costs, a substitute, or another gift.',
+        'These are AI-created gift concepts with generated artwork and suggested contribution amounts, not products being sold or ordered. Any Stripe charge is a fixed gift contribution to Saberistic; AmirSaber may use it toward this idea, a substitute, related costs, or another gift.',
       ideas,
       runId,
       searchedAt: drawStartedAt,
@@ -304,7 +298,7 @@ export async function handleGiftIdeas(
     })
     return giftJSONResponse(
       origin,
-      { error: 'The cached product inventory is temporarily unavailable. Try again shortly.' },
+      { error: 'The cached concept inventory is temporarily unavailable. Try again shortly.' },
       503,
     )
   } finally {

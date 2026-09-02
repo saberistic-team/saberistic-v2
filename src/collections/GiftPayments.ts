@@ -1,10 +1,13 @@
-import type { CollectionConfig, Field } from 'payload'
+import type { CollectionConfig, Field, FieldAccess } from 'payload'
 
 import { isAdmin, isStaff, staffFieldAccess } from '@/access/roles'
 
 const immutable = {
   update: () => false,
 }
+
+const paidFulfillmentAccess: FieldAccess = ({ doc }) =>
+  doc?.paymentStatus === 'paid' || doc?.paymentStatus === 'partially_refunded'
 
 function providerControlledField(field: Field): Field {
   return {
@@ -217,6 +220,7 @@ export const GiftPayments: CollectionConfig = {
     {
       name: 'fulfillmentStatus',
       type: 'select',
+      access: { update: paidFulfillmentAccess },
       defaultValue: 'awaiting_review',
       index: true,
       options: [

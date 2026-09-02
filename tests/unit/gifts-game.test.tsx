@@ -9,19 +9,18 @@ import type { GiftRecommendationResponse } from '@/lib/gifts'
 function recommendationDeck(): GiftRecommendationResponse {
   return {
     disclaimer:
-      'Images, retailer links, prices, and availability are cached references that may change. The Stripe amount is a fixed gift contribution to Saberistic.',
+      'Gift concepts and artwork are AI-generated inspiration. Suggested amounts are fixed gift contributions to Saberistic, not retail prices.',
     ideas: Array.from({ length: 9 }, (_, index) => ({
+      artworkAlt: `A generated illustration of thoughtful gift concept ${index + 1}.`,
       artworkUrl: `/api/gifts/artwork/offer_${String(index + 1).padStart(8, '0')}`,
       category: `Category ${index + 1}`,
-      checkedAt: '2026-08-31T15:30:00.000Z',
+      conceptDescription: `An AI-created description for thoughtful gift concept ${index + 1}.`,
       currency: 'usd' as const,
+      generatedAt: '2026-08-31T15:30:00.000Z',
       id: `offer_${String(index + 1).padStart(8, '0')}`,
-      name: `Thoughtful physical gift ${index + 1}`,
-      observedPriceCents: 1_500 + index * 100,
-      productDescription: `A retailer-sourced description for thoughtful physical gift ${index + 1}.`,
+      name: `Thoughtful gift concept ${index + 1}`,
       quoteToken: `gq1.${'a'.repeat(40 + index)}.${'b'.repeat(43)}`,
-      retailer: `Retailer ${index + 1}`,
-      sourceUrl: `https://www.adafruit.com/products/gift-${index + 1}`,
+      suggestedContributionCents: 1_500 + index * 100,
       whyItFits: `A useful and durable choice for a design-conscious systems builder number ${index + 1}.`,
     })),
     runId: 'run_1234567890123456',
@@ -130,7 +129,7 @@ describe('Gift Draft game', () => {
     expect(fetchMock).toHaveBeenCalledTimes(3)
   })
 
-  it('deals from ready cache while discovery and validation refresh future games', async () => {
+  it('deals from ready cache while background generation creates future games', async () => {
     let finishDeck: (response: Response) => void = () => undefined
     const pendingDeck = new Promise<Response>((resolve) => {
       finishDeck = resolve
@@ -146,9 +145,9 @@ describe('Gift Draft game', () => {
     fireEvent.click(view.getByRole('button', { name: 'Deal the first round' }))
 
     expect(
-      await view.findByRole('heading', { name: 'Assembling your cached product deck…' }),
+      await view.findByRole('heading', { name: 'Assembling your cached concept deck…' }),
     ).toBeTruthy()
-    expect(view.getByText(/discovery and validation refresh future games/i)).toBeTruthy()
+    expect(view.getByText(/background generation creates future games/i)).toBeTruthy()
 
     await act(async () => {
       finishDeck(Response.json(recommendationDeck()))
@@ -158,7 +157,7 @@ describe('Gift Draft game', () => {
     ).toBeTruthy()
   })
 
-  it('deals three rounds with cached product images and requires contribution acknowledgment', async () => {
+  it('deals three rounds with generated cached artwork and requires contribution acknowledgment', async () => {
     const fetchMock = vi.fn(async (_input: string | URL | Request, init?: RequestInit) =>
       init?.method === 'GET' ? availabilityResponse() : Response.json(recommendationDeck()),
     )
@@ -178,13 +177,13 @@ describe('Gift Draft game', () => {
     expect(
       await view.findByRole('heading', { name: 'Keep one. The other two leave the deck.' }),
     ).toBeTruthy()
-    expect(view.getAllByRole('img', { name: /product image/ })).toHaveLength(3)
-    expect(view.getAllByText('Cached product image')).toHaveLength(3)
-    expect(view.getAllByText(/Approx\. cached price/)).toHaveLength(3)
-    expect(view.getAllByText(/retailer-sourced description/i)).toHaveLength(3)
-    expect(view.getAllByText(/last checked/i)).toHaveLength(3)
-    expect(view.getAllByRole('link', { name: /View .+ at Retailer .+/ })).toHaveLength(3)
-    expect(view.getByText(/cached, validated inventory/i)).toBeTruthy()
+    expect(view.getAllByRole('img', { name: /AI-generated concept artwork/ })).toHaveLength(3)
+    expect(view.getAllByText('AI-generated concept artwork · cached by Saberistic')).toHaveLength(3)
+    expect(view.getAllByText(/Suggested gift contribution/)).toHaveLength(3)
+    expect(view.getAllByText(/AI-created description/i)).toHaveLength(3)
+    expect(view.getAllByText(/AI-created concept · generated/i)).toHaveLength(3)
+    expect(view.queryAllByRole('link')).toHaveLength(0)
+    expect(view.getByText(/artwork depicts an idea, not an item offered for sale/i)).toBeTruthy()
 
     for (let round = 0; round < 3; round += 1) {
       const keepButtons = await view.findAllByRole('button', { name: 'Keep this one' })
@@ -193,23 +192,23 @@ describe('Gift Draft game', () => {
     }
 
     expect(
-      await view.findByRole('heading', { name: 'One gift gets the checkout button.' }),
+      await view.findByRole('heading', { name: 'Choose your final gift concept.' }),
     ).toBeTruthy()
     fireEvent.click(view.getAllByRole('button', { name: 'Choose this finalist' })[0]!)
 
     expect(
       view.getByRole('heading', {
-        name: 'You are sending a fixed gift contribution—not placing a retailer order.',
+        name: 'You are funding a gift idea—not buying the depicted item.',
       }),
     ).toBeTruthy()
-    expect(view.getByText(/retailer link, cached price, and availability may change/i)).toBeTruthy()
+    expect(view.getByText(/generated artwork are inspiration, not a promise/i)).toBeTruthy()
     expect(view.getAllByText(/a substitute, or any other gift/i).length).toBeGreaterThan(0)
     const checkout = view.getByRole('button', { name: 'Open Stripe Checkout — $15.00' })
     expect((checkout as HTMLButtonElement).disabled).toBe(true)
 
     fireEvent.click(
       view.getByRole('checkbox', {
-        name: /I understand this is a fixed gift contribution to Saberistic, not a purchase/,
+        name: /I understand this is a fixed gift contribution to Saberistic, not a purchase or order/,
       }),
     )
     expect((checkout as HTMLButtonElement).disabled).toBe(false)
@@ -239,9 +238,9 @@ describe('Gift Draft game', () => {
     fireEvent.click(await view.findByRole('radio', { name: /Under \$30/ }))
     fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
 
-    expect(view.getByText(/cached product inventory is paused right now/i)).toBeTruthy()
+    expect(view.getByText(/cached gift-concept inventory is paused right now/i)).toBeTruthy()
     expect(
-      (view.getByRole('button', { name: 'Product inventory is paused' }) as HTMLButtonElement)
+      (view.getByRole('button', { name: 'Gift-concept inventory is paused' }) as HTMLButtonElement)
         .disabled,
     ).toBe(true)
     expect(fetchMock).toHaveBeenCalledOnce()
@@ -258,9 +257,11 @@ describe('Gift Draft game', () => {
     vi.stubGlobal('fetch', fetchMock)
     const view = render(<GiftDiscoveryGame />)
 
-    expect(await view.findByText(/real products are being checked and cached now/i)).toBeTruthy()
     expect(
-      (view.getByRole('button', { name: 'Restocking real products…' }) as HTMLButtonElement)
+      await view.findByText(/new AI gift concepts and artwork are being generated now/i),
+    ).toBeTruthy()
+    expect(
+      (view.getByRole('button', { name: 'Generating new concepts…' }) as HTMLButtonElement)
         .disabled,
     ).toBe(true)
     expect(view.queryByText(/inventory is paused right now/i)).toBeNull()
@@ -281,7 +282,7 @@ describe('Gift Draft game', () => {
     fireEvent.click(view.getByRole('button', { name: 'Try status again' }))
 
     await waitFor(() => {
-      expect(view.getByText(/instant from cached inventory/i)).toBeTruthy()
+      expect(view.getByText(/instant from cached concepts/i)).toBeTruthy()
     })
     fireEvent.click(view.getByRole('radio', { name: /Under \$30/ }))
     fireEvent.click(view.getByRole('radio', { name: /Build fuel/ }))
@@ -319,7 +320,7 @@ describe('Gift Draft game', () => {
     const view = render(<GiftDiscoveryGame />)
 
     expect(
-      await view.findByRole('heading', { name: 'One gift gets the checkout button.' }),
+      await view.findByRole('heading', { name: 'Choose your final gift concept.' }),
     ).toBeTruthy()
     expect(view.getByText('Gift contribution checkout is currently paused.')).toBeTruthy()
     expect(view.queryByRole('button', { name: /Open Stripe Checkout/ })).toBeNull()

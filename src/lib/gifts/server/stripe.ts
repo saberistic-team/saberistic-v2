@@ -57,7 +57,6 @@ export function buildGiftCheckoutParams(
   _nowMs: number = Date.now(),
 ): Stripe.Checkout.SessionCreateParams {
   const itemName = boundedMetadata(claim.itemName, 100)
-  const sourceHost = new URL(claim.sourceUrl).hostname
   const sharedMetadata = buildGiftSessionMetadata(claim, inventoryReservationId, quoteSecret)
 
   return {
@@ -76,11 +75,11 @@ export function buildGiftCheckoutParams(
     custom_text: {
       after_submit: {
         message:
-          'Thank you. Stripe will return you to Gift Draft. No retailer order is placed automatically; AmirSaber handles the gift manually.',
+          'Thank you. Stripe will return you to Gift Draft. This contribution does not create a product order or shipment; AmirSaber chooses how to use the gift.',
       },
       submit: {
         message:
-          'This is a Gift Draft contribution based on an approximate reference listing, not a promise to buy that exact item or price. AmirSaber may apply it to the selected item, tax or shipping, or a similar gift if the listing changes. The reference retailer does not receive this payment.',
+          'This is a fixed gift contribution to Saberistic inspired by an AI-created concept and generated artwork, not a product purchase. AmirSaber may use it toward this idea, a substitute, related costs, or another gift.',
       },
     },
     expires_at: giftCheckoutExpiresAt(claim),
@@ -91,10 +90,10 @@ export function buildGiftCheckoutParams(
           currency: claim.currency,
           product_data: {
             description: boundedMetadata(
-              `Contribution for ${giftRecipientProfile.shortName}, inspired by an approximate listing at ${claim.retailer} (${sourceHost}). No retailer order is placed automatically; funds may cover the item, tax or shipping, or a similar gift if the listing changes.`,
+              `Fixed gift contribution for ${giftRecipientProfile.shortName}, inspired by the AI-created concept “${itemName}.” No product is sold, ordered, or shipped; ${giftRecipientProfile.shortName} chooses how to use the contribution.`,
               300,
             ),
-            name: `Gift Draft contribution — ${itemName}`,
+            name: `Gift contribution — ${itemName}`,
           },
           unit_amount: claim.amountCents,
         },

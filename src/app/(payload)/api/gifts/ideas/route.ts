@@ -8,7 +8,6 @@ import {
   handleGiftIdeasStatus,
 } from '@/lib/gifts/server/ideas-handler'
 import {
-  enqueueDueGiftInventoryRevalidation,
   enqueueGiftInventoryReplenishment,
   getGiftInventoryDatabase,
   pruneGiftInventoryMaintenance,
@@ -65,11 +64,8 @@ async function maintainBaselineInventory(): Promise<void> {
       theme: 'mixed',
     }).catch(() => 0)
   }
-  await Promise.allSettled([
-    enqueueDueGiftInventoryRevalidation(database),
-    pruneGiftInventoryMaintenance(database),
-  ])
-  await drainAndLogGiftInventoryJobs(database, 3)
+  await pruneGiftInventoryMaintenance(database).catch(() => undefined)
+  await drainAndLogGiftInventoryJobs(database, 1)
 }
 
 async function runDrawMaintenance(task: () => Promise<void>): Promise<void> {

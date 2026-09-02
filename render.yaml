@@ -73,10 +73,12 @@ projects:
                 sync: false
               - key: OPENROUTER_GIFT_FALLBACK_MODEL
                 sync: false
-              - key: OPENROUTER_GIFT_RESEARCH_MODEL
-                sync: false
               - key: OPENROUTER_GIFT_INVENTORY_MODEL
                 sync: false
+              - key: OPENROUTER_GIFT_IMAGE_MODEL
+                sync: false
+              - key: OPENROUTER_GIFT_IMAGE_PROVIDER
+                value: google-vertex/global
               - key: STRIPE_RESTRICTED_KEY
                 sync: false
               - key: STRIPE_GIFT_WEBHOOK_SECRET
@@ -117,8 +119,10 @@ projects:
                 value: '3600'
               - key: OPENROUTER_GIFT_TIMEOUT_MS
                 value: '20000'
+              - key: OPENROUTER_GIFT_IMAGE_TIMEOUT_MS
+                value: '60000'
               - key: GIFT_INVENTORY_JOB_TIMEOUT_MS
-                value: '75000'
+                value: '120000'
               - key: OPENROUTER_GIFT_MAX_COMPLETION_TOKENS
                 value: '3000'
               - key: GIFTING_IP_LIMIT

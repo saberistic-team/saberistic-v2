@@ -18,6 +18,7 @@ import {
   enqueueGiftInventoryReplenishment,
   getGiftInventoryArtwork,
   isGiftInventoryReady,
+  isWebP,
   releaseGiftInventoryAfterDefinitiveCheckoutFailure,
   reservationFingerprint,
   reserveGiftInventoryItem,
@@ -25,6 +26,8 @@ import {
   type GiftInventoryDatabase,
 } from '@/lib/gifts/server/inventory'
 import {
+  buildGeneratedGiftConceptMessages,
+  buildGeneratedGiftImagePrompt,
   buildGiftInventoryResearchMessages,
   buildGiftInventorySynthesisMessages,
   claimGiftInventoryJob,
@@ -38,7 +41,9 @@ import {
   giftProductNamesMateriallyMatch,
   GiftInventoryWorkerError,
   isPublicNetworkAddress,
+  normalizeGeneratedGiftImage,
   normalizeRetailerImage,
+  parseGeneratedGiftConcept,
   parseGiftDiscoveryMetadata,
   processGiftInventoryJob,
   readBoundedBytes,
@@ -58,12 +63,13 @@ function inventoryRow(overrides: Record<string, unknown> = {}) {
     created_at: new Date('2026-09-01T00:00:00.000Z'),
     currency: 'usd',
     id: 'gift-12345678',
-    name: 'Real Product',
+    name: 'Modular Desk Tray',
     observed_price_cents: 4_999,
-    original_image_url: 'https://cdn.example.com/product.jpg',
-    product_description: 'A canonical description extracted from the retailer product page.',
-    retailer: 'MoMA Design Store',
-    source_url: 'https://store.moma.org/products/real-product',
+    original_image_url: 'https://saberistic.com/api/gifts/artwork/gift-12345678',
+    product_description:
+      'An AI-created concept for a modular tray that organizes small desk tools.',
+    retailer: 'Saberistic AI concept',
+    source_url: 'https://saberistic.com/gifts/?concept=gift-12345678',
     status: 'available',
     theme_ids: ['desk_life'],
     validation_status: 'valid',
@@ -94,9 +100,12 @@ function mockDatabase(
 const workerConfig: GiftInventoryWorkerConfig = {
   apiKey: 'secret',
   databaseURL: 'postgres://example.test/inventory',
+  imageModel: 'google/gemini-3.1-flash-lite-image',
+  imageProvider: 'google-vertex/global',
+  imageTimeoutMilliseconds: 60_000,
   jobTimeoutMilliseconds: 75_000,
   pollMilliseconds: 5_000,
-  researchModel: 'openai/gpt-4.1-mini',
+  publicSiteOrigin: 'https://saberistic.com',
   synthesisModel: 'openai/gpt-4.1-mini',
   timeoutMilliseconds: 60_000,
 }
@@ -134,20 +143,21 @@ describe('gift inventory', () => {
     const result = await dealAvailableGiftItems(database, {
       budget: '30_to_75',
       seed: 'stable-draw-seed',
-      theme: 'desk_life',
+      theme: 'desk_life' as const,
     })
 
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       artworkUrl: '/api/gifts/artwork/gift-12345678',
       contributionAmountCents: 4_999,
-      productDescription: expect.stringContaining('canonical description'),
+      productDescription: expect.stringContaining('AI-created concept'),
       validationStatus: 'valid',
     })
     const select = connectionQuery.mock.calls.find(([text]) =>
       String(text).startsWith('SELECT id,'),
     )
     expect(select?.[0]).toContain('observed_price_cents BETWEEN $2 AND $3')
+    expect(select?.[0]).toContain("retailer = 'Saberistic AI concept'")
     expect(select?.[0]).toContain('CASE WHEN $4::text IS NULL OR $4 = ANY(theme_ids)')
     expect(select?.[0]).not.toContain('AND ($4::text IS NULL')
     expect(select?.[1]?.slice(1)).toEqual([3_000, 7_500, 'desk_life', 54])
@@ -169,7 +179,7 @@ describe('gift inventory', () => {
       budget: '30_to_75',
       limit: 2,
       seed: 'stable-draw-seed',
-      theme: 'desk_life',
+      theme: 'desk_life' as const,
     })
 
     expect(result.map(({ id }) => id)).toEqual(['gift-12345678', 'gift-32345678'])
@@ -200,6 +210,7 @@ describe('gift inventory', () => {
     ).toBe(true)
     const readiness = query.mock.calls.find(([text]) => String(text).includes('AS low_count'))
     expect(readiness?.[0]).toMatch(/count\(DISTINCT normalized_name\) FILTER/g)
+    expect(readiness?.[0]).toContain("retailer = 'Saberistic AI concept'")
   })
 
   it('deduplicates source fingerprints after removing tracking parameters', () => {
@@ -225,10 +236,10 @@ describe('gift inventory', () => {
       expected: {
         category: 'Desk tool',
         currency: 'usd',
-        name: 'Real Product',
+        name: 'Modular Desk Tray',
         observedPriceCents: 4_999,
-        retailer: 'MoMA Design Store',
-        sourceUrl: 'https://store.moma.org/products/real-product',
+        retailer: 'Saberistic AI concept',
+        sourceUrl: 'https://saberistic.com/gifts/?concept=gift-12345678',
       },
       offerId: 'gift-12345678',
       reservationId,
@@ -237,6 +248,7 @@ describe('gift inventory', () => {
 
     expect(reserved?.status).toBe('reserved')
     expect(query.mock.calls[0][0]).toContain('name = $4 AND category = $5')
+    expect(query.mock.calls[0][0]).toContain("retailer = 'Saberistic AI concept'")
     expect(query.mock.calls[0][0]).toContain('stripe_checkout_session_id IS NULL')
     expect(query.mock.calls[0][1]).toContain(reservationFingerprint(reservationId))
     expect(query.mock.calls[0][1]).not.toContain(reservationId)
@@ -330,6 +342,11 @@ describe('gift inventory', () => {
     expect(
       inventoryCounts.every(([text]) => String(text).includes('DISTINCT normalized_name')),
     ).toBe(true)
+    expect(
+      inventoryCounts.every(([text]) =>
+        String(text).includes("retailer = 'Saberistic AI concept'"),
+      ),
+    ).toBe(true)
     const inserts = connectionQuery.mock.calls.filter(([text]) =>
       String(text).includes('INSERT INTO gift_inventory_jobs'),
     )
@@ -402,7 +419,10 @@ describe('gift inventory worker boundaries', () => {
         NODE_ENV: 'test',
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: '1',
         OPENROUTER_API_KEY: 'secret',
+        OPENROUTER_GIFT_IMAGE_MODEL: 'google/gemini-3.1-flash-lite-image',
+        OPENROUTER_GIFT_IMAGE_PROVIDER: 'google-vertex/global',
         OPENROUTER_GIFT_PRIMARY_MODEL: 'openai/gpt-4.1-mini',
+        PUBLIC_SITE_URL: 'https://saberistic.com',
       }),
     ).toThrow('worker_account_gate_unconfirmed')
     expect(() =>
@@ -412,7 +432,10 @@ describe('gift inventory worker boundaries', () => {
         NODE_ENV: 'test',
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: readinessPolicyVersion,
         OPENROUTER_API_KEY: 'secret',
+        OPENROUTER_GIFT_IMAGE_MODEL: 'google/gemini-3.1-flash-lite-image',
+        OPENROUTER_GIFT_IMAGE_PROVIDER: 'google-vertex/global',
         OPENROUTER_GIFT_PRIMARY_MODEL: 'openai/gpt-4.1-mini',
+        PUBLIC_SITE_URL: 'https://saberistic.com',
       }),
     ).toThrow('worker_config_missing')
     expect(() =>
@@ -422,7 +445,10 @@ describe('gift inventory worker boundaries', () => {
         NODE_ENV: 'test',
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: readinessPolicyVersion,
         OPENROUTER_API_KEY: 'secret',
+        OPENROUTER_GIFT_IMAGE_MODEL: 'google/gemini-3.1-flash-lite-image',
+        OPENROUTER_GIFT_IMAGE_PROVIDER: 'google-vertex/global',
         OPENROUTER_GIFT_PRIMARY_MODEL: 'openrouter/auto',
+        PUBLIC_SITE_URL: 'https://saberistic.com',
       }),
     ).toThrow('worker_model_invalid')
     expect(
@@ -432,9 +458,240 @@ describe('gift inventory worker boundaries', () => {
         NODE_ENV: 'test',
         OPENROUTER_ACCOUNT_GATES_CONFIRMED: readinessPolicyVersion,
         OPENROUTER_API_KEY: 'secret',
+        OPENROUTER_GIFT_IMAGE_MODEL: 'google/gemini-3.1-flash-lite-image',
+        OPENROUTER_GIFT_IMAGE_PROVIDER: 'google-vertex/global',
         OPENROUTER_GIFT_PRIMARY_MODEL: 'openai/gpt-4.1-mini',
+        PUBLIC_SITE_URL: 'https://saberistic.com',
       }),
-    ).toMatchObject({ jobTimeoutMilliseconds: 75_000, researchModel: 'openai/gpt-4.1-mini' })
+    ).toMatchObject({
+      imageModel: 'google/gemini-3.1-flash-lite-image',
+      jobTimeoutMilliseconds: 120_000,
+      synthesisModel: 'openai/gpt-4.1-mini',
+    })
+  })
+
+  it('accepts only an exact, safe concept inside the job budget and theme', () => {
+    const job: GiftInventoryJob = {
+      attempts: 1,
+      budget: '30_to_75',
+      id: '1',
+      jobKey: 'gift-discover-generated-concept-12345678',
+      kind: 'discover',
+      maxAttempts: 4,
+      productId: null,
+      theme: 'desk_life',
+    }
+    const concept = {
+      category: 'Desk object',
+      imagePrompt:
+        'A compact walnut desk tray with softly rounded corners and a removable aluminum divider.',
+      name: 'Modular Walnut Desk Tray',
+      productDescription:
+        'A compact hardwood organizer with adjustable sections for the small tools used during a focused workday.',
+      suggestedPriceCents: 5_500,
+      theme: 'desk_life' as const,
+      whyItFits:
+        'It gives frequently used tools a deliberate home without adding visual clutter to the workspace.',
+    }
+
+    expect(parseGeneratedGiftConcept(concept, job)).toEqual(concept)
+    expect(parseGeneratedGiftConcept({ ...concept, suggestedPriceCents: 7_501 }, job)).toBeNull()
+    expect(parseGeneratedGiftConcept({ ...concept, theme: 'wildcard' }, job)).toBeNull()
+    expect(
+      parseGeneratedGiftConcept({ ...concept, sourceUrl: 'https://retailer.example' }, job),
+    ).toBeNull()
+    expect(parseGeneratedGiftConcept({ ...concept, name: 'Example® Branded Tray' }, job)).toBeNull()
+    expect(
+      parseGeneratedGiftConcept(
+        { ...concept, whyItFits: 'See https://retailer.example for this useful desk object.' },
+        job,
+      ),
+    ).toBeNull()
+
+    const messages = buildGeneratedGiftConceptMessages(job)
+    expect(messages[0].content).toContain('fictional and unbranded')
+    expect(messages[0].content).toContain('suggested gift-contribution amount')
+    expect(JSON.stringify(messages)).not.toContain(job.jobKey)
+    expect(buildGeneratedGiftImagePrompt(concept)).toContain('no people')
+    expect(buildGeneratedGiftImagePrompt(concept)).toContain('no brand names')
+  })
+
+  it('uses only OpenRouter chat and image endpoints before caching one generated WebP', async () => {
+    const job: GiftInventoryJob = {
+      attempts: 1,
+      budget: '30_to_75',
+      id: '41',
+      jobKey: 'gift-discover-generated-image-12345678',
+      kind: 'discover',
+      maxAttempts: 4,
+      productId: null,
+      theme: 'desk_life',
+    }
+    const concept = {
+      category: 'Desk object',
+      imagePrompt:
+        'A compact walnut desk tray with softly rounded corners and a removable aluminum divider.',
+      name: 'Modular Walnut Desk Tray',
+      productDescription:
+        'A compact hardwood organizer with adjustable sections for the small tools used during a focused workday.',
+      suggestedPriceCents: 5_500,
+      theme: 'desk_life' as const,
+      whyItFits:
+        'It gives frequently used tools a deliberate home without adding visual clutter to the workspace.',
+    }
+    const sourcePng = await sharp({
+      create: { background: '#d6c2a5', channels: 3, height: 128, width: 128 },
+    })
+      .png()
+      .toBuffer()
+    const requests: Array<{ body: Record<string, unknown>; url: string }> = []
+    const fetchImpl = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input)
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>
+      requests.push({ body, url })
+      if (url.endsWith('/chat/completions')) {
+        return new Response(
+          JSON.stringify({
+            choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(concept) } }],
+            model: body.model,
+          }),
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+      if (url.endsWith('/images')) {
+        return new Response(
+          JSON.stringify({ data: [{ b64_json: sourcePng.toString('base64') }] }),
+          { headers: { 'Content-Type': 'application/json' } },
+        )
+      }
+      throw new Error(`unexpected outbound request: ${url}`)
+    })
+    const { connectionQuery, database } = mockDatabase(async (text) => {
+      if (text.includes('count(DISTINCT normalized_name)')) {
+        return { rowCount: 1, rows: [{ count: 0 }] }
+      }
+      if (text.includes('INSERT INTO gift_inventory (')) return { rowCount: 1, rows: [] }
+      return { rowCount: 0, rows: [] }
+    })
+
+    await expect(processGiftInventoryJob(database, workerConfig, job, fetchImpl)).resolves.toEqual({
+      inserted: true,
+      outcome: 'discovered',
+    })
+    expect(requests.map(({ url }) => url)).toEqual([
+      'https://openrouter.ai/api/v1/chat/completions',
+      'https://openrouter.ai/api/v1/images',
+    ])
+    expect(requests[0]?.body).not.toHaveProperty('tools')
+    expect(requests[1]?.body).toMatchObject({
+      aspect_ratio: '1:1',
+      model: 'google/gemini-3.1-flash-lite-image',
+      n: 1,
+      provider: {
+        allow_fallbacks: false,
+        only: ['google-vertex/global'],
+      },
+      resolution: '1K',
+    })
+    expect(String(requests[1]?.body.prompt)).toContain('no people')
+    expect(String(requests[1]?.body.prompt)).toContain('no brand names')
+
+    const insert = connectionQuery.mock.calls.find(([text]) =>
+      String(text).includes('INSERT INTO gift_inventory ('),
+    )
+    expect(insert?.[0]).toContain("'Saberistic AI concept'")
+    expect(insert?.[0]).toContain("'available', 'valid'")
+    expect(insert?.[1]?.[6]).toMatch(
+      /^https:\/\/saberistic\.com\/gifts\/\?concept=gift-[a-f0-9]{32}$/,
+    )
+    expect(insert?.[1]?.[7]).toMatch(
+      /^https:\/\/saberistic\.com\/api\/gifts\/artwork\/gift-[a-f0-9]{32}$/,
+    )
+    expect(insert?.[1]?.[8]).toBe(5_500)
+    expect(insert?.[1]?.[9]).toEqual(['desk_life'])
+    expect(isWebP(insert?.[1]?.[10] as Uint8Array)).toBe(true)
+    expect(insert?.[1]?.[11]).toMatch(/^[a-f0-9]{64}$/)
+    const capacityCheck = connectionQuery.mock.calls.find(([text]) =>
+      String(text).includes('count(DISTINCT normalized_name)'),
+    )
+    expect(capacityCheck?.[0]).toContain("retailer = 'Saberistic AI concept'")
+    expect(connectionQuery.mock.calls.some(([text]) => String(text).includes("'validate'"))).toBe(
+      false,
+    )
+  })
+
+  it('retires a legacy validation job without making any network request', async () => {
+    const fetchImpl = vi.fn()
+    const { connectionQuery, database } = mockDatabase(async () => ({ rowCount: 1, rows: [] }))
+    const job: GiftInventoryJob = {
+      attempts: 1,
+      budget: null,
+      id: '42',
+      jobKey: 'gift-validate-retired-12345678',
+      kind: 'validate',
+      maxAttempts: 4,
+      productId: 'gift-12345678',
+      theme: null,
+    }
+
+    await expect(processGiftInventoryJob(database, workerConfig, job, fetchImpl)).resolves.toEqual({
+      outcome: 'invalid',
+    })
+    expect(fetchImpl).not.toHaveBeenCalled()
+    const update = connectionQuery.mock.calls.find(([text]) =>
+      String(text).includes('retailer_validation_retired'),
+    )
+    expect(update?.[0]).toContain("status <> 'sold'")
+    expect(update?.[0]).toContain("retailer <> 'Saberistic AI concept'")
+    expect(update?.[1]).toEqual(['gift-12345678'])
+  })
+
+  it('rejects noncanonical or multiple image payloads before any inventory write', async () => {
+    const job: GiftInventoryJob = {
+      attempts: 1,
+      budget: 'under_30',
+      id: '43',
+      jobKey: 'gift-discover-invalid-image-12345678',
+      kind: 'discover',
+      maxAttempts: 4,
+      productId: null,
+      theme: 'wildcard' as const,
+    }
+    const concept = {
+      category: 'Analog object',
+      imagePrompt: 'A palm-sized brass and wood mechanical puzzle with smooth geometric pieces.',
+      name: 'Pocket Geometry Puzzle',
+      productDescription:
+        'A tactile geometric puzzle that offers a brief off-screen systems-thinking challenge.',
+      suggestedPriceCents: 2_500,
+      theme: 'wildcard' as const,
+      whyItFits:
+        'It turns systems thinking into a playful physical break that can live beside the keyboard.',
+    }
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ finish_reason: 'stop', message: { content: JSON.stringify(concept) } }],
+            model: workerConfig.synthesisModel,
+          }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ data: [{ b64_json: 'not canonical ===' }] })),
+      )
+    const { connectionQuery, database } = mockDatabase(async () => ({ rowCount: 0, rows: [] }))
+
+    await expect(processGiftInventoryJob(database, workerConfig, job, fetchImpl)).rejects.toThrow(
+      'openrouter_image_response_invalid',
+    )
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(
+      connectionQuery.mock.calls.some(([text]) =>
+        String(text).includes('INSERT INTO gift_inventory'),
+      ),
+    ).toBe(false)
   })
 
   it('augments annotations with approved retailer URLs found in bounded research text', () => {
@@ -570,27 +827,15 @@ describe('gift inventory worker boundaries', () => {
       theme: 'books_ideas',
     }
     const payloads: Array<Record<string, unknown>> = []
-    const citationURL = 'https://store.moma.org/products/citation-bound-product'
     const fetchImpl = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
       const payload = JSON.parse(String(init?.body)) as Record<string, unknown>
       payloads.push(payload)
-      const researchPhase = !('response_format' in payload)
       return new Response(
         JSON.stringify({
           choices: [
             {
               finish_reason: 'stop',
-              message: researchPhase
-                ? {
-                    annotations: [
-                      {
-                        type: 'url_citation',
-                        url_citation: { title: 'Product', url: citationURL },
-                      },
-                    ],
-                    content: 'Several distinct, direct product-detail candidates were reviewed.',
-                  }
-                : { content: '{}' },
+              message: { content: '{}' },
             },
           ],
           model: payload.model,
@@ -603,39 +848,43 @@ describe('gift inventory worker boundaries', () => {
     for (const attempts of [1, 2]) {
       await expect(
         processGiftInventoryJob(database, workerConfig, { ...job, attempts }, fetchImpl),
-      ).rejects.toThrow('openrouter_metadata_invalid')
+      ).rejects.toThrow('generated_concept_invalid')
     }
 
-    expect(payloads).toHaveLength(4)
+    expect(payloads).toHaveLength(2)
     const expectedUser = createHash('sha256')
       .update(`gift-worker:${job.jobKey}`)
       .digest('base64url')
-    expect(payloads.map((payload) => payload.user)).toEqual(Array(4).fill(expectedUser))
+    expect(payloads.map((payload) => payload.user)).toEqual(Array(2).fill(expectedUser))
     expect(JSON.stringify(payloads)).not.toContain(job.jobKey)
 
-    const researchPayloads = payloads.filter((payload) => !('response_format' in payload))
-    const variations = researchPayloads.map((payload) => {
+    const variations = payloads.map((payload) => {
       const messages = payload.messages as Array<{ content: string; role: string }>
       return (JSON.parse(messages[1].content) as Record<string, unknown>).variation
     })
     expect(new Set(variations).size).toBe(2)
 
-    for (const payload of payloads.filter((candidate) => 'response_format' in candidate)) {
+    for (const payload of payloads) {
       const format = payload.response_format as {
         json_schema: {
           schema: {
             properties: {
-              themes: { items: { enum: string[] }; maxItems: number; minItems: number }
+              suggestedPriceCents: { maximum: number; minimum: number; type: string }
+              theme: { const: string; type: string }
             }
           }
         }
       }
-      expect(format.json_schema.schema.properties.themes).toEqual({
-        items: { enum: ['books_ideas'], type: 'string' },
-        maxItems: 1,
-        minItems: 1,
-        type: 'array',
+      expect(format.json_schema.schema.properties.theme).toEqual({
+        const: 'books_ideas',
+        type: 'string',
       })
+      expect(format.json_schema.schema.properties.suggestedPriceCents).toEqual({
+        maximum: 3_000,
+        minimum: 1_000,
+        type: 'integer',
+      })
+      expect(payload).not.toHaveProperty('tools')
     }
   })
 
@@ -1374,11 +1623,18 @@ describe('gift inventory worker boundaries', () => {
       .png()
       .toBuffer()
     const image = await normalizeRetailerImage(png, 'image/png')
+    const generated = await normalizeGeneratedGiftImage(png, 'image/png')
 
     expect(image.mime).toBe('image/webp')
     expect(image.bytes.subarray(0, 4).toString()).toBe('RIFF')
     expect(image.bytes.byteLength).toBeLessThanOrEqual(1_500_000)
     expect(image.sha256).toMatch(/^[a-f0-9]{64}$/)
+    expect(generated.mime).toBe('image/webp')
+    expect(generated.bytes.subarray(0, 4).toString()).toBe('RIFF')
+    expect(generated.sha256).toMatch(/^[a-f0-9]{64}$/)
+    await expect(normalizeGeneratedGiftImage(png, 'image/svg+xml')).rejects.toThrow(
+      'generated_image_type_invalid',
+    )
   })
 
   it('rejects source images above the twelve-million-pixel boundary', async () => {

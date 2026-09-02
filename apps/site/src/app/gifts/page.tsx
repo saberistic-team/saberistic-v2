@@ -7,7 +7,7 @@ import { giftEndpoints } from '../../lib/gift-endpoints'
 
 export const metadata: Metadata = createPageMetadata({
   description:
-    'Play a three-round gift draft for AmirSaber using varied, search-backed ideas and a transparent Stripe funding handoff.',
+    'Play a quick three-round gift draft using cached AI-created concepts, generated artwork, and transparent contribution amounts.',
   path: '/gifts/',
   title: 'Gift Draft',
 })

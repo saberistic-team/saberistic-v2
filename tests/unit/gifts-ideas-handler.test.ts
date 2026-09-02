@@ -115,7 +115,6 @@ function successfulDependencies(items: GiftInventoryItem[] = inventoryItems()) {
   const release = vi.fn().mockResolvedValue(undefined)
   const deal = vi.fn().mockResolvedValue(items)
   const enqueueReplenish = vi.fn().mockResolvedValue(3)
-  const enqueueRevalidation = vi.fn().mockResolvedValue(2)
   const scheduledTasks: Array<() => Promise<void>> = []
   const scheduleMaintenance = vi.fn((task: () => Promise<void>) => {
     scheduledTasks.push(task)
@@ -125,7 +124,6 @@ function successfulDependencies(items: GiftInventoryItem[] = inventoryItems()) {
     database: inventoryDatabase,
     deal,
     enqueueReplenish,
-    enqueueRevalidation,
     release,
     scheduledTasks,
     dependencies: {
@@ -133,7 +131,6 @@ function successfulDependencies(items: GiftInventoryItem[] = inventoryItems()) {
       database: inventoryDatabase,
       deal,
       enqueueReplenish,
-      enqueueRevalidation,
       environment: environment(),
       now: () => nowMs,
       randomUUID: vi
@@ -253,13 +250,11 @@ describe('Gift Draft cached ideas handler', () => {
   it('maps a real limiter rejection without reading inventory or queueing work', async () => {
     const deal = vi.fn()
     const enqueueReplenish = vi.fn()
-    const enqueueRevalidation = vi.fn()
     const response = await handleGiftIdeas(request(), {
       authorize: vi.fn().mockResolvedValue({ allowed: false, reason: 'token' }),
       database: database(),
       deal,
       enqueueReplenish,
-      enqueueRevalidation,
       environment: environment(),
     })
 
@@ -269,10 +264,9 @@ describe('Gift Draft cached ideas handler', () => {
     })
     expect(deal).not.toHaveBeenCalled()
     expect(enqueueReplenish).not.toHaveBeenCalled()
-    expect(enqueueRevalidation).not.toHaveBeenCalled()
   })
 
-  it('deals nine cached real products, signs their durable IDs, and queues maintenance', async () => {
+  it('deals nine cached concepts, signs their durable IDs, and queues replenishment', async () => {
     const items = inventoryItems()
     const setup = successfulDependencies(items)
     const log = vi.fn()
@@ -287,7 +281,7 @@ describe('Gift Draft cached ideas handler', () => {
       searchedAt: string
     }
     expect(body).toMatchObject({
-      disclaimer: expect.stringContaining('cached references that may change'),
+      disclaimer: expect.stringContaining('AI-created gift concepts'),
       runId: '00000000-0000-4000-8000-000000000002',
       searchedAt: new Date(nowMs).toISOString(),
     })
@@ -297,19 +291,20 @@ describe('Gift Draft cached ideas handler', () => {
     body.ideas.forEach((idea, index) => {
       const item = items[index]
       expect(idea).toEqual({
+        artworkAlt: `AI-generated concept artwork for ${item.name}`,
         artworkUrl: item.artworkUrl,
         category: item.category,
-        checkedAt: item.checkedAt,
+        conceptDescription: item.productDescription,
         currency: item.currency,
+        generatedAt: item.createdAt,
         id: item.id,
         name: item.name,
-        observedPriceCents: item.observedPriceCents,
-        productDescription: item.productDescription,
         quoteToken: expect.stringMatching(/^gq1\./),
-        retailer: item.retailer,
-        sourceUrl: item.sourceUrl,
+        suggestedContributionCents: item.observedPriceCents,
         whyItFits: item.whyItFits,
       })
+      expect(idea).not.toHaveProperty('retailer')
+      expect(idea).not.toHaveProperty('sourceUrl')
 
       expect(verifyGiftQuoteToken(idea.quoteToken, environment(), nowMs)).toEqual(
         expect.objectContaining({
@@ -328,7 +323,6 @@ describe('Gift Draft cached ideas handler', () => {
       theme: 'build_fuel',
     })
     expect(setup.enqueueReplenish).not.toHaveBeenCalled()
-    expect(setup.enqueueRevalidation).not.toHaveBeenCalled()
     expect(setup.scheduledTasks).toHaveLength(1)
     await setup.scheduledTasks[0]()
     expect(setup.enqueueReplenish).toHaveBeenCalledOnce()
@@ -336,8 +330,6 @@ describe('Gift Draft cached ideas handler', () => {
       { budget: 'under_30', theme: 'build_fuel' },
       setup.database,
     )
-    expect(setup.enqueueRevalidation).toHaveBeenCalledOnce()
-    expect(setup.enqueueRevalidation).toHaveBeenCalledWith(setup.database)
     expect(setup.release).toHaveBeenCalledOnce()
     expect(log).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -351,46 +343,41 @@ describe('Gift Draft cached ideas handler', () => {
     expect(JSON.stringify(log.mock.calls)).not.toContain(validRequest.anonymousToken)
   })
 
-  it('returns restocking when fewer than nine products are available but still queues maintenance', async () => {
+  it('returns restocking when fewer than nine concepts are available but still queues maintenance', async () => {
     const setup = successfulDependencies(inventoryItems().slice(0, 8))
 
     const response = await handleGiftIdeas(request(), setup.dependencies)
 
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toEqual({
-      error: 'That product lane is restocking. Try another range or theme shortly.',
+      error: 'That concept lane is restocking. Try another range or theme shortly.',
     })
     expect(setup.enqueueReplenish).not.toHaveBeenCalled()
-    expect(setup.enqueueRevalidation).not.toHaveBeenCalled()
     expect(setup.scheduledTasks).toHaveLength(1)
     await setup.scheduledTasks[0]()
     expect(setup.enqueueReplenish).toHaveBeenCalledWith(
       { budget: 'under_30', theme: 'build_fuel' },
       setup.database,
     )
-    expect(setup.enqueueRevalidation).toHaveBeenCalledWith(setup.database)
     expect(setup.release).toHaveBeenCalledOnce()
   })
 
   it('returns a bounded inventory error and releases the permit when the database fails', async () => {
     const release = vi.fn().mockResolvedValue(undefined)
     const enqueueReplenish = vi.fn()
-    const enqueueRevalidation = vi.fn()
     const response = await handleGiftIdeas(request(), {
       authorize: vi.fn().mockResolvedValue({ allowed: true, release }),
       database: database(),
       deal: vi.fn().mockRejectedValue(new Error('private database details')),
       enqueueReplenish,
-      enqueueRevalidation,
       environment: environment(),
     })
 
     expect(response.status).toBe(503)
     await expect(response.json()).resolves.toEqual({
-      error: 'The cached product inventory is temporarily unavailable. Try again shortly.',
+      error: 'The cached concept inventory is temporarily unavailable. Try again shortly.',
     })
     expect(enqueueReplenish).not.toHaveBeenCalled()
-    expect(enqueueRevalidation).not.toHaveBeenCalled()
     expect(release).toHaveBeenCalledOnce()
   })
 })

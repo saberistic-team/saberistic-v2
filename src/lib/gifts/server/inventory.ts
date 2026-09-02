@@ -284,7 +284,7 @@ export function isWebP(bytes: Uint8Array): boolean {
   )
 }
 
-/** Empty and idempotent: real products enter through grounded worker research only. */
+/** Empty and idempotent: generated concepts enter through the inventory worker only. */
 export async function bootstrapGiftInventory(database: GiftInventoryDatabase): Promise<number> {
   return inTransaction(database, async (connection) => {
     await connection.query(
@@ -322,6 +322,7 @@ export async function countAvailableGiftInventory(
       `SELECT count(DISTINCT normalized_name)::integer AS count
        FROM gift_inventory
        WHERE status = 'available'
+         AND retailer = 'Saberistic AI concept'
          AND cached_image_webp IS NOT NULL
          AND (
            validation_status = 'valid'
@@ -352,6 +353,7 @@ export async function isGiftInventoryReady(database: GiftInventoryDatabase): Pro
        count(DISTINCT normalized_name) FILTER (WHERE observed_price_cents BETWEEN 15000 AND 30000)::integer AS high_count
      FROM gift_inventory
      WHERE status = 'available'
+       AND retailer = 'Saberistic AI concept'
        AND cached_image_webp IS NOT NULL
        AND (
          validation_status = 'valid'
@@ -391,6 +393,7 @@ export async function dealAvailableGiftItems(
       `SELECT ${inventoryMetadataSelect()}
        FROM gift_inventory
        WHERE status = 'available'
+         AND retailer = 'Saberistic AI concept'
          AND cached_image_webp IS NOT NULL
          AND observed_price_cents BETWEEN $2 AND $3
          AND (
@@ -442,6 +445,7 @@ export async function reserveGiftInventoryItem(
      SET status = 'reserved', reservation_key = $2,
          reservation_expires_at = now() + ($3 * interval '1 second'), updated_at = now()
      WHERE id = $1
+       AND retailer = 'Saberistic AI concept'
        AND name = $4 AND category = $5 AND retailer = $6 AND source_url = $7
        AND observed_price_cents = $8 AND currency = $9
        AND (
@@ -645,6 +649,7 @@ export async function enqueueGiftInventoryReplenishment(
     const inventory = await connection.query<CountRow>(
       `SELECT count(DISTINCT normalized_name)::integer AS count FROM gift_inventory
        WHERE status = 'available' AND cached_image_webp IS NOT NULL
+         AND retailer = 'Saberistic AI concept'
          AND observed_price_cents BETWEEN $1 AND $2
          AND ($3::text IS NULL OR $3 = ANY(theme_ids))
          AND (validation_status = 'valid'
@@ -662,6 +667,7 @@ export async function enqueueGiftInventoryReplenishment(
     const globalInventory = await connection.query<CountRow>(
       `SELECT count(DISTINCT normalized_name)::integer AS count FROM gift_inventory
        WHERE status = 'available' AND cached_image_webp IS NOT NULL
+         AND retailer = 'Saberistic AI concept'
          AND (validation_status = 'valid'
            OR (validation_status = 'pending' AND validation_expires_at > now())
            OR (validation_status = 'stale'
