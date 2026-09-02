@@ -11,6 +11,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',
     '/build-notes/harness-durable-control-plane-m4',
+    '/build-notes/harness-deterministic-session-loop-m7',
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
@@ -134,6 +135,46 @@ test.describe('Public site smoke', () => {
     await expect(page.getByText('APPEND BEFORE YIELD', { exact: true })).toBeVisible()
     await expect(
       page.getByText('M6 IS A CONTRACT LAYER, NOT A SELF-HOSTED AGENT', { exact: true }),
+    ).toBeVisible()
+
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth)
+
+    const diagramCanvases = page.locator('.article-diagram__canvas--scrollable')
+    await expect(diagramCanvases).toHaveCount(4)
+    for (let index = 0; index < 4; index += 1) {
+      await expect(diagramCanvases.nth(index)).toHaveAttribute('tabindex', '0')
+    }
+  })
+
+  test('Harness M7 keeps tool execution behind durable intent and policy', async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 })
+    const response = await page.goto('/build-notes/harness-deterministic-session-loop-m7')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M7: putting durable policy before tool execution',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('41af384')
+    await expect(page.getByRole('link', { name: 'Multi-round loop' })).toHaveAttribute(
+      'href',
+      '#session-loop',
+    )
+    await expect(page.getByRole('link', { name: 'Durable execution fence' })).toHaveAttribute(
+      'href',
+      '#execution-fence',
+    )
+    await expect(
+      page.getByText('THE INTENT IS DURABLE BEFORE THE EFFECT', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('M7 RUNS A LOOP; IT DOES NOT SELF-HOST HARNESS', { exact: true }),
     ).toBeVisible()
 
     const viewport = await page.evaluate(() => ({

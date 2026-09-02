@@ -10,6 +10,7 @@ import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
 import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramDevnet'
 import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControlPlane'
+import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
@@ -33,6 +34,7 @@ const articleBySlug = {
   'growth-program-sensor-scorecards-devnet': GrowthProgramDevnetArticle,
   'growth-program-v2-scorecards': GrowthProgramArticle,
   'harness-durable-control-plane-m4': HarnessControlPlaneArticle,
+  'harness-deterministic-session-loop-m7': HarnessDeterministicSessionLoopArticle,
   'harness-eval-credibility-m2': HarnessEvalCredibilityArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,

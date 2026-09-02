@@ -63,6 +63,7 @@ The product promise is:
 | [27 — Three converging AI product workstreams](./27-converging-ai-product-workstreams-build-note.md)              | Readiness, paid diagnostic, and Gift Draft boundaries, activation runbooks, evidence placeholders, and release gates.              |
 | [28 — Harness Platform M5 Conditional Polyglot Review](./28-harness-polyglot-review-m5-build-note.md)             | Evidence-gated runtime decision, Step 0 exit-gate hardening, run-report/v2, two-PR delivery, and residual host trust boundaries.   |
 | [29 — Harness Platform M6 Runtime Contracts](./29-harness-runtime-contracts-m6-build-note.md)                     | One-request runtime, streaming compatibility, append-before-yield events, lifecycle controls, checks, and self-hosting limits.     |
+| [30 — Harness Platform M7 Deterministic Session Loop](./30-harness-deterministic-session-loop-m7-build-note.md)   | Multi-round pure-tool loop, immutable context, policy-before-effect ordering, hard budgets, cancellation, evidence, and limits.    |
 
 ## Recommended first release
 

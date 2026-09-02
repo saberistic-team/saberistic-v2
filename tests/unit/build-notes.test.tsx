@@ -6,6 +6,7 @@ import { CryptoPalArticle } from '@/content/build-notes/CryptoPal'
 import { GrowthProgramArticle } from '@/content/build-notes/GrowthProgram'
 import { GrowthProgramDevnetArticle } from '@/content/build-notes/GrowthProgramDevnet'
 import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControlPlane'
+import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
@@ -46,7 +47,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-runtime-contracts-m6')
+    expect(buildNotes[0]?.slug).toBe('harness-deterministic-session-loop-m7')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -83,6 +84,9 @@ describe('Git-authored build notes', () => {
     expect(getBuildNote('harness-runtime-contracts-m6')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '98924a6',
     )
+    expect(
+      getBuildNote('harness-deterministic-session-loop-m7')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('41af384')
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
       getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
@@ -185,6 +189,25 @@ describe('Git-authored build notes', () => {
     expect(html).toContain('THE 17.377-SECOND CI FIELD IS NOT A BENCHMARK')
     expect(html).toContain('CHECKS-GATED, NOT PEER-REVIEWED')
     expect(html).toContain('98924a6')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('renders M7 with a deterministic tool loop and durable policy-before-effect boundary', () => {
+    const html = renderToStaticMarkup(createElement(HarnessDeterministicSessionLoopArticle))
+
+    expect(html).toContain('reason, act, observe, and continue')
+    expect(html).toContain('M7 RUNS A LOOP; IT DOES NOT SELF-HOST HARNESS')
+    expect(html).toContain('Every request can name the exact immutable message history')
+    expect(html).toContain('Unknown and invalid calls become observations')
+    expect(html).toContain('THE INTENT IS DURABLE BEFORE THE EFFECT')
+    expect(html).toContain('PURE IS A TRUSTED BOUNDARY, NOT A SANDBOX')
+    expect(html).toContain('623 / 623')
+    expect(html).toContain('59 RUNTIME TESTS ARE NOT A LOAD TEST')
+    expect(html).toContain('MERGED FIRST, SUBSEQUENTLY VERIFIED')
+    expect(html).toContain('41af384')
     expect(html.match(/role="img"/g)?.length).toBe(4)
     expect(html.match(/role="region"/g)?.length).toBe(5)
     expect(html).toContain('tabindex="0"')

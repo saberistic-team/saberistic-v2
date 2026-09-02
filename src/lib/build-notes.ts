@@ -20,6 +20,47 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 7',
+    footerSummary:
+      'The pinned public merge contains the deterministic multi-round loop, versioned immutable context, strict tool admission, policy-before-effect fence, budgets, cancellation, and offline proof described here.',
+    footerTitle: 'Inspect the session loop—and the operational authority it still leaves closed.',
+    modifiedAt: '2026-09-02',
+    publishedAt: '2026-09-02',
+    readingMinutes: 32,
+    repositories: [
+      {
+        commit: '41af384b6d990c53aefe81e826e59cc33f00c47c',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['session-loop', 'Multi-round loop'],
+      ['versioned-state', 'Versioned context'],
+      ['stream-validation', 'Model stream integrity'],
+      ['tool-admission', 'Tool admission'],
+      ['execution-fence', 'Durable execution fence'],
+      ['permissions', 'Permission semantics'],
+      ['budgets', 'Hard budgets'],
+      ['cancellation', 'Cancellation and deadlines'],
+      ['task-gate', 'Machine-readable scope'],
+      ['delivery', 'Delivery chronology'],
+      ['verification', 'Verified result'],
+      ['evidence-artifact', 'Evidence artifact'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M7: deterministic session loop',
+    slug: 'harness-deterministic-session-loop-m7',
+    summary:
+      'How M7 adds a deterministic multi-round session loop with versioned context, strict tool admission, durable policy-before-effect ordering, hard budgets, cancellation, and timeouts.',
+    tags: ['Agent runtime', 'Tool calling', 'Policy enforcement', 'Deterministic systems'],
+    title: 'Harness Platform M7: putting durable policy before tool execution',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 6',
     footerSummary:
       'The pinned public merge contains the compatibility-first runtime, streaming model adapter, canonical event vocabulary, append-before-yield semantics, lifecycle controls, and offline proof described here.',
