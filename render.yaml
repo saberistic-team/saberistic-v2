@@ -116,7 +116,7 @@ projects:
               - key: READINESS_REJECT_IP_WINDOW_SECONDS
                 value: '3600'
               - key: OPENROUTER_GIFT_TIMEOUT_MS
-                value: '60000'
+                value: '20000'
               - key: OPENROUTER_GIFT_MAX_COMPLETION_TOKENS
                 value: '3000'
               - key: GIFTING_IP_LIMIT

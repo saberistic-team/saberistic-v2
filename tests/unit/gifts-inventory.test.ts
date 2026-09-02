@@ -114,11 +114,11 @@ function lookupAll(lookup: LookupFunction, hostname: string, family = 0) {
   })
 }
 
-function fakeDispatcher(close = vi.fn(async () => undefined)): {
-  close: typeof close
+function fakeDispatcher(destroy = vi.fn(async (): Promise<void> => undefined)): {
+  destroy: typeof destroy
   dispatcher: Dispatcher
 } {
-  return { close, dispatcher: { close } as unknown as Dispatcher }
+  return { destroy, dispatcher: { destroy } as unknown as Dispatcher }
 }
 
 describe('gift inventory', () => {
@@ -503,8 +503,10 @@ describe('gift inventory worker boundaries', () => {
     expect(isPublicNetworkAddress('::1')).toBe(false)
     expect(isPublicNetworkAddress('0:0:0:0:0:0:0:1')).toBe(false)
     expect(isPublicNetworkAddress('0:0:0:0:0:ffff:127.0.0.1')).toBe(false)
+    expect(isPublicNetworkAddress('64:ff9b::7f00:1')).toBe(false)
     expect(isPublicNetworkAddress('fec0::1')).toBe(false)
     expect(isPublicNetworkAddress('2002:7f00:1::')).toBe(false)
+    expect(isPublicNetworkAddress('2606:4700:4700::1111%en0')).toBe(false)
   })
 
   it('serves only the validated public addresses from a pinned lookup without re-resolving', async () => {
@@ -607,8 +609,8 @@ describe('gift inventory worker boundaries', () => {
       [{ address: '1.1.1.1', family: 4 }],
     ])
     expect(usedDispatchers).toEqual([first.dispatcher, second.dispatcher])
-    expect(first.close).toHaveBeenCalledOnce()
-    expect(second.close).toHaveBeenCalledOnce()
+    expect(first.destroy).toHaveBeenCalledOnce()
+    expect(second.destroy).toHaveBeenCalledOnce()
   })
 
   it('blocks a redirect whose independently resolved address is private', async () => {
@@ -639,7 +641,97 @@ describe('gift inventory worker boundaries', () => {
     ).rejects.toThrow('remote_address_blocked')
 
     expect(fetchImpl).toHaveBeenCalledOnce()
-    expect(first.close).toHaveBeenCalledOnce()
+    expect(first.destroy).toHaveBeenCalledOnce()
+  })
+
+  it('applies the single remote deadline while DNS resolution is still pending', async () => {
+    vi.useFakeTimers()
+    try {
+      const fetchImpl = vi.fn()
+      const request = fetchRemote('https://media.retailer.example/product', {
+        accept: 'image/webp',
+        approvedRetailerOnly: false,
+        fetchImpl,
+        maximumBytes: 1_024,
+        timeoutMilliseconds: 100,
+        transport: {
+          dnsLookup: () => new Promise<Array<{ address: string; family: number }>>(() => undefined),
+        },
+      })
+      const rejected = expect(request).rejects.toThrow('remote_timeout')
+
+      await vi.advanceTimersByTimeAsync(100)
+      await rejected
+
+      expect(fetchImpl).not.toHaveBeenCalled()
+    } finally {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
+  })
+
+  it('does not reset the deadline across redirects or wait for dispatcher cleanup', async () => {
+    vi.useFakeTimers()
+    try {
+      const neverFinishes = () => new Promise<void>(() => undefined)
+      const first = fakeDispatcher(vi.fn(neverFinishes))
+      const second = fakeDispatcher(vi.fn(neverFinishes))
+      let requestNumber = 0
+      const fetchImpl = vi.fn(
+        () =>
+          new Promise<Response>((resolve) => {
+            requestNumber += 1
+            const currentRequest = requestNumber
+            setTimeout(
+              () =>
+                resolve(
+                  currentRequest === 1
+                    ? new Response(null, {
+                        headers: { Location: 'https://cdn.retailer.example/product.webp' },
+                        status: 302,
+                      })
+                    : new Response('cached-image', {
+                        headers: { 'Content-Type': 'image/webp' },
+                        status: 200,
+                      }),
+                ),
+              60,
+            )
+          }),
+      )
+      const dispatcherFactory = vi
+        .fn()
+        .mockReturnValueOnce(first.dispatcher)
+        .mockReturnValueOnce(second.dispatcher)
+      const request = fetchRemote('https://media.retailer.example/product', {
+        accept: 'image/webp',
+        approvedRetailerOnly: false,
+        fetchImpl,
+        maximumBytes: 1_024,
+        timeoutMilliseconds: 100,
+        transport: {
+          dispatcherFactory,
+          dnsLookup: async (hostname) => [
+            {
+              address: hostname === 'media.retailer.example' ? '8.8.8.8' : '1.1.1.1',
+              family: 4,
+            },
+          ],
+        },
+      })
+      const rejected = expect(request).rejects.toThrow('remote_timeout')
+
+      await vi.advanceTimersByTimeAsync(60)
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+      await vi.advanceTimersByTimeAsync(40)
+      await rejected
+
+      expect(first.destroy).toHaveBeenCalledOnce()
+      expect(second.destroy).toHaveBeenCalledOnce()
+    } finally {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
   })
 
   it('keeps request cancellation active while a bounded response body is read', async () => {
@@ -659,6 +751,46 @@ describe('gift inventory worker boundaries', () => {
         timeoutCode: 'openrouter_timeout',
       }),
     ).rejects.toThrow('openrouter_timeout')
+  })
+
+  it('applies the remote deadline when a response body stalls after headers', async () => {
+    vi.useFakeTimers()
+    try {
+      const remote = fakeDispatcher()
+      const fetchImpl = vi.fn(async () =>
+        Promise.resolve(
+          new Response(
+            new ReadableStream<Uint8Array>({
+              start() {
+                // Headers arrive, but the retailer never sends or closes the body.
+              },
+            }),
+            { headers: { 'Content-Type': 'image/webp' }, status: 200 },
+          ),
+        ),
+      )
+      const request = fetchRemote('https://media.retailer.example/product.webp', {
+        accept: 'image/webp',
+        approvedRetailerOnly: false,
+        fetchImpl,
+        maximumBytes: 1_024,
+        timeoutMilliseconds: 100,
+        transport: {
+          dispatcherFactory: () => remote.dispatcher,
+          dnsLookup: async () => [{ address: '8.8.8.8', family: 4 }],
+        },
+      })
+      const rejected = expect(request).rejects.toThrow('remote_timeout')
+
+      await vi.advanceTimersByTimeAsync(100)
+      await rejected
+
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(remote.destroy).toHaveBeenCalledOnce()
+    } finally {
+      vi.clearAllTimers()
+      vi.useRealTimers()
+    }
   })
 
   it('extracts canonical product fields from retailer JSON-LD, not model-authored description/image', () => {

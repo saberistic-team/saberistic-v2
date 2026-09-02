@@ -287,11 +287,12 @@ function privateIPv4(address: string): boolean {
 }
 
 export function isPublicNetworkAddress(address: string): boolean {
+  if (address.includes('%')) return false
   const kind = isIP(address)
   if (kind === 4) return !privateIPv4(address)
   if (kind !== 6) return false
 
-  const normalized = address.toLowerCase().split('%')[0] ?? ''
+  const normalized = address.toLowerCase()
   return (
     publicIPv6Networks.check(normalized, 'ipv6') && !reservedIPv6Networks.check(normalized, 'ipv6')
   )
@@ -334,6 +335,7 @@ function safeRemoteURL(value: string, approvedRetailerOnly: boolean): URL {
 
 async function resolvePublicRemoteAddresses(
   url: URL,
+  signal: AbortSignal,
   lookup: RemoteDNSLookup = (hostname, options) => dnsLookup(hostname, options),
 ): Promise<PublicRemoteAddress[]> {
   if (isIP(url.hostname)) {
@@ -344,8 +346,12 @@ async function resolvePublicRemoteAddresses(
   }
   let addresses: Array<{ address: string; family: number }>
   try {
-    addresses = await lookup(url.hostname, { all: true, verbatim: true })
-  } catch {
+    addresses = await awaitRemoteOperation(
+      Promise.resolve().then(() => lookup(url.hostname, { all: true, verbatim: true })),
+      signal,
+    )
+  } catch (error) {
+    if (error instanceof GiftInventoryWorkerError) throw error
     throw new GiftInventoryWorkerError('remote_dns_failed')
   }
   if (
@@ -373,6 +379,33 @@ function remoteLookupError(hostname: string): NodeJS.ErrnoException {
   error.code = 'ENOTFOUND'
   error.syscall = 'getaddrinfo'
   return error
+}
+
+function remoteTimeoutError(): GiftInventoryWorkerError {
+  return new GiftInventoryWorkerError('remote_timeout')
+}
+
+function assertRemoteDeadline(signal: AbortSignal, deadline: number): void {
+  if (signal.aborted || Date.now() >= deadline) throw remoteTimeoutError()
+}
+
+function awaitRemoteOperation<T>(operation: Promise<T>, signal: AbortSignal): Promise<T> {
+  if (signal.aborted) return Promise.reject(remoteTimeoutError())
+  return new Promise<T>((resolve, reject) => {
+    let settled = false
+    const finish = (callback: () => void) => {
+      if (settled) return
+      settled = true
+      signal.removeEventListener('abort', abort)
+      callback()
+    }
+    const abort = () => finish(() => reject(remoteTimeoutError()))
+    signal.addEventListener('abort', abort, { once: true })
+    operation.then(
+      (value) => finish(() => resolve(value)),
+      (error: unknown) => finish(() => reject(error)),
+    )
+  })
 }
 
 export function createPinnedRemoteLookup(
@@ -428,6 +461,22 @@ function createPinnedRemoteDispatcher(
   })
 }
 
+function destroyRemoteDispatcher(dispatcher: Dispatcher): void {
+  try {
+    void dispatcher.destroy().catch(() => undefined)
+  } catch {
+    // A failed cleanup must never extend or mask the request deadline.
+  }
+}
+
+function cancelRemoteBody(body: ReadableStream<Uint8Array> | null): void {
+  try {
+    void body?.cancel().catch(() => undefined)
+  } catch {
+    // The dispatcher is destroyed separately; cancellation is best effort.
+  }
+}
+
 export async function readBoundedBytes(
   response: Response,
   maximumBytes: number,
@@ -435,7 +484,7 @@ export async function readBoundedBytes(
 ): Promise<Buffer> {
   const declared = Number(response.headers.get('content-length'))
   if (Number.isFinite(declared) && declared > maximumBytes) {
-    await response.body?.cancel().catch(() => undefined)
+    cancelRemoteBody(response.body)
     throw new GiftInventoryWorkerError('remote_response_too_large', 'invalid')
   }
   if (!response.body) throw new GiftInventoryWorkerError('remote_response_empty')
@@ -462,20 +511,24 @@ export async function readBoundedBytes(
       if (!result.value) continue
       total += result.value.byteLength
       if (total > maximumBytes) {
-        await reader.cancel().catch(() => undefined)
+        void reader.cancel().catch(() => undefined)
         throw new GiftInventoryWorkerError('remote_response_too_large', 'invalid')
       }
       chunks.push(result.value)
     }
   } catch (error) {
-    await reader.cancel().catch(() => undefined)
+    void reader.cancel().catch(() => undefined)
     if (error instanceof GiftInventoryWorkerError) throw error
     throw new GiftInventoryWorkerError(
       options.signal?.aborted ? (options.timeoutCode ?? 'remote_timeout') : 'remote_response_read',
     )
   } finally {
     options.signal?.removeEventListener('abort', abort)
-    reader.releaseLock()
+    try {
+      reader.releaseLock()
+    } catch {
+      // A pending read is terminated when fetchRemote destroys its dispatcher.
+    }
   }
   if (total === 0) throw new GiftInventoryWorkerError('remote_response_empty')
   return Buffer.concat(
@@ -495,67 +548,86 @@ export async function fetchRemote(
     timeoutMilliseconds: number
   },
 ): Promise<{ bytes: Buffer; contentType: string; finalURL: string; status: number }> {
-  let url = safeRemoteURL(initialURL, input.approvedRetailerOnly)
-  for (let redirect = 0; redirect <= maximumRedirects; redirect += 1) {
-    const addresses = await resolvePublicRemoteAddresses(url, input.transport?.dnsLookup)
-    const dispatcher = (input.transport?.dispatcherFactory ?? createPinnedRemoteDispatcher)(
-      url.hostname,
-      createPinnedRemoteLookup(url.hostname, addresses),
-      input.timeoutMilliseconds,
-    )
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), input.timeoutMilliseconds)
-    let response: Response
-    try {
-      response = await input.fetchImpl(url, {
-        cache: 'no-store',
-        dispatcher,
-        headers: { Accept: input.accept, 'User-Agent': 'SaberisticGiftInventory/1.0' },
-        redirect: 'manual',
-        signal: controller.signal,
-      } as RequestInit & { dispatcher: Dispatcher })
-      if ([301, 302, 303, 307, 308].includes(response.status)) {
-        const location = response.headers.get('location')
-        await response.body?.cancel().catch(() => undefined)
-        if (!location || redirect === maximumRedirects) {
-          throw new GiftInventoryWorkerError('remote_redirect_invalid', 'invalid')
+  const controller = new AbortController()
+  const deadline = Date.now() + input.timeoutMilliseconds
+  const timeout = setTimeout(() => controller.abort(), input.timeoutMilliseconds)
+  try {
+    let url = safeRemoteURL(initialURL, input.approvedRetailerOnly)
+    for (let redirect = 0; redirect <= maximumRedirects; redirect += 1) {
+      assertRemoteDeadline(controller.signal, deadline)
+      const addresses = await resolvePublicRemoteAddresses(
+        url,
+        controller.signal,
+        input.transport?.dnsLookup,
+      )
+      assertRemoteDeadline(controller.signal, deadline)
+      const dispatcher = (input.transport?.dispatcherFactory ?? createPinnedRemoteDispatcher)(
+        url.hostname,
+        createPinnedRemoteLookup(url.hostname, addresses),
+        Math.max(1, deadline - Date.now()),
+      )
+      let response: Response
+      try {
+        response = await awaitRemoteOperation(
+          Promise.resolve().then(() =>
+            input.fetchImpl(url, {
+              cache: 'no-store',
+              dispatcher,
+              headers: { Accept: input.accept, 'User-Agent': 'SaberisticGiftInventory/1.0' },
+              redirect: 'manual',
+              signal: controller.signal,
+            } as RequestInit & { dispatcher: Dispatcher }),
+          ),
+          controller.signal,
+        )
+        assertRemoteDeadline(controller.signal, deadline)
+        if ([301, 302, 303, 307, 308].includes(response.status)) {
+          const location = response.headers.get('location')
+          cancelRemoteBody(response.body)
+          if (!location || redirect === maximumRedirects) {
+            throw new GiftInventoryWorkerError('remote_redirect_invalid', 'invalid')
+          }
+          url = safeRemoteURL(new URL(location, url).toString(), input.approvedRetailerOnly)
+          continue
         }
-        url = safeRemoteURL(new URL(location, url).toString(), input.approvedRetailerOnly)
-        continue
-      }
 
-      if (response.status === 404 || response.status === 410) {
-        await response.body?.cancel().catch(() => undefined)
-        throw new GiftInventoryWorkerError('retailer_product_unavailable', 'invalid')
-      }
-      if (!response.ok) {
-        await response.body?.cancel().catch(() => undefined)
-        throw new GiftInventoryWorkerError(`remote_http_${response.status}`)
-      }
+        if (response.status === 404 || response.status === 410) {
+          cancelRemoteBody(response.body)
+          throw new GiftInventoryWorkerError('retailer_product_unavailable', 'invalid')
+        }
+        if (!response.ok) {
+          cancelRemoteBody(response.body)
+          throw new GiftInventoryWorkerError(`remote_http_${response.status}`)
+        }
 
-      return {
-        bytes: await readBoundedBytes(response, input.maximumBytes, {
+        const bytes = await readBoundedBytes(response, input.maximumBytes, {
           signal: controller.signal,
           timeoutCode: 'remote_timeout',
-        }),
-        contentType: (response.headers.get('content-type') ?? '')
-          .split(';')[0]
-          .trim()
-          .toLowerCase(),
-        finalURL: url.toString(),
-        status: response.status,
+        })
+        assertRemoteDeadline(controller.signal, deadline)
+        return {
+          bytes,
+          contentType: (response.headers.get('content-type') ?? '')
+            .split(';')[0]
+            .trim()
+            .toLowerCase(),
+          finalURL: url.toString(),
+          status: response.status,
+        }
+      } catch (error) {
+        if (error instanceof GiftInventoryWorkerError) throw error
+        throw new GiftInventoryWorkerError(
+          controller.signal.aborted || Date.now() >= deadline ? 'remote_timeout' : 'remote_network',
+        )
+      } finally {
+        destroyRemoteDispatcher(dispatcher)
       }
-    } catch (error) {
-      if (error instanceof GiftInventoryWorkerError) throw error
-      throw new GiftInventoryWorkerError(
-        controller.signal.aborted ? 'remote_timeout' : 'remote_network',
-      )
-    } finally {
-      clearTimeout(timeout)
-      await dispatcher.close().catch(() => undefined)
     }
+    throw new GiftInventoryWorkerError('remote_redirect_invalid', 'invalid')
+  } finally {
+    clearTimeout(timeout)
+    controller.abort()
   }
-  throw new GiftInventoryWorkerError('remote_redirect_invalid', 'invalid')
 }
 
 function decodeHtmlEntities(value: string): string {
