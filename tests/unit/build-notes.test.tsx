@@ -13,6 +13,7 @@ import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperato
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
 import { HarnessPolyglotReviewArticle } from '@/content/build-notes/HarnessPolyglotReview'
 import { HarnessRuntimeContractsArticle } from '@/content/build-notes/HarnessRuntimeContracts'
+import { HarnessWorkspaceCapabilityArticle } from '@/content/build-notes/HarnessWorkspaceCapability'
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
@@ -47,7 +48,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-deterministic-session-loop-m7')
+    expect(buildNotes[0]?.slug).toBe('harness-workspace-capability-boundary-m8')
     expect(getBuildNote('harness-from-scratch')?.repositories[0]?.commit.slice(0, 7)).toBe(
       '88ef2f4',
     )
@@ -87,6 +88,9 @@ describe('Git-authored build notes', () => {
     expect(
       getBuildNote('harness-deterministic-session-loop-m7')?.repositories[0]?.commit.slice(0, 7),
     ).toBe('41af384')
+    expect(
+      getBuildNote('harness-workspace-capability-boundary-m8')?.repositories[0]?.commit.slice(0, 7),
+    ).toBe('d14fc13')
     expect(getBuildNote('spiral-safe-passkey-signing-platform')?.repositories).toHaveLength(8)
     expect(
       getBuildNote('spiral-safe-passkey-signing-platform')?.repositories[0]?.commit.slice(0, 7),
@@ -208,6 +212,25 @@ describe('Git-authored build notes', () => {
     expect(html).toContain('59 RUNTIME TESTS ARE NOT A LOAD TEST')
     expect(html).toContain('MERGED FIRST, SUBSEQUENTLY VERIFIED')
     expect(html).toContain('41af384')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(10)
+  })
+
+  it('renders M8 with injected workspace authority and explicit adapter limits', () => {
+    const html = renderToStaticMarkup(createElement(HarnessWorkspaceCapabilityArticle))
+
+    expect(html).toContain('M8 does not open the workspace')
+    expect(html).toContain('M8 DEFINES AUTHORITY; IT DOES NOT IMPLEMENT THE HOST')
+    expect(html).toContain('without confusing it for authority')
+    expect(html).toContain('THE TOOL GETS ONE OPERATION, NOT THE WORKSPACE')
+    expect(html).toContain('Capability presence changes what the model is allowed to see')
+    expect(html).toContain('not a runtime interceptor')
+    expect(html).toContain('658 / 658')
+    expect(html).toContain('658 TESTS ARE NOT A WORKSPACE LOAD TEST')
+    expect(html).toContain('GREEN BEFORE MERGE, NOT HUMAN-APPROVED')
+    expect(html).toContain('d14fc13')
     expect(html.match(/role="img"/g)?.length).toBe(4)
     expect(html.match(/role="region"/g)?.length).toBe(5)
     expect(html).toContain('tabindex="0"')

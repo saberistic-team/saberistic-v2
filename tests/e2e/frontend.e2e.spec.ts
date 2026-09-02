@@ -18,6 +18,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-permissioned-agent-services-m3',
     '/build-notes/harness-polyglot-review-m5',
     '/build-notes/harness-runtime-contracts-m6',
+    '/build-notes/harness-workspace-capability-boundary-m8',
     '/build-notes/spiral-safe-passkey-signing-platform',
     '/build-notes/three-lovable-prototypes',
     '/build-notes/turbopass-rust-temporal',
@@ -175,6 +176,48 @@ test.describe('Public site smoke', () => {
     ).toBeVisible()
     await expect(
       page.getByText('M7 RUNS A LOOP; IT DOES NOT SELF-HOST HARNESS', { exact: true }),
+    ).toBeVisible()
+
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth)
+
+    const diagramCanvases = page.locator('.article-diagram__canvas--scrollable')
+    await expect(diagramCanvases).toHaveCount(4)
+    for (let index = 0; index < 4; index += 1) {
+      await expect(diagramCanvases.nth(index)).toHaveAttribute('tabindex', '0')
+    }
+  })
+
+  test('Harness M8 keeps workspace authority injected, restricted, and fail-closed', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ height: 844, width: 390 })
+    const response = await page.goto('/build-notes/harness-workspace-capability-boundary-m8')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M8: making workspace authority an injected capability',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('d14fc13')
+    await expect(page.getByRole('link', { name: 'Authority boundary' })).toHaveAttribute(
+      'href',
+      '#boundary',
+    )
+    await expect(page.getByRole('link', { name: 'Fail-closed service admission' })).toHaveAttribute(
+      'href',
+      '#server-admission',
+    )
+    await expect(
+      page.getByText('M8 DEFINES AUTHORITY; IT DOES NOT IMPLEMENT THE HOST', { exact: true }),
+    ).toBeVisible()
+    await expect(
+      page.getByText('658 TESTS ARE NOT A WORKSPACE LOAD TEST', { exact: true }),
     ).toBeVisible()
 
     const viewport = await page.evaluate(() => ({

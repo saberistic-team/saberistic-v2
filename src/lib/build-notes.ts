@@ -20,6 +20,50 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONE 8',
+    footerSummary:
+      'The pinned public merge contains the canonical injected Workspace contract, strict operation dispatcher, least-privilege tool views, runtime and service admission rules, host-import guard, and explicit adapter limits described here.',
+    footerTitle:
+      'Inspect the workspace authority boundary—and the adapters it still refuses to invent.',
+    modifiedAt: '2026-09-02',
+    publishedAt: '2026-09-02',
+    readingMinutes: 32,
+    repositories: [
+      {
+        commit: 'd14fc13e299a6718d9e8a98ba9e028b320cd5f53',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['boundary', 'Authority boundary'],
+      ['workspace-contract', 'Workspace contract'],
+      ['operation-dispatch', 'Strict operation dispatch'],
+      ['least-privilege', 'Least-privilege views'],
+      ['runtime-injection', 'Runtime injection'],
+      ['tool-boundaries', 'Reviewed tool boundaries'],
+      ['compatibility', 'Identity and capability'],
+      ['server-admission', 'Fail-closed service admission'],
+      ['import-boundary', 'Host-import guard'],
+      ['hardening', 'AbortSignal hardening'],
+      ['task-gate', 'Machine-readable scope'],
+      ['delivery', 'Delivery chronology'],
+      ['verification', 'Verified result'],
+      ['evidence-artifact', 'Evidence artifact'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M8: workspace capability boundary',
+    slug: 'harness-workspace-capability-boundary-m8',
+    summary:
+      'How M8 moves filesystem and process authority behind one injected Workspace contract, restricts tools to reviewed operations, and blocks direct host access without shipping an adapter early.',
+    tags: ['Agent workspaces', 'Capability security', 'Least privilege', 'TypeScript'],
+    title: 'Harness Platform M8: making workspace authority an injected capability',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONE 7',
     footerSummary:
       'The pinned public merge contains the deterministic multi-round loop, versioned immutable context, strict tool admission, policy-before-effect fence, budgets, cancellation, and offline proof described here.',
