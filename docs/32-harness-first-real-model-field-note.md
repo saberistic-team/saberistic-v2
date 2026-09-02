@@ -384,28 +384,28 @@ Uncommitted experiment paths:
 
 ### Content and evidence
 
-- [ ] The article calls `d14fc13` the public M8 base, not a commit containing the experiment.
-- [ ] The article says “uncommitted local field test” near its title and evidence summary.
-- [ ] The shared transcript confirms the exact prompt and final five-bullet answer before either is
+- [x] The article calls `d14fc13` the public M8 base, not a commit containing the experiment.
+- [x] The article says “uncommitted local field test” near its title and evidence summary.
+- [x] The shared transcript confirms the exact prompt and final five-bullet answer before either is
       quoted.
-- [ ] Run metrics match the durable SQLite records and distinguish completed, failed, and
+- [x] Run metrics match the durable SQLite records and distinguish completed, failed, and
       budget-exceeded statuses.
-- [ ] `mounts: 0` is explained as zero writable mounts, not zero total mounts.
-- [ ] The local 669-test gate is not labeled GitHub CI and does not imply typecheck passed.
-- [ ] Context/token budgets and observed durations are not presented as benchmarks or load tests.
-- [ ] The mutable local image, Node-version difference, and absence of image digest stay visible.
+- [x] `mounts: 0` is explained as zero writable mounts, not zero total mounts.
+- [x] The local 669-test gate is not labeled GitHub CI and does not imply typecheck passed.
+- [x] Context/token budgets and observed durations are not presented as benchmarks or load tests.
+- [x] The mutable local image, Node-version difference, and absence of image digest stay visible.
 
 ### Website
 
-- [ ] Build Note metadata, route, article component, diagrams, and tests are implemented.
-- [ ] Every table-of-contents entry resolves to a unique article section ID.
-- [ ] Every diagram has meaningful image semantics and a keyboard-scrollable wrapper.
-- [ ] Desktop and 390-pixel mobile layouts have no document-width overflow.
-- [ ] Metadata, canonical URL, BlogPosting JSON-LD, Build Notes index, RSS, and sitemap are correct.
-- [ ] Formatting, typechecks, lint, tests, build, and static export pass.
-- [ ] Website CI and CodeQL pass for the publication commit.
-- [ ] The checks-gated Render deploy becomes live and custom-domain acceptance passes.
-- [ ] This record is updated with final website evidence without changing the Harness delivery
+- [x] Build Note metadata, route, article component, diagrams, and tests are implemented.
+- [x] Every table-of-contents entry resolves to a unique article section ID.
+- [x] Every diagram has meaningful image semantics and a keyboard-scrollable wrapper.
+- [x] Desktop and 390-pixel mobile layouts have no document-width overflow.
+- [x] Metadata, canonical URL, BlogPosting JSON-LD, Build Notes index, RSS, and sitemap are correct.
+- [x] Formatting, typechecks, lint, tests, build, and static export pass.
+- [x] Website CI and CodeQL pass for the publication commit.
+- [x] The checks-gated Render deploy becomes live and custom-domain acceptance passes.
+- [x] This record is updated with final website evidence without changing the Harness delivery
       truth.
 
 ## Limitations and claim controls
@@ -444,9 +444,44 @@ Uncommitted experiment paths:
 
 ## Production evidence
 
-No website publication evidence exists yet. Add the website commit, GitHub CI, CodeQL, Render
-deploy, generated-page count, custom-domain checks, responsive acceptance, and feed/sitemap checks
-only after each result exists.
+The first publication landed in website commit
+`de6f630f7b2cee6f485183cb23e0c29eb8732bbb`. GitHub CI run `33654520921` passed
+under Node 22: both TypeScript checks, ESLint, 654 passing and three skipped unit/integration tests,
+the production build, and the reviewed-fixture static export. That fixture export generated 32
+pages and verified 16 Build Notes plus two prototype routes. CodeQL run `33654520071` passed both
+its Actions and JavaScript/TypeScript jobs.
+
+The checks-gated Render Static Site deployed that exact commit as
+`dep-dac4s5p5efls73a9fpv0`. Render prepared public content revision `2e8da5a6f350` with five
+prototypes, generated 35 of 35 static pages, and verified 16 Build Notes plus five prototype routes
+before the deploy became live at `2026-09-02T16:28:30Z`.
+
+Production acceptance on the custom domain verified:
+
+- HTTP 200 for
+  `https://saberistic.com/build-notes/harness-first-real-model-ollama/`;
+- the expected title, H1, short baseline commit `d14fc13`, canonical URL, BlogPosting structured
+  data, and explicit “not M9 or a release” boundary;
+- four accessible diagram canvases and six labeled keyboard-scrollable regions across the diagrams
+  and tables;
+- no document-width overflow at the 390-by-844 acceptance viewport;
+- the article on the Build Notes index and in `/build-notes/feed.xml`;
+- the canonical article route in `sitemap.xml`;
+- a Cloudflare CDN cache hit with a five-minute shared-cache window; and
+- the deployed CSP, Permissions Policy, Referrer Policy, `X-Content-Type-Options`, and
+  `X-Frame-Options` headers.
+
+The focused production Playwright acceptance passed one of one tests. The broader local E2E run
+recorded 34 passes, one skip, and two environment-specific failures unrelated to this article: the
+local Payload admin could not authenticate to its configured Postgres database, and a local
+cross-origin development-asset restriction stopped the readiness flow from advancing. The article
+route and every Build Note route passed, so this record does not describe the entire local E2E suite
+as green.
+
+These website checks verify publication, discoverability, and responsive behavior. They do not
+change the Harness delivery boundary or create hosted verification for the uncommitted experiment,
+model-provenance proof, deterministic answer-quality evidence, or performance, load, capacity, or
+production-isolation proof.
 
 ## Definition of done
 
@@ -454,7 +489,7 @@ only after each result exists.
 - [x] Exact session chronology, usage, tool, policy, sandbox, and gate metrics are recorded.
 - [x] Delivery truth and unsupported claims are explicit.
 - [x] Site implementation and publication verification are planned.
-- [ ] Build Note 016 is implemented and verified locally.
-- [ ] Website CI and CodeQL pass.
-- [ ] The checks-gated Render Static Site publishes the article.
-- [ ] Production acceptance evidence is appended.
+- [x] Build Note 016 is implemented and its focused article E2E passes locally.
+- [x] Website CI and CodeQL pass for commit `de6f630`.
+- [x] The checks-gated Render Static Site publishes the article.
+- [x] Production acceptance evidence is appended.

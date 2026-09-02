@@ -258,7 +258,9 @@ Build Note 016 documents an uncommitted local field test based on Harness M8 mer
 provider-timeout failures that preceded it, six policy-denied model commands, a later completed
 30,000-token-budget session, and a local 669-test gate. It is explicitly not M9, a Harness release,
 a reviewed pull request, GitHub-CI evidence, a load test, or production proof. The implementation
-and publication plan is maintained in
+is published in website commit `de6f630`; CI run `33654520921`, CodeQL run `33654520071`, and
+checks-gated Static Site deploy `dep-dac4s5p5efls73a9fpv0` passed, generating 35 production pages
+with 16 Build Notes and five Payload prototype routes. Publication evidence is maintained in
 [32](./32-harness-first-real-model-field-note.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
