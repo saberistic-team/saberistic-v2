@@ -31,4 +31,11 @@ or complete source-change dependency system claimed. No paid research run for th
 Local typecheck, lint, 19 Build Note unit tests, and fixture static export passed.
 Export verified 19 notes, SEO metadata, feed and sitemap. Browser inspection verified
 12 sections, three diagrams, and no page overflow at 390px; diagram canvases scroll
-independently. Awaiting automatic deployment.
+independently.
+
+Published in website commit `9333414b5a204967969a3cf015922f0017ec537f`.
+CI `34415662694` and CodeQL `34415662474` passed. Render Static Site deploy
+`dep-dagugvvlk1mc73a7n36g` succeeded at 2026-09-09T23:16:16Z
+(GitHub deployment `6361169493`). Live article, index, RSS, sitemap, BlogPosting
+markup, and shared-chat attribution verified. Publication URL:
+https://saberistic.com/build-notes/licensing-roadmap-evidence-first-tools/.
