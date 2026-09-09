@@ -8,6 +8,7 @@ test.describe('Public site smoke', () => {
     '/readiness',
     '/build-notes',
     '/build-notes/r3n-continuous-research-local-graphrag',
+    '/build-notes/licensing-roadmap-evidence-first-tools',
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',

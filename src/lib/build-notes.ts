@@ -14,12 +14,45 @@ export type BuildNote = {
   seoTitle: string
   slug: string
   sourceLabel?: string
+  sourceUrl?: string
   summary: string
   tags: readonly string[]
   title: string
 }
 
 export const buildNotes = [
+  {
+    eyebrow: 'PRODUCT BUILD / EVIDENCE-FIRST LICENSING',
+    footerSummary:
+      'Follow the development record, from checkout parity to reusable research and the staging rollout of fifteen licensing tools. The implementation repositories remain private.',
+    footerTitle: 'From a licensing question to a useful, source-backed next step.',
+    modifiedAt: '2026-09-09',
+    publishedAt: '2026-09-09',
+    readingMinutes: 12,
+    repositories: [],
+    sourceLabel: 'Build record',
+    sourceUrl: 'https://chatgpt.com/s/cx_6aa1e22246ec8191a567b03a43f5db37',
+    sections: [
+      ['brief', 'A website becomes a product'],
+      ['checkout', 'Preserve the checkout contract'],
+      ['customers', 'Customers are not attempts'],
+      ['roadmap', 'The first licensing roadmap'],
+      ['evidence', 'Answers become evidence'],
+      ['completeness', 'Check what is missing'],
+      ['publishing', 'Research once, publish carefully'],
+      ['tools', 'Fifteen tools, shared research'],
+      ['extraction', 'Reading difficult sources'],
+      ['experience', 'Make the work visible'],
+      ['results', 'Results and release boundaries'],
+      ['next', 'What remains to prove'],
+    ],
+    seoTitle: 'Licensing Roadmap: research becomes a product',
+    slug: 'licensing-roadmap-evidence-first-tools',
+    summary:
+      'Turning a checkout migration into an evidence-first licensing platform: structured research, on-demand guides, fifteen tools, safer customer records and a carefully staged rollout.',
+    tags: ['Applied AI', 'Astro', 'Research tools', 'Product engineering'],
+    title: 'Licensing Roadmap: turning research into a product people can use',
+  },
   {
     eyebrow: 'LOCAL RESEARCH / GRAPH-ASSISTED Q&A',
     footerSummary:

@@ -24,7 +24,7 @@ import { createBuildNotesRSS } from '@/lib/build-notes-feed'
 
 describe('Git-authored build notes', () => {
   it('publishes an explicit, unique, newest-first manifest', () => {
-    expect(buildNotes).toHaveLength(18)
+    expect(buildNotes).toHaveLength(19)
 
     const slugs = buildNotes.map((note) => note.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
@@ -35,7 +35,9 @@ describe('Git-authored build notes', () => {
       expect(note.modifiedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/)
       expect(Date.parse(note.modifiedAt)).toBeGreaterThanOrEqual(Date.parse(note.publishedAt))
       expect(note.readingMinutes).toBeGreaterThan(0)
-      expect(note.repositories.length).toBeGreaterThan(0)
+      expect(note.repositories.length > 0 || 'sourceUrl' in note).toBe(true)
+      if ('sourceUrl' in note)
+        expect(note.sourceUrl).toMatch(/^https:\/\/chatgpt\.com\/s\/cx_[a-f0-9]+$/)
       for (const repository of note.repositories) {
         expect(repository.commit).toMatch(/^[a-f0-9]{40}$/)
         expect(repository.label.length).toBeGreaterThan(0)
@@ -50,7 +52,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('r3n-continuous-research-local-graphrag')
+    expect(buildNotes[0]?.slug).toBe('licensing-roadmap-evidence-first-tools')
     expect(
       getBuildNote('harness-local-docker-workspace-adapters-m9-m10')?.repositories[0]?.commit,
     ).toBe('6e1e578747484bbad5a3651601c7b57854cc771f')

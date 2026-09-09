@@ -24,6 +24,7 @@ import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovableProtot
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { R3NArticle } from '@/content/build-notes/R3N'
+import { LicensingRoadmapArticle } from '@/content/build-notes/LicensingRoadmap'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
 
@@ -34,6 +35,7 @@ type BuildNotePageProps = {
 }
 
 const articleBySlug = {
+  'licensing-roadmap-evidence-first-tools': LicensingRoadmapArticle,
   'r3n-continuous-research-local-graphrag': R3NArticle,
   'cryptopal-wallet-email-wallet': CryptoPalArticle,
   'growth-program-sensor-scorecards-devnet': GrowthProgramDevnetArticle,
@@ -287,7 +289,9 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
                     (note.repositories.length === 1 ? 'Verified commit' : 'Verified sources')}
                 </dt>
                 <dd>
-                  {note.repositories.length === 1 ? (
+                  {note.sourceUrl ? (
+                    'Shared development chat'
+                  ) : note.repositories.length === 1 ? (
                     <code>{note.repositories[0].commit.slice(0, 7)}</code>
                   ) : (
                     `${note.repositories.length} pinned commits`
@@ -300,6 +304,16 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
               </div>
             </dl>
             <div className="build-note__source-actions">
+              {note.sourceUrl && (
+                <TrackedAnchor
+                  analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
+                  className="button button--quiet"
+                  href={note.sourceUrl}
+                  rel="external"
+                >
+                  Read the build chat ↗
+                </TrackedAnchor>
+              )}
               {note.repositories.map((repository) => (
                 <TrackedAnchor
                   analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
@@ -344,6 +358,16 @@ export default async function BuildNotePage({ params }: BuildNotePageProps) {
           <p>{note.footerSummary}</p>
         </div>
         <div className="build-note__source-actions">
+          {note.sourceUrl && (
+            <TrackedAnchor
+              analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}
+              className="button"
+              href={note.sourceUrl}
+              rel="external"
+            >
+              Read the build chat ↗
+            </TrackedAnchor>
+          )}
           {note.repositories.map((repository) => (
             <TrackedAnchor
               analyticsEvent={{ data: { note: note.slug }, name: 'build_note_source_clicked' }}

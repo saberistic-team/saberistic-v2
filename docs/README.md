@@ -288,6 +288,10 @@ operational requirements. See
 
 ## Source-of-truth rules
 
+Build Note 019 documents Licensing Roadmap, from checkout compatibility through an
+evidence-first suite of fifteen tools. See [35](./35-licensing-roadmap-evidence-first-tools.md)
+for sources, implementation, claim boundaries, and publication status.
+
 - Public claims must follow the evidence labels and claim holds in [03](./03-verified-content-and-ai-brief.md).
 - Payload owns general editable content, prototype records, CMS-projected SEO metadata, and evidence
   references. ADR-020 makes Build Notes a narrow Git-authored exception for code-adjacent evidence.
