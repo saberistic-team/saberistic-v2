@@ -55,4 +55,12 @@ research content or credentials.
 
 ## Publication
 
-Pending website checks and automatic deployment.
+Published from website commit `18227e1877c829147965307e817a242544f402da`.
+CI `34414296023` and CodeQL `34414296166` passed. Render Static Site deployment
+`dep-dagu7kc9v7es7381qrug` succeeded at 2026-09-09 22:57:40 UTC.
+
+The article, index, RSS feed and sitemap returned successfully and contained the new slug.
+The article includes BlogPosting structured data, the pinned R3N commit and verified test count.
+Local static-export validation passed for all 18 Build Notes. Browser inspection confirmed three
+readable diagrams and a 390-pixel document width with no page-level horizontal overflow.
+TypeScript, lint and the existing article metadata/rendering suite passed before publication.
