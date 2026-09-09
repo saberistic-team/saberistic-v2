@@ -206,8 +206,31 @@ and is horizontally scrollable on narrow screens without widening the document v
 - [x] Reproduce the focused live-Docker suite locally.
 - [x] Add metadata, article registration, RSS/sitemap-compatible registry entry, and four diagrams.
 - [x] Add unit, export, route, mobile overflow, and accessible-diagram assertions.
-- [ ] Pass website formatting, lint, typecheck, unit, static export, and focused browser checks.
-- [ ] Commit and push website changes after review.
-- [ ] Wait for checks-gated Render Static Site deployment.
-- [ ] Verify the article, index, feed, sitemap, headers, cache, and mobile layout on the custom domain.
-- [ ] Record final website commit, CI, CodeQL, Render deploy, and production acceptance here.
+- [x] Pass website formatting, lint, typecheck, unit, static export, and focused browser checks.
+- [x] Commit and push website changes after review.
+- [x] Wait for checks-gated Render Static Site deployment.
+- [x] Verify the article, index, feed, sitemap, headers, cache, and mobile layout on the custom domain.
+- [x] Record final website commit, CI, CodeQL, Render deploy, and production acceptance here.
+
+## Production publication record
+
+Website commit `add45553e6875c5a1e8fea8f6039f95204fc29e9` passed CI run `34400925588`
+and CodeQL run `34400923967`. The checks-gated Render Static Site deployment
+`dep-dags2qpsrm7s73c81h8g` completed successfully at 2026-09-09 20:29:14 UTC.
+
+The production acceptance pass verified:
+
+- the custom-domain article, Build Notes index, RSS feed, and sitemap returned HTTP 200;
+- all three discovery surfaces contained the new slug;
+- the article contained the pinned merge, 693/693 offline and 10/10 local-live evidence, and the
+  hosted-live disclosure;
+- BlogPosting and BreadcrumbList structured data were present;
+- `Cache-Control: public, max-age=0, s-maxage=300` was present and the article produced a CDN hit;
+- CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, Permissions Policy, and Referrer
+  Policy were present;
+- the focused production browser smoke and 390-pixel mobile overflow checks both passed;
+- all four accessible scrollable diagrams were present.
+
+The Render command-line token had expired during this audit. Deployment identity and success were
+therefore read from the Render GitHub App deployment record, then independently confirmed from the
+custom domain. No manual deploy was triggered.
