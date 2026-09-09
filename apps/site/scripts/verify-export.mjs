@@ -132,6 +132,7 @@ const buildNoteSlugs = [
 
 assert.ok(buildNoteSlugs.length > 0)
 assert.ok(buildNoteSlugs.includes('harness-first-real-model-ollama'))
+assert.ok(buildNoteSlugs.includes('harness-local-docker-workspace-adapters-m9-m10'))
 for (const slug of buildNoteSlugs) {
   const canonical = `https://saberistic.com/build-notes/${slug}/`
   const html = await readOutput(`build-notes/${slug}/index.html`)
@@ -160,6 +161,17 @@ assert.match(
   harnessFirstRealModel,
   /no commit, remote branch, or hosted check exists for this snapshot/,
 )
+
+const harnessWorkspaceAdapters = await readOutput(
+  'build-notes/harness-local-docker-workspace-adapters-m9-m10/index.html',
+)
+assert.match(harnessWorkspaceAdapters, /choosing where an agent is allowed to work/)
+assert.match(harnessWorkspaceAdapters, /6e1e578/)
+assert.match(harnessWorkspaceAdapters, /TRUSTED DEVELOPMENT MODE, NOT A SANDBOX/)
+assert.match(harnessWorkspaceAdapters, /COPY, NEVER MOUNT/)
+assert.match(harnessWorkspaceAdapters, /THE HOSTED LIVE LANE EXISTS, BUT HAD NOT RUN/)
+assert.match(harnessWorkspaceAdapters, /693 \/ 693 passed/)
+assert.match(harnessWorkspaceAdapters, /10 \/ 10 passed/)
 
 const cryptopal = await readOutput('build-notes/cryptopal-wallet-email-wallet/index.html')
 assert.match(cryptopal, /<video[^>]*aria-label="CryptoPal local private-transfer walkthrough"/)

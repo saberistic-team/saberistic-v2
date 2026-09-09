@@ -9,6 +9,7 @@ import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControl
 import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFirstRealModelArticle } from '@/content/build-notes/HarnessFirstRealModel'
+import { HarnessWorkspaceAdaptersArticle } from '@/content/build-notes/HarnessWorkspaceAdapters'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
@@ -23,7 +24,7 @@ import { createBuildNotesRSS } from '@/lib/build-notes-feed'
 
 describe('Git-authored build notes', () => {
   it('publishes an explicit, unique, newest-first manifest', () => {
-    expect(buildNotes).toHaveLength(16)
+    expect(buildNotes).toHaveLength(17)
 
     const slugs = buildNotes.map((note) => note.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
@@ -49,7 +50,10 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-first-real-model-ollama')
+    expect(buildNotes[0]?.slug).toBe('harness-local-docker-workspace-adapters-m9-m10')
+    expect(
+      getBuildNote('harness-local-docker-workspace-adapters-m9-m10')?.repositories[0]?.commit,
+    ).toBe('6e1e578747484bbad5a3651601c7b57854cc771f')
     expect(getBuildNote('harness-first-real-model-ollama')?.repositories[0]?.commit).toBe(
       'd14fc13e299a6718d9e8a98ba9e028b320cd5f53',
     )
@@ -255,6 +259,24 @@ describe('Git-authored build notes', () => {
     expect(html.match(/role="img"/g)?.length).toBe(4)
     expect(html.match(/role="region"/g)?.length).toBe(6)
     expect(html.match(/role="region" tabindex="0"/g)?.length).toBe(6)
+  })
+
+  it('renders M9 and M10 with explicit local trust and Docker isolation boundaries', () => {
+    const html = renderToStaticMarkup(createElement(HarnessWorkspaceAdaptersArticle))
+
+    expect(html).toContain('M8 defined workspace authority')
+    expect(html).toContain('Docker is the default')
+    expect(html).toContain('TRUSTED DEVELOPMENT MODE, NOT A SANDBOX')
+    expect(html).toContain('COPY, NEVER MOUNT')
+    expect(html).toContain('THE HOSTED LIVE LANE EXISTS, BUT HAD NOT RUN')
+    expect(html).toContain('693 / 693 passed')
+    expect(html).toContain('10 / 10 passed')
+    expect(html).toContain('not a filesystem read allowlist')
+    expect(html).toContain('6e1e578')
+    expect(html.match(/role="img"/g)?.length).toBe(4)
+    expect(html.match(/role="region"/g)?.length).toBe(5)
+    expect(html).toContain('tabindex="0"')
+    expect(html.match(/<figure class="article-code">/g)?.length).toBeGreaterThanOrEqual(8)
   })
 
   it('renders M2 with a calibration target, opt-in telemetry, and a gated live MCP lane', () => {

@@ -21,6 +21,52 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONES 9–10',
+    footerSummary:
+      'The pinned public merge contains the explicit LocalWorkspace and DockerWorkspace adapters, selector, bounded state transfer, lifecycle evidence, and isolation checks described here.',
+    footerTitle:
+      'Inspect the workspace adapters—and the runtime integration they deliberately leave open.',
+    modifiedAt: '2026-09-09',
+    publishedAt: '2026-09-09',
+    readingMinutes: 34,
+    repositories: [
+      {
+        commit: '6e1e578747484bbad5a3651601c7b57854cc771f',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Milestone contract'],
+      ['pairing', 'Why M9 and M10 travel together'],
+      ['selector', 'Explicit backend selection'],
+      ['shared-domain', 'Bounded workspace domain'],
+      ['local-boundary', 'Local developer adapter'],
+      ['local-races', 'Path and race defenses'],
+      ['local-effects', 'Processes and change scope'],
+      ['docker-copy', 'Copy, never mount'],
+      ['docker-sandbox', 'Container boundary'],
+      ['returned-state', 'Returned-state validation'],
+      ['outputs', 'Patch, artifacts, retention'],
+      ['lifecycle', 'Lifecycle evidence'],
+      ['testing', 'Two verification lanes'],
+      ['debugging', 'What live Docker found'],
+      ['task-gate', 'Machine-readable scope'],
+      ['delivery', 'Checks-gated delivery'],
+      ['verification', 'Verified result'],
+      ['limits', 'Current truth'],
+      ['files', 'File guide'],
+      ['next', 'What is next'],
+      ['sources', 'Evidence ledger'],
+    ],
+    seoTitle: 'Harness M9–M10: local and Docker workspaces',
+    slug: 'harness-local-docker-workspace-adapters-m9-m10',
+    summary:
+      "How Harness turns M8's Workspace capability into an explicit trusted local adapter and a Docker-by-default disposable adapter—with bounded text worktrees, no host mounts, and auditable cleanup.",
+    tags: ['Agent workspaces', 'Docker isolation', 'Capability security', 'Developer tooling'],
+    title: 'Harness Platform M9–M10: choosing where an agent is allowed to work',
+  },
+  {
     eyebrow: 'FIELD NOTE / FIRST REAL MODEL',
     footerSummary:
       'The public link is the M8 baseline. The guarded-array, timeout, task, and live-run evidence described here remain an uncommitted local experiment until they pass review and hosted checks.',

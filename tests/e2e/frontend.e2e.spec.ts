@@ -14,6 +14,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/harness-deterministic-session-loop-m7',
     '/build-notes/harness-eval-credibility-m2',
     '/build-notes/harness-first-real-model-ollama',
+    '/build-notes/harness-local-docker-workspace-adapters-m9-m10',
     '/build-notes/harness-from-scratch',
     '/build-notes/harness-operator-loop-m1',
     '/build-notes/harness-permissioned-agent-services-m3',
@@ -261,6 +262,39 @@ test.describe('Public site smoke', () => {
 
     await expect(page.locator('.article-diagram__canvas--scrollable')).toHaveCount(4)
     await expect(page.locator('[role="region"][tabindex="0"]')).toHaveCount(6)
+  })
+
+  test('Harness M9–M10 keeps local trust distinct from Docker isolation', async ({ page }) => {
+    await page.setViewportSize({ height: 844, width: 390 })
+    const response = await page.goto('/build-notes/harness-local-docker-workspace-adapters-m9-m10')
+    expect(response?.ok()).toBe(true)
+
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Harness Platform M9–M10: choosing where an agent is allowed to work',
+      }),
+    ).toBeVisible()
+    await expect(page.locator('.build-note__facts code')).toHaveText('6e1e578')
+    await expect(page.getByRole('link', { name: 'Explicit backend selection' })).toHaveAttribute(
+      'href',
+      '#selector',
+    )
+    await expect(page.getByRole('link', { name: 'Container boundary' })).toHaveAttribute(
+      'href',
+      '#docker-sandbox',
+    )
+    await expect(page.getByText('TRUSTED DEVELOPMENT MODE, NOT A SANDBOX')).toBeVisible()
+    await expect(page.getByText('THE HOSTED LIVE LANE EXISTS, BUT HAD NOT RUN')).toBeVisible()
+
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth,
+    }))
+    expect(viewport.scrollWidth).toBeLessThanOrEqual(viewport.clientWidth)
+
+    await expect(page.locator('.article-diagram__canvas--scrollable')).toHaveCount(4)
+    await expect(page.locator('[role="region"][tabindex="0"]')).toHaveCount(5)
   })
 
   test('Harness M3 keeps permissioning fail-closed and live provider and Docker proof open', async ({

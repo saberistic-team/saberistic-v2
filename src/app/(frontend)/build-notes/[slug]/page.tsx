@@ -13,6 +13,7 @@ import { HarnessControlPlaneArticle } from '@/content/build-notes/HarnessControl
 import { HarnessDeterministicSessionLoopArticle } from '@/content/build-notes/HarnessDeterministicSessionLoop'
 import { HarnessEvalCredibilityArticle } from '@/content/build-notes/HarnessEvalCredibility'
 import { HarnessFirstRealModelArticle } from '@/content/build-notes/HarnessFirstRealModel'
+import { HarnessWorkspaceAdaptersArticle } from '@/content/build-notes/HarnessWorkspaceAdapters'
 import { HarnessFromScratchArticle } from '@/content/build-notes/HarnessFromScratch'
 import { HarnessOperatorLoopArticle } from '@/content/build-notes/HarnessOperatorLoop'
 import { HarnessPermissionedServicesArticle } from '@/content/build-notes/HarnessPermissionedServices'
@@ -39,6 +40,7 @@ const articleBySlug = {
   'harness-deterministic-session-loop-m7': HarnessDeterministicSessionLoopArticle,
   'harness-eval-credibility-m2': HarnessEvalCredibilityArticle,
   'harness-first-real-model-ollama': HarnessFirstRealModelArticle,
+  'harness-local-docker-workspace-adapters-m9-m10': HarnessWorkspaceAdaptersArticle,
   'harness-from-scratch': HarnessFromScratchArticle,
   'harness-operator-loop-m1': HarnessOperatorLoopArticle,
   'harness-permissioned-agent-services-m3': HarnessPermissionedServicesArticle,

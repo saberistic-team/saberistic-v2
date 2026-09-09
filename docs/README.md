@@ -66,6 +66,7 @@ The product promise is:
 | [30 — Harness Platform M7 Deterministic Session Loop](./30-harness-deterministic-session-loop-m7-build-note.md)       | Multi-round pure-tool loop, immutable context, policy-before-effect ordering, hard budgets, cancellation, evidence, and limits.    |
 | [31 — Harness Platform M8 Workspace Capability Boundary](./31-harness-workspace-capability-boundary-m8-build-note.md) | Injected workspace authority, strict dispatch, least-privilege tool views, host-import enforcement, release evidence, and limits.  |
 | [32 — Harness first real-model field note](./32-harness-first-real-model-field-note.md)                               | Local Ollama/Qwen loop, guarded-array and timeout fixes, denied commands, sandbox evidence, and limits.                            |
+| [33 — Harness Platform M9–M10 workspace adapters](./33-harness-local-docker-workspace-adapters-m9-m10.md)             | Explicit local trust, Docker-by-default copied workspaces, lifecycle evidence, live isolation checks, and integration limits.      |
 
 ## Recommended first release
 
@@ -262,6 +263,16 @@ is published in website commit `de6f630`; CI run `33654520921`, CodeQL run `3365
 checks-gated Static Site deploy `dep-dac4s5p5efls73a9fpv0` passed, generating 35 production pages
 with 16 Build Notes and five Payload prototype routes. Publication evidence is maintained in
 [32](./32-harness-first-real-model-field-note.md).
+Build Note 017 is prepared from Harness Platform M9–M10 merge `6e1e578`. It documents the explicit
+developer-only LocalWorkspace, Docker-by-default selector, bounded UTF-8 text-tree contract,
+descriptor-safe local access, copied-state Docker lifecycle with no repository mount, host-side
+returned-state validation, bounded patches and declared artifacts, and audited state retention.
+PR-head and exact-merge CI and CodeQL passed, the branch gate retained 693-test evidence with zero
+scope violations, and a publication audit reproduced 10/10 hostile-fixture Docker checks locally
+with no remaining Harness containers. The hosted manual/weekly live-Docker lane had not run at the
+audit, and Pi TaskAgent integration, load testing, production proof, and security certification
+remain explicit non-claims. Publication planning and evidence are maintained in
+[33](./33-harness-local-docker-workspace-adapters-m9-m10.md).
 The expiring shared database, missing
 backup/retention automation, backend cold starts, and one stale `www` DNS target remain unresolved
 operational requirements. See
