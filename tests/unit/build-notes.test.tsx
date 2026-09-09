@@ -24,7 +24,7 @@ import { createBuildNotesRSS } from '@/lib/build-notes-feed'
 
 describe('Git-authored build notes', () => {
   it('publishes an explicit, unique, newest-first manifest', () => {
-    expect(buildNotes).toHaveLength(17)
+    expect(buildNotes).toHaveLength(18)
 
     const slugs = buildNotes.map((note) => note.slug)
     expect(new Set(slugs).size).toBe(slugs.length)
@@ -50,7 +50,7 @@ describe('Git-authored build notes', () => {
     expect([...buildNotes].sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))).toEqual(
       buildNotes,
     )
-    expect(buildNotes[0]?.slug).toBe('harness-local-docker-workspace-adapters-m9-m10')
+    expect(buildNotes[0]?.slug).toBe('r3n-continuous-research-local-graphrag')
     expect(
       getBuildNote('harness-local-docker-workspace-adapters-m9-m10')?.repositories[0]?.commit,
     ).toBe('6e1e578747484bbad5a3651601c7b57854cc771f')

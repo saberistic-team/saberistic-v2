@@ -23,6 +23,7 @@ import { HarnessWorkspaceCapabilityArticle } from '@/content/build-notes/Harness
 import { LovablePrototypeTrioArticle } from '@/content/build-notes/LovablePrototypeTrio'
 import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
+import { R3NArticle } from '@/content/build-notes/R3N'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
 
@@ -33,6 +34,7 @@ type BuildNotePageProps = {
 }
 
 const articleBySlug = {
+  'r3n-continuous-research-local-graphrag': R3NArticle,
   'cryptopal-wallet-email-wallet': CryptoPalArticle,
   'growth-program-sensor-scorecards-devnet': GrowthProgramDevnetArticle,
   'growth-program-v2-scorecards': GrowthProgramArticle,

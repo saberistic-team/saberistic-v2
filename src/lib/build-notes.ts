@@ -21,6 +21,42 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'LOCAL RESEARCH / GRAPH-ASSISTED Q&A',
+    footerSummary:
+      'Explore the continuous research loop, local hybrid retrieval, evidence graph and exact-excerpt citation contract in the public R3N repository.',
+    footerTitle: 'Follow the question—from web research to a notebook you can ask.',
+    modifiedAt: '2026-09-09',
+    publishedAt: '2026-09-09',
+    readingMinutes: 15,
+    repositories: [
+      {
+        commit: '58113f8651a2f9449d5bd2b51f85a637379a5f99',
+        label: 'R3N',
+        url: 'https://github.com/saberistic-team/r3n',
+      },
+    ],
+    sections: [
+      ['idea', 'Follow the question'],
+      ['cycles', 'Continuous research'],
+      ['providers', 'Brave and local Qwen'],
+      ['storage', 'Durable notebook'],
+      ['indexing', 'Passage indexing'],
+      ['graph', 'Evidence-linked relationships'],
+      ['retrieval', 'Ask your research'],
+      ['citations', 'The live-test corrections'],
+      ['interface', 'Researcher controls'],
+      ['results', 'Verified results'],
+      ['limits', 'Current boundaries'],
+      ['files', 'Implementation guide'],
+    ],
+    seoTitle: 'R3N: continuous research meets local GraphRAG',
+    slug: 'r3n-continuous-research-local-graphrag',
+    summary:
+      'Building a continuous research notebook with Brave Answers, local Qwen, SQLite, hybrid search, evidence graphs and exact passage citations—then making the collected research answerable.',
+    tags: ['Local AI', 'Research tools', 'GraphRAG', 'SQLite'],
+    title: 'R3N: from continuous web research to a notebook you can ask',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONES 9–10',
     footerSummary:
       'The pinned public merge contains the explicit LocalWorkspace and DockerWorkspace adapters, selector, bounded state transfer, lifecycle evidence, and isolation checks described here.',

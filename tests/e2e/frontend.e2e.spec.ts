@@ -7,6 +7,7 @@ test.describe('Public site smoke', () => {
     '/prototypes',
     '/readiness',
     '/build-notes',
+    '/build-notes/r3n-continuous-research-local-graphrag',
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',

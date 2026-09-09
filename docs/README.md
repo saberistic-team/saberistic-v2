@@ -70,6 +70,10 @@ The product promise is:
 
 ## Recommended first release
 
+Build Note 018 documents R3N's continuous research notebook and local graph-assisted Q&A.
+Its source audit, implementation plan, verification and publication record are in
+[34 — R3N](./34-r3n-continuous-research-local-graphrag.md).
+
 The smallest credible V2 includes:
 
 - the homepage, Work, Prototypes, Services, About, and Contact routes;
