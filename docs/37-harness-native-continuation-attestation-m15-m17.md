@@ -43,4 +43,8 @@ No live-provider, live-Postgres, load, or security-certification claim is made.
 - Website typecheck and lint passed; all 19 journal unit tests passed.
 - Fixture export built 37 pages and verified 21 build notes, metadata, RSS, and sitemap.
 - Desktop/mobile browser inspection passed; 390px viewport has 390px document width and twelve article sections.
-- Live deployment verification pending.
+- Published content commit: `3d9b052d567b19df4d402209c9d86360479e2585`.
+- Website CI `34620177426` and CodeQL `34620175887` passed.
+- Render Static Site deploy `dep-dai2fnoae00c73b87ri0` succeeded at `2026-09-11T16:12:50Z` (GitHub deployment `6397029892`).
+- [Live article](https://saberistic.com/build-notes/harness-native-continuation-attestation-m15-m17/) returned HTTP 200 and contains the source pin, 724-test evidence, and BlogPosting structured data.
+- Public journal index, RSS feed, and sitemap returned HTTP 200 and include the new slug. Browser verification confirmed the live title.
