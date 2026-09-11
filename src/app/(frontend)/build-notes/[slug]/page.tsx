@@ -25,6 +25,7 @@ import { SpiralSafeArticle } from '@/content/build-notes/SpiralSafe'
 import { TurboPassArticle } from '@/content/build-notes/TurboPass'
 import { R3NArticle } from '@/content/build-notes/R3N'
 import { LicensingRoadmapArticle } from '@/content/build-notes/LicensingRoadmap'
+import { HarnessDurableSessionsArticle } from '@/content/build-notes/HarnessDurableSessions'
 import { buildNotes, formatBuildNoteDate, getBuildNote } from '@/lib/build-notes'
 import { createPageMetadata } from '@/lib/seo'
 
@@ -35,6 +36,7 @@ type BuildNotePageProps = {
 }
 
 const articleBySlug = {
+  'harness-bounded-tools-durable-sessions-m11-m14': HarnessDurableSessionsArticle,
   'licensing-roadmap-evidence-first-tools': LicensingRoadmapArticle,
   'r3n-continuous-research-local-graphrag': R3NArticle,
   'cryptopal-wallet-email-wallet': CryptoPalArticle,

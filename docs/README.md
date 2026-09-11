@@ -288,6 +288,10 @@ operational requirements. See
 
 ## Source-of-truth rules
 
+Build Note 020 covers Harness M11–M14: bounded tools, isolated mutation, steering,
+compaction and durable checkpoints. Sources, verification and release boundaries
+are recorded in [36](./36-harness-bounded-tools-durable-sessions-m11-m14.md).
+
 Build Note 019 documents Licensing Roadmap, from checkout compatibility through an
 evidence-first suite of fifteen tools. See [35](./35-licensing-roadmap-evidence-first-tools.md)
 for sources, implementation, claim boundaries, and publication status.

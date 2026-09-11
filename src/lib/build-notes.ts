@@ -22,6 +22,44 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONES 11–14',
+    footerSummary:
+      'Inspect the five-tool boundary, safe steering, append-only compaction and fenced session checkpoints in the public merge. Interrupted-work continuation remains the next milestone.',
+    footerTitle: 'Follow the session from a bounded tool call to a durable checkpoint.',
+    modifiedAt: '2026-09-11',
+    publishedAt: '2026-09-11',
+    readingMinutes: 18,
+    repositories: [
+      {
+        commit: 'fc8b3d9793d90669bc9dbf2f60ec93d62c6be177',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Four milestones, one session'],
+      ['tools', 'Exactly five development tools'],
+      ['isolation', 'Isolated mutation authority'],
+      ['aliases', 'Provider aliases, canonical policy'],
+      ['steering', 'Safe-boundary steering'],
+      ['followups', 'Follow-up turns'],
+      ['context', 'Occupancy versus budget'],
+      ['compaction', 'Summary without erased history'],
+      ['persistence', 'Durable event semantics'],
+      ['checkpoints', 'Exact request checkpoints'],
+      ['recovery', 'The M14 recovery boundary'],
+      ['results', 'Verified evidence lanes'],
+      ['files', 'Source and merge guide'],
+      ['next', 'What comes next'],
+    ],
+    seoTitle: 'Harness M11–M14: tools and durable sessions',
+    slug: 'harness-bounded-tools-durable-sessions-m11-m14',
+    summary:
+      'Five bounded tools, Docker-only model mutations, FIFO steering, context compaction and durable replay—four Harness milestones backed by 710 offline tests and explicit recovery limits.',
+    tags: ['Agent infrastructure', 'Runtime', 'Persistence', 'Safety boundaries'],
+    title: 'Harness M11–M14: bounded tools, steerable turns, and durable sessions',
+  },
+  {
     eyebrow: 'PRODUCT BUILD / EVIDENCE-FIRST LICENSING',
     footerSummary:
       'Follow the development record, from checkout parity to reusable research and the staging rollout of fifteen licensing tools. The implementation repositories remain private.',
