@@ -10,6 +10,7 @@ test.describe('Public site smoke', () => {
     '/build-notes/r3n-continuous-research-local-graphrag',
     '/build-notes/licensing-roadmap-evidence-first-tools',
     '/build-notes/harness-bounded-tools-durable-sessions-m11-m14',
+    '/build-notes/harness-native-continuation-attestation-m15-m17',
     '/build-notes/cryptopal-wallet-email-wallet',
     '/build-notes/growth-program-sensor-scorecards-devnet',
     '/build-notes/growth-program-v2-scorecards',

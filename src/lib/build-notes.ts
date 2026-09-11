@@ -22,6 +22,42 @@ export type BuildNote = {
 
 export const buildNotes = [
   {
+    eyebrow: 'STAGE 1 / MILESTONES 15–17',
+    footerSummary:
+      'Inspect safe continuation, the offline native TaskAgent, and signed candidate/accepted-patch evidence in the pinned public merge. Live self-hosted qualification remains M18.',
+    footerTitle: 'Trace the change from a safe checkpoint to verifiable output.',
+    modifiedAt: '2026-09-11',
+    publishedAt: '2026-09-11',
+    readingMinutes: 15,
+    repositories: [
+      {
+        commit: 'cfe7a8032e636d6cc1a114068994e0f1e1c08302',
+        label: 'Harness Platform',
+        url: 'https://github.com/saberistic-team/harness-platform',
+      },
+    ],
+    sections: [
+      ['brief', 'Accountable native work'],
+      ['safe', 'Safe continuation boundaries'],
+      ['fencing', 'Transactional ownership'],
+      ['crashes', 'Crash and effect tests'],
+      ['runner', 'Kernel-backed TaskAgent'],
+      ['integration', 'Offline integration gate'],
+      ['authorship', 'Reject pre-authored changes'],
+      ['attestation', 'Signed evidence chain'],
+      ['acceptance', 'Candidate and accepted output'],
+      ['results', 'Verified evidence lanes'],
+      ['files', 'Implementation guide'],
+      ['next', 'The M18 qualification boundary'],
+    ],
+    seoTitle: 'Harness M15–M17: an attested native builder',
+    slug: 'harness-native-continuation-attestation-m15-m17',
+    summary:
+      'Restart-safe continuation, a kernel-backed task runner, and signed authorship evidence: Harness M15–M17 connect safe checkpoints to verifiable patches, with 724 offline tests and explicit live gates.',
+    tags: ['Agent infrastructure', 'Recovery', 'Provenance', 'Native builder'],
+    title: 'Harness M15–M17: safe continuation and an attested native builder',
+  },
+  {
     eyebrow: 'STAGE 1 / MILESTONES 11–14',
     footerSummary:
       'Inspect the five-tool boundary, safe steering, append-only compaction and fenced session checkpoints in the public merge. Interrupted-work continuation remains the next milestone.',

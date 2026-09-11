@@ -31,6 +31,9 @@ The product promise is:
 
 ## Documentation map
 
+The Harness M15–M17 article, evidence boundaries, and publication record are documented in
+[37 — Safe continuation and an attested native builder](./37-harness-native-continuation-attestation-m15-m17.md).
+
 | Document                                                                                                              | Purpose                                                                                                                            |
 | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | [00 — Project context and research summary](./00-project-context-and-research-summary.md)                             | Request history, source material, original critique, tool selection, and research method.                                          |
