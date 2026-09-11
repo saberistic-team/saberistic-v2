@@ -46,4 +46,12 @@ tracked source/HEAD remained unchanged. We did not alter or reset that work.
 Website typecheck, lint, 19 Build Note unit tests and fixture static export passed.
 The export verifies 20 Build Notes and their SEO/feed/sitemap entries. Browser QA
 confirmed fourteen sections, four diagrams, desktop rendering and no document
-overflow at 390px. Awaiting checks-gated deployment.
+overflow at 390px.
+
+Published in website commit `d9cccf3b937483164667799c26535ad4fa88e605`.
+Website CI `34614040253` and CodeQL `34614039606` passed. Render Static Site
+deploy `dep-dai1ii0ae00c73b6v0q0` succeeded at 2026-09-11T15:10:38Z
+(GitHub deployment `6395915082`). Verified live article, index, RSS, sitemap,
+BlogPosting metadata, source pin, test qualification and recovery boundary.
+
+Live: https://saberistic.com/build-notes/harness-bounded-tools-durable-sessions-m11-m14/.
